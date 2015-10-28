@@ -5,7 +5,12 @@ import java.util.Set;
 
 import org.eclipse.jface.viewers.StructuredViewer;
 
-
+/**
+ * Common super class for EventBMachine and EventBContext
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBUnit {
 	
 	protected EventBDependencies dependencies = null;
