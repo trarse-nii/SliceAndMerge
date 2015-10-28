@@ -16,6 +16,7 @@ import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.ITableColorProvider;
 import org.eclipse.jface.viewers.ITableFontProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
+import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -72,6 +73,7 @@ public class SelectionEditor extends EditorPart {
 
 	private CheckboxTableViewer attributeCheckboxTableViewer = null;
 	private CheckboxTableViewer conditionCheckboxTableViewer = null;
+	private ContainerCheckedTreeViewer treeViewer = null;
 
 	public SelectionEditor() {
 		// TODO Auto-generated constructor stub
@@ -234,14 +236,16 @@ public class SelectionEditor extends EditorPart {
 			column.setText(title);
 			if (title.equals(LABEL_CHECKBOX)) {
 				column.setResizable(false);
-				column.setWidth(27);
+				// column.setWidth(27);
 			}
 		}
 
+		createContainerCheckedTreeViewer(tree, titles);
+
 		for (TreeColumn oneColumn : tree.getColumns()) {
-			if (oneColumn.getText().equals(LABEL_CHECKBOX)) {
-				continue;
-			}
+			// if (oneColumn.getText().equals(LABEL_CHECKBOX)) {
+			// continue;
+			// }
 			oneColumn.pack();
 		}
 	}
@@ -257,9 +261,68 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
-
+				if (event.getElement() instanceof EventBElement) {
+					EventBElement element = (EventBElement) event.getElement();
+					element.setSelected(event.getChecked());
+					treeViewer.update(element, null);
+					// TODO: Add dependency stuff.
+				}
 			}
 		});
+
+		treeViewer.setContentProvider(new ITreeContentProvider() {
+
+			@Override
+			public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public void dispose() {
+				// TODO Auto-generated method stub
+
+			}
+
+			@Override
+			public boolean hasChildren(Object element) {
+				if (element instanceof EventBMachine) {
+					EventBMachine machine = (EventBMachine) element;
+					if (machine.getInvariants().isEmpty() && machine.getVariables().isEmpty()) {
+						return false;
+					}
+					return true;
+				}
+				return false;
+			}
+
+			@Override
+			public Object getParent(Object element) {
+				if (element instanceof EventBElement) {
+					return ((EventBElement) element).getParent();
+				}
+				return null;
+			}
+
+			@Override
+			public Object[] getElements(Object inputElement) {
+				return getChildren(inputElement);
+			}
+
+			@Override
+			public Object[] getChildren(Object parentElement) {
+				if ((parentElement instanceof EventBMachine)) {
+					EventBMachine machine = (EventBMachine) parentElement;
+					List<EventBElement> children = new ArrayList<>();
+					children.addAll(machine.getInvariants());
+					children.addAll(machine.getVariables());
+					return children.toArray();
+				}
+				return null;
+			}
+		});
+
+		treeViewer.setInput(machine);
 	}
 
 	private Table createTable(Composite parent){
@@ -419,31 +482,26 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public void addListener(ILabelProviderListener listener) {
-			// TODO Auto-generated method stub
-			
+			// Intentionally left empty
 		}
 
 		@Override
 		public void dispose() {
-			// TODO Auto-generated method stub
-			
+			// Intentionally left empty
 		}
 
 		@Override
 		public boolean isLabelProperty(Object element, String property) {
-			// TODO Auto-generated method stub
 			return false;
 		}
 
 		@Override
 		public void removeListener(ILabelProviderListener listener) {
-			// TODO Auto-generated method stub
-			
+			// Intentionally left empty
 		}
 
 		@Override
 		public Font getFont(Object element, int columnIndex) {
-			// TODO Auto-generated method stub
 			return null;
 		}
 
@@ -553,6 +611,7 @@ public class SelectionEditor extends EditorPart {
 		GridLayout layout = new GridLayout();
 		layout.numColumns = 1;
 		parent.setLayout(layout);
+		createTree(parent);
 		new Label(parent, SWT.NONE).setText("Invariants");
 		createInvariantAndAxiomTable(parent);
 		new Label(parent, SWT.NONE).setText("Variables");
