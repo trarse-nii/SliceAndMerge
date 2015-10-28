@@ -28,9 +28,12 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eventb.core.IContextRoot;
@@ -209,6 +212,56 @@ public class SelectionEditor extends EditorPart {
 		}
 	}
 	
+	private void createTree(Composite parent) {
+		Tree tree = new Tree(parent, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER | SWT.CHECK | SWT.V_SCROLL
+				| SWT.H_SCROLL);
+		tree.setLinesVisible(true);
+		tree.setHeaderVisible(true);
+		GridData gridData = new GridData(SWT.FILL, SWT.BEGINNING, true, true);
+		tree.setLayoutData(gridData);
+
+		String[] titles = {
+				LABEL_CHECKBOX,
+				LABEL_LABEL,
+				LABEL_CONTENT,
+				LABEL_COMMENT
+ };
+
+		TreeColumn column;
+
+		for (String title : titles) {
+			column = new TreeColumn(tree, SWT.NONE);
+			column.setText(title);
+			if (title.equals(LABEL_CHECKBOX)) {
+				column.setResizable(false);
+				column.setWidth(27);
+			}
+		}
+
+		for (TreeColumn oneColumn : tree.getColumns()) {
+			if (oneColumn.getText().equals(LABEL_CHECKBOX)) {
+				continue;
+			}
+			oneColumn.pack();
+		}
+	}
+
+	private void createContainerCheckedTreeViewer(Tree tree, String[] titles) {
+		ContainerCheckedTreeViewer treeViewer = new ContainerCheckedTreeViewer(tree);
+		treeViewer.setColumnProperties(titles);
+		treeViewer.setUseHashlookup(true);
+
+		treeViewer.setLabelProvider(new LabelProvider());
+
+		treeViewer.addCheckStateListener(new ICheckStateListener() {
+
+			@Override
+			public void checkStateChanged(CheckStateChangedEvent event) {
+
+			}
+		});
+	}
+
 	private Table createTable(Composite parent){
 		Table table = new Table(parent, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER | SWT.CHECK | SWT.V_SCROLL | SWT.H_SCROLL);
 		table.setLinesVisible(true);
