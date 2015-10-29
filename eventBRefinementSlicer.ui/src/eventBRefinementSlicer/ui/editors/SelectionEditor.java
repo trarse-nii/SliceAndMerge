@@ -53,6 +53,7 @@ import eventBRefinementSlicer.internal.datastructures.EventBDependencies;
 import eventBRefinementSlicer.internal.datastructures.EventBElement;
 import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
 import eventBRefinementSlicer.internal.datastructures.EventBMachine;
+import eventBRefinementSlicer.internal.datastructures.EventBUnit;
 import eventBRefinementSlicer.internal.datastructures.EventBVariable;
 import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
 public class SelectionEditor extends EditorPart {
@@ -478,6 +479,51 @@ public class SelectionEditor extends EditorPart {
 		return checkboxTableViewer;
 	} 
 	
+	class EventBTreeSubcategory {
+		final String label;
+		final EventBUnit parentUnit;
+		final EventBElement parentElement;
+		final EventBTreeElement[] children;
+
+		public EventBTreeSubcategory(String label, EventBUnit parent, EventBElement[] children) {
+			this.label = label;
+			this.parentUnit = parent;
+			this.parentElement = null;
+
+			List<EventBTreeElement> treeChildren = new ArrayList<>();
+			for (EventBElement originalChild : children) {
+				EventBTreeElement treeChild = new EventBTreeElement(this, originalChild);
+				treeChildren.add(treeChild);
+			}
+
+			this.children = (EventBTreeElement[]) treeChildren.toArray();
+		}
+
+		public EventBTreeSubcategory(String label, EventBElement parent, EventBElement[] children) {
+			this.label = label;
+			this.parentElement = parent;
+			this.parentUnit = null;
+
+			List<EventBTreeElement> treeChildren = new ArrayList<>();
+			for (EventBElement originalChild : children) {
+				EventBTreeElement treeChild = new EventBTreeElement(this, originalChild);
+				treeChildren.add(treeChild);
+			}
+
+			this.children = (EventBTreeElement[]) treeChildren.toArray();
+		}
+	}
+
+	class EventBTreeElement {
+		final EventBTreeSubcategory parent;
+		final EventBElement originalElement;
+
+		public EventBTreeElement(EventBTreeSubcategory parent, EventBElement originalElement) {
+			this.parent = parent;
+			this.originalElement = originalElement;
+		}
+	}
+
 	class LabelProvider implements ITableLabelProvider, ITableColorProvider, ITableFontProvider {
 
 		@Override
