@@ -26,7 +26,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Tree;
@@ -47,14 +46,14 @@ import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
 import eventBRefinementSlicer.internal.datastructures.EventBAttribute;
+import eventBRefinementSlicer.internal.datastructures.EventBAxiom;
 import eventBRefinementSlicer.internal.datastructures.EventBCondition;
+import eventBRefinementSlicer.internal.datastructures.EventBConstant;
 import eventBRefinementSlicer.internal.datastructures.EventBContext;
 import eventBRefinementSlicer.internal.datastructures.EventBDependencies;
 import eventBRefinementSlicer.internal.datastructures.EventBElement;
-import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
 import eventBRefinementSlicer.internal.datastructures.EventBMachine;
 import eventBRefinementSlicer.internal.datastructures.EventBUnit;
-import eventBRefinementSlicer.internal.datastructures.EventBVariable;
 import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
 public class SelectionEditor extends EditorPart {
 
@@ -70,6 +69,8 @@ public class SelectionEditor extends EditorPart {
 	private IMachineRoot machineRoot;
 	private EventBMachine machine;
 	
+	private EventBTreeSubcategory[] treeCategories;
+
 	private Map<EventBElement, Integer> selectionDependencies = new HashMap<>();
 
 	private CheckboxTableViewer attributeCheckboxTableViewer = null;
@@ -220,7 +221,7 @@ public class SelectionEditor extends EditorPart {
 				| SWT.H_SCROLL);
 		tree.setLinesVisible(true);
 		tree.setHeaderVisible(true);
-		GridData gridData = new GridData(SWT.FILL, SWT.BEGINNING, true, true);
+		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		tree.setLayoutData(gridData);
 
 		String[] titles = {
@@ -236,7 +237,7 @@ public class SelectionEditor extends EditorPart {
 			column = new TreeColumn(tree, SWT.NONE);
 			column.setText(title);
 			if (title.equals(LABEL_CHECKBOX)) {
-				column.setResizable(false);
+				// column.setResizable(false);
 				// column.setWidth(27);
 			}
 		}
@@ -244,9 +245,6 @@ public class SelectionEditor extends EditorPart {
 		createContainerCheckedTreeViewer(tree, titles);
 
 		for (TreeColumn oneColumn : tree.getColumns()) {
-			// if (oneColumn.getText().equals(LABEL_CHECKBOX)) {
-			// continue;
-			// }
 			oneColumn.pack();
 		}
 	}
@@ -262,11 +260,58 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
-				if (event.getElement() instanceof EventBElement) {
-					EventBElement element = (EventBElement) event.getElement();
-					element.setSelected(event.getChecked());
-					treeViewer.update(element, null);
-					// TODO: Add dependency stuff.
+				treeViewer.update(event.getElement(), null);
+				if (event.getElement() instanceof EventBTreeSubcategory) {
+					return;
+				}
+				// TODO: Maybe put this in its own method
+				EventBElement element = ((EventBTreeElement) event.getElement()).getOriginalElement();
+				EventBDependencies dependencies = machine.getDependencies();
+				for (EventBElement dependee : dependencies.getDependeesForElement(element)) {
+					if (event.getChecked()) {
+						if (!selectionDependencies.containsKey(dependee)) {
+							selectionDependencies.put(dependee, 0);
+						}
+						selectionDependencies.put(dependee, selectionDependencies.get(dependee) + 1);
+					} else {
+						if (selectionDependencies.containsKey(dependee)) {
+							selectionDependencies.put(dependee, selectionDependencies.get(dependee) - 1);
+							if (selectionDependencies.get(dependee).intValue() <= 0) {
+								selectionDependencies.remove(dependee);
+							}
+						}
+					}
+					for (Object category : treeCategories) {
+						EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) category;
+						EventBTreeElement treeElement = treeCategory.findTreeElement(dependee);
+						if (treeElement != null) {
+							treeViewer.update(treeElement, null);
+							break;
+						}
+					}
+				}
+				for (EventBElement depender : dependencies.getDependersForElement(element)) {
+					if (event.getChecked()) {
+						if (!selectionDependencies.containsKey(depender)) {
+							selectionDependencies.put(depender, 0);
+						}
+						selectionDependencies.put(depender, selectionDependencies.get(depender) + 1);
+					} else {
+						if (selectionDependencies.containsKey(depender)) {
+							selectionDependencies.put(depender, selectionDependencies.get(depender) - 1);
+							if (selectionDependencies.get(depender).intValue() <= 0) {
+								selectionDependencies.remove(depender);
+							}
+						}
+					}
+					for (Object category : treeCategories) {
+						EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) category;
+						EventBTreeElement treeElement = treeCategory.findTreeElement(depender);
+						if (treeElement != null) {
+							treeViewer.update(treeElement, null);
+							break;
+						}
+					}
 				}
 			}
 		});
@@ -294,36 +339,53 @@ public class SelectionEditor extends EditorPart {
 					}
 					return true;
 				}
+				if (element instanceof EventBTreeSubcategory) {
+					return ((EventBTreeSubcategory) element).getChildren().length > 0;
+				}
 				return false;
 			}
 
 			@Override
 			public Object getParent(Object element) {
-				if (element instanceof EventBElement) {
-					return ((EventBElement) element).getParent();
+				if (element instanceof EventBTreeElement) {
+					return ((EventBTreeElement) element).getParent();
 				}
 				return null;
 			}
 
 			@Override
 			public Object[] getElements(Object inputElement) {
-				return getChildren(inputElement);
+				EventBMachine machine = (EventBMachine) inputElement;
+				EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine, machine.getInvariants());
+				EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine, machine.getVariables());
+				List<EventBAxiom> axes = new ArrayList<>();
+				List<EventBConstant> consts = new ArrayList<>();
+				for (EventBContext context : machine.getSeenContexts()) {
+					axes.addAll(context.getAxioms());
+					consts.addAll(context.getConstants());
+				}
+				EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", machine, axes);
+				EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", machine, consts);
+				EventBTreeSubcategory[] treeChildren = { invariants, axioms, variables, constants };
+				treeCategories = treeChildren;
+				return treeChildren;
 			}
 
 			@Override
 			public Object[] getChildren(Object parentElement) {
 				if ((parentElement instanceof EventBMachine)) {
-					EventBMachine machine = (EventBMachine) parentElement;
-					List<EventBElement> children = new ArrayList<>();
-					children.addAll(machine.getInvariants());
-					children.addAll(machine.getVariables());
-					return children.toArray();
+					return getElements(parentElement);
+				}
+				if (parentElement instanceof EventBTreeSubcategory) {
+					return ((EventBTreeSubcategory) parentElement).children;
 				}
 				return null;
 			}
 		});
 
 		treeViewer.setInput(machine);
+
+		this.treeViewer = treeViewer;
 	}
 
 	private Table createTable(Composite parent){
@@ -331,7 +393,7 @@ public class SelectionEditor extends EditorPart {
 		table.setLinesVisible(true);
 		table.setHeaderVisible(true);
 		table.getVerticalBar().setVisible(true);
-		GridData gridData = new GridData(SWT.FILL, SWT.BEGINNING, true, true);
+		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		table.setLayoutData(gridData);
 		
 		return table;
@@ -482,10 +544,10 @@ public class SelectionEditor extends EditorPart {
 	class EventBTreeSubcategory {
 		final String label;
 		final EventBUnit parentUnit;
-		final EventBElement parentElement;
+		final EventBTreeElement parentElement;
 		final EventBTreeElement[] children;
 
-		public EventBTreeSubcategory(String label, EventBUnit parent, EventBElement[] children) {
+		public EventBTreeSubcategory(String label, EventBUnit parent, List<? extends EventBElement> children) {
 			this.label = label;
 			this.parentUnit = parent;
 			this.parentElement = null;
@@ -496,10 +558,10 @@ public class SelectionEditor extends EditorPart {
 				treeChildren.add(treeChild);
 			}
 
-			this.children = (EventBTreeElement[]) treeChildren.toArray();
+			this.children = treeChildren.toArray(new EventBTreeElement[treeChildren.size()]);
 		}
 
-		public EventBTreeSubcategory(String label, EventBElement parent, EventBElement[] children) {
+		public EventBTreeSubcategory(String label, EventBTreeElement parent, List<? extends EventBElement> children) {
 			this.label = label;
 			this.parentElement = parent;
 			this.parentUnit = null;
@@ -510,7 +572,32 @@ public class SelectionEditor extends EditorPart {
 				treeChildren.add(treeChild);
 			}
 
-			this.children = (EventBTreeElement[]) treeChildren.toArray();
+			this.children = treeChildren.toArray(new EventBTreeElement[treeChildren.size()]);
+		}
+
+		public String getLabel() {
+			return label;
+		}
+
+		public EventBUnit getParentUnit() {
+			return parentUnit;
+		}
+
+		public EventBTreeElement getParentElement() {
+			return parentElement;
+		}
+
+		public EventBTreeElement[] getChildren() {
+			return children;
+		}
+
+		public EventBTreeElement findTreeElement(EventBElement originalElement) {
+			for (EventBTreeElement child : children) {
+				if (child.getOriginalElement().equals(originalElement)) {
+					return child;
+				}
+			}
+			return null;
 		}
 	}
 
@@ -521,6 +608,14 @@ public class SelectionEditor extends EditorPart {
 		public EventBTreeElement(EventBTreeSubcategory parent, EventBElement originalElement) {
 			this.parent = parent;
 			this.originalElement = originalElement;
+		}
+
+		public EventBTreeSubcategory getParent() {
+			return parent;
+		}
+
+		public EventBElement getOriginalElement() {
+			return originalElement;
 		}
 	}
 
@@ -553,47 +648,43 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public Color getForeground(Object element, int columnIndex) {
-			if (element instanceof EventBCondition){
+			if (element instanceof EventBTreeSubcategory) {
+				// TODO: Add color coding for categories
+				return null;
+			}
+			if (element instanceof EventBTreeElement) {
 				switch (columnIndex) {
 				case 0: // Selection Column
 					break;
 				case 1:
-					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY);
-				case 2:
 					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_CYAN);
-				case 3:
+				case 2:
 					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_MAGENTA);
-				case 4:
-					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN);
-				default:
-					break;
-				}
-			}
-			if (element instanceof EventBAttribute){
-				switch (columnIndex) {
-				case 0: // Selection Column
-					break;
-				case 1:
-					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY);
-				case 2:
-					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_CYAN);
 				case 3:
 					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN);
 				default:
 					break;
 				}
 			}
-
 			return null;
 		}
 
 		@Override
 		public Color getBackground(Object element, int columnIndex) {
-			EventBElement eventBElement = (EventBElement) element;
-			if (eventBElement.isSelected()){
+			if (!(element instanceof EventBTreeElement)) {
+				// TODO: Add color coding for categories
+				return null;
+			}
+			if (treeViewer.getChecked(element)) {
 				return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
 			}
-			if (selectionDependencies.containsKey(eventBElement)) {
+			// element = ((EventBTreeElement) element).getOriginalElement();
+			// EventBElement eventBElement = (EventBElement) element;
+			// if (eventBElement.isSelected()){
+			// return
+			// Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
+			// }
+			if (selectionDependencies.containsKey(((EventBTreeElement) element).getOriginalElement())) {
 				return Display.getDefault().getSystemColor(SWT.COLOR_RED);
 			}
 			return null;
@@ -607,46 +698,33 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public String getColumnText(Object element, int columnIndex) {
+			if (element instanceof EventBTreeSubcategory) {
+				if (columnIndex == 1) {
+					return ((EventBTreeSubcategory) element).getLabel();
+				}
+			}
+			if (!(element instanceof EventBTreeElement)) {
+				return null;
+			}
+			element = ((EventBTreeElement) element).getOriginalElement();
 			if (!(element instanceof EventBCondition || element instanceof EventBAttribute)){
 				return null;
-			} else if (element instanceof EventBCondition){
-				EventBCondition condition = (EventBCondition) element;
-				switch (columnIndex) {
-				case 0: // Selection Column
-					return null;
-				case 1:
-					if (element instanceof EventBInvariant){
-						return "Invariant";
-					} else {
-						return "Axiom";
-					}
-				case 2:
-					return condition.getLabel();
-				case 3:
-					return condition.getPredicate();
-				case 4:
-					return condition.getComment();
-				default:
-					return null;
+			}
+			EventBElement eventBElement = (EventBElement) element;
+			switch (columnIndex) {
+			case 0: // Selection Column
+				return null;
+			case 1:
+				return eventBElement.getLabel();
+			case 2:
+				if (eventBElement instanceof EventBCondition){
+					return ((EventBCondition)eventBElement).getPredicate();
 				}
-			} else {
-				EventBAttribute attribute = (EventBAttribute) element;
-				switch (columnIndex) {
-				case 0: // Selection Column
-					return null;
-				case 1:
-					if (attribute instanceof EventBVariable){
-						return "Variable";
-					} else {
-						return "Constant";
-					}
-				case 2:
-					return attribute.getLabel();
-				case 3:
-					return attribute.getComment();
-				default:
-					return null;
-				}
+				return null; 
+			case 3:
+				return eventBElement.getComment();
+			default:
+				return null;
 			}
 		}
 		
@@ -658,10 +736,10 @@ public class SelectionEditor extends EditorPart {
 		layout.numColumns = 1;
 		parent.setLayout(layout);
 		createTree(parent);
-		new Label(parent, SWT.NONE).setText("Invariants");
-		createInvariantAndAxiomTable(parent);
-		new Label(parent, SWT.NONE).setText("Variables");
-		createVariableAndConstantTable(parent);
+		// new Label(parent, SWT.NONE).setText("Invariants");
+		// createInvariantAndAxiomTable(parent);
+		// new Label(parent, SWT.NONE).setText("Variables");
+		// createVariableAndConstantTable(parent);
 		
 	}
 
