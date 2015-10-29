@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: RodinNewEditor
+Bundle-Name: Refinement Slicer Editor
 Bundle-SymbolicName: eventBRefinementSlicer.ui;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: eventBRefinementSlicer.ui.Activator
