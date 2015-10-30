@@ -1,6 +1,5 @@
 package eventBRefinementSlicer.ui.editors;
 
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,10 +8,8 @@ import java.util.Map;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
-import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ILabelProviderListener;
-import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.ITableColorProvider;
 import org.eclipse.jface.viewers.ITableFontProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
@@ -26,8 +23,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Table;
-import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.ui.IEditorInput;
@@ -55,32 +50,27 @@ import eventBRefinementSlicer.internal.datastructures.EventBElement;
 import eventBRefinementSlicer.internal.datastructures.EventBMachine;
 import eventBRefinementSlicer.internal.datastructures.EventBUnit;
 import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
+
 public class SelectionEditor extends EditorPart {
 
-	private String LABEL_TYPE = "Type";
 	private String LABEL_CHECKBOX = "";
 	private String LABEL_LABEL = "Label";
 	private String LABEL_CONTENT = "Content";
 	private String LABEL_COMMENT = "Comment";
-	
-	private SelectionManager selectionManager;
 
 	private IRodinFile rodinFile;
 	private IMachineRoot machineRoot;
 	private EventBMachine machine;
-	
+
 	private EventBTreeSubcategory[] treeCategories;
 
 	private Map<EventBElement, Integer> selectionDependencies = new HashMap<>();
 
-	private CheckboxTableViewer attributeCheckboxTableViewer = null;
-	private CheckboxTableViewer conditionCheckboxTableViewer = null;
 	private ContainerCheckedTreeViewer treeViewer = null;
 
 	public SelectionEditor() {
 		// TODO Auto-generated constructor stub
 	}
-	
 
 	@Override
 	public void doSave(IProgressMonitor monitor) {
@@ -95,11 +85,9 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	@Override
-	public void init(IEditorSite site, IEditorInput input)
-			throws PartInitException {
+	public void init(IEditorSite site, IEditorInput input) throws PartInitException {
 		setSite(site);
 		setInput(input);
-		selectionManager = SelectionManager.getInstance();
 		rodinFile = getRodinFileFromInput(input);
 		IInternalElement internalElementRoot = rodinFile.getRoot();
 		assert (internalElementRoot instanceof IContextRoot) || (internalElementRoot instanceof IMachineRoot);
@@ -111,23 +99,23 @@ public class SelectionEditor extends EditorPart {
 		}
 		EventBDependencyAnalysisJob.doEventBDependencyAnalysis(machine);
 	}
-	
-	protected IRodinFile getRodinFileFromInput(IEditorInput input){
+
+	protected IRodinFile getRodinFileFromInput(IEditorInput input) {
 		FileEditorInput editorInput = (FileEditorInput) input;
 		IFile inputFile = editorInput.getFile();
 		IRodinFile rodinFile = RodinCore.valueOf(inputFile);
 		return rodinFile;
 	}
-	
-	public IRodinFile getRodinFile(){
-		if(rodinFile == null){
+
+	public IRodinFile getRodinFile() {
+		if (rodinFile == null) {
 			throw new IllegalStateException("Editor has not been initialized yet");
 		}
 		return rodinFile;
 	}
-	
-	public FormulaFactory getFormulaFactory(){
-		return ((IEventBRoot)machineRoot).getFormulaFactory();
+
+	public FormulaFactory getFormulaFactory() {
+		return ((IEventBRoot) machineRoot).getFormulaFactory();
 	}
 
 	@Override
@@ -142,94 +130,14 @@ public class SelectionEditor extends EditorPart {
 		return false;
 	}
 
-	private void createInvariantAndAxiomTable(Composite parent){
-		Table table = createTable(parent);
-		String [] titles = {
-				LABEL_CHECKBOX,
-				LABEL_TYPE,
-				LABEL_LABEL,
-				LABEL_CONTENT,
-				LABEL_COMMENT
-		};
-		
-		TableColumn column;
-		
-		column = new TableColumn(table, SWT.NONE, 0);
-		column.setText(titles[0]);
-		column.setResizable(false);
-		column.setWidth(27);
-		
-		column = new TableColumn(table, SWT.NONE, 1);
-		column.setText(titles[1]);
-		
-		column = new TableColumn(table, SWT.NONE, 2);
-		column.setText(titles[2]);
-		
-		column = new TableColumn(table, SWT.NONE, 3);
-		column.setText(titles[3]);
-		
-		column = new TableColumn(table, SWT.NONE, 4);
-		column.setText(titles[4]);
-
-		createCheckboxTableViewerForInvariantsAndAxioms(table, titles);
-		
-		for (TableColumn oneColumn : table.getColumns()){
-			if (oneColumn.getText().equals(LABEL_CHECKBOX)){
-				continue;
-			}
-			oneColumn.pack();
-		}
-	}
-	
-	private void createVariableAndConstantTable(Composite parent){
-		Table table = createTable(parent);
-		String [] titles = {
-			LABEL_CHECKBOX,
-			LABEL_TYPE,
-			LABEL_LABEL,
-			LABEL_COMMENT
-		};
-		
-		TableColumn column;
-		
-		column = new TableColumn(table, SWT.NONE, 0);
-		column.setText(titles[0]);
-		column.setResizable(false);
-		column.setWidth(27);
-		
-		column = new TableColumn(table, SWT.NONE, 1);
-		column.setText(titles[1]);
-		
-		column = new TableColumn(table, SWT.NONE, 2);
-		column.setText(titles[2]);
-		
-		column = new TableColumn(table, SWT.NONE, 3);
-		column.setText(titles[3]);
-		
-		createCheckboxTableViewerForVariablesAndConstants(table, titles);
-		
-		for (TableColumn oneColumn : table.getColumns()){
-			if (oneColumn.getText().equals(LABEL_CHECKBOX)){
-				continue;
-			}
-			oneColumn.pack();
-		}
-	}
-	
 	private void createTree(Composite parent) {
-		Tree tree = new Tree(parent, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER | SWT.CHECK | SWT.V_SCROLL
-				| SWT.H_SCROLL);
+		Tree tree = new Tree(parent, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER | SWT.CHECK | SWT.V_SCROLL | SWT.H_SCROLL);
 		tree.setLinesVisible(true);
 		tree.setHeaderVisible(true);
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		tree.setLayoutData(gridData);
 
-		String[] titles = {
-				LABEL_CHECKBOX,
-				LABEL_LABEL,
-				LABEL_CONTENT,
-				LABEL_COMMENT
- };
+		String[] titles = { LABEL_CHECKBOX, LABEL_LABEL, LABEL_CONTENT, LABEL_COMMENT };
 
 		TreeColumn column;
 
@@ -388,159 +296,6 @@ public class SelectionEditor extends EditorPart {
 		this.treeViewer = treeViewer;
 	}
 
-	private Table createTable(Composite parent){
-		Table table = new Table(parent, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER | SWT.CHECK | SWT.V_SCROLL | SWT.H_SCROLL);
-		table.setLinesVisible(true);
-		table.setHeaderVisible(true);
-		table.getVerticalBar().setVisible(true);
-		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
-		table.setLayoutData(gridData);
-		
-		return table;
-	}
-	
-	private void createCheckboxTableViewerForInvariantsAndAxioms(Table table, String[] columnNames){
-		conditionCheckboxTableViewer = createCheckboxTableViewer(table, columnNames);
-		
-		conditionCheckboxTableViewer.setContentProvider(new IStructuredContentProvider(){
-
-			@Override
-			public void dispose() {
-				// Nothing to dispose of
-			}
-
-			@Override
-			public void inputChanged(Viewer viewer, Object oldInput,
-					Object newInput) {
-				if(oldInput != null){
-					((EventBMachine)oldInput).removeChangeListener((CheckboxTableViewer)viewer);
-				}
-				if (newInput != null){
-					((EventBMachine)newInput).addChangeListener((CheckboxTableViewer)viewer);
-				}
-				
-			}
-
-			@Override
-			public Object[] getElements(Object inputElement) {
-				EventBMachine machine = (EventBMachine) inputElement;
-				List<EventBCondition> conditions = new ArrayList<>();
-				conditions.addAll(machine.getInvariants());
-				for(EventBContext context : machine.getSeenContexts()){
-					conditions.addAll(context.getAxioms());
-				}
-				return conditions.toArray();
-			}
-			
-		});
-
-		conditionCheckboxTableViewer.setInput(machine);
-	}
-	
-	private void createCheckboxTableViewerForVariablesAndConstants(Table table, String[] columnNames){
-		attributeCheckboxTableViewer = createCheckboxTableViewer(table, columnNames);
-		
-		attributeCheckboxTableViewer.setContentProvider(new IStructuredContentProvider(){
-
-			@Override
-			public void dispose() {
-				// Nothing to dispose of
-			}
-
-			@Override
-			public void inputChanged(Viewer viewer, Object oldInput,
-					Object newInput) {
-				if(oldInput != null){
-					((EventBMachine)oldInput).removeChangeListener((CheckboxTableViewer)viewer);
-				}
-				if (newInput != null){
-					((EventBMachine)newInput).addChangeListener((CheckboxTableViewer)viewer);
-				}
-				
-			}
-
-			@Override
-			public Object[] getElements(Object inputElement) {
-				EventBMachine machine = (EventBMachine) inputElement;
-				List<EventBAttribute> attributes = new ArrayList<>();
-				attributes.addAll(machine.getVariables());
-				for (EventBContext context : machine.getSeenContexts()){
-					attributes.addAll(context.getConstants());
-				}
-				
-				return attributes.toArray();
-			}
-			
-		});
-		
-
-		attributeCheckboxTableViewer.setInput(machine);
-		
-	}
-	
-	private CheckboxTableViewer createCheckboxTableViewer(Table table, String[] columnNames){
-		CheckboxTableViewer checkboxTableViewer = new CheckboxTableViewer(table);
-		checkboxTableViewer.setColumnProperties(columnNames);
-		checkboxTableViewer.setUseHashlookup(true);
-		
-		
-		checkboxTableViewer.setLabelProvider(new LabelProvider());
-		
-		checkboxTableViewer.addCheckStateListener(new ICheckStateListener() {
-			
-			@Override
-			public void checkStateChanged(CheckStateChangedEvent event) {
-				EventBElement element = (EventBElement) event.getElement();
-				element.setSelected(event.getChecked());
-				selectionManager.setSelection(element, event.getChecked());
-				checkboxTableViewer.update(event.getElement(), null);
-				EventBDependencies dependencies = element.getParent().getDependencies();
-				for (EventBElement dependee : dependencies.getDependeesForElement(element)) {
-					if(event.getChecked()){
-						if (!selectionDependencies.containsKey(dependee)){
-							selectionDependencies.put(dependee, 0);
-						}
-						selectionDependencies.put(dependee, selectionDependencies.get(dependee) + 1);
-					} else {
-						if (selectionDependencies.containsKey(dependee)) {
-							selectionDependencies.put(dependee, selectionDependencies.get(dependee) - 1);
-							if (selectionDependencies.get(dependee).intValue() <= 0) {
-								selectionDependencies.remove(dependee);
-							}
-						}
-					}
-					if (dependee instanceof EventBAttribute) {
-						attributeCheckboxTableViewer.update(dependee, null);
-					} else {
-						conditionCheckboxTableViewer.update(dependee, null);
-					}
-				}
-				for (EventBElement depender : dependencies.getDependersForElement(element)) {
-					if (event.getChecked()) {
-						if (!selectionDependencies.containsKey(depender)) {
-							selectionDependencies.put(depender, 0);
-						}
-						selectionDependencies.put(depender, selectionDependencies.get(depender) + 1);
-					} else {
-						if (selectionDependencies.containsKey(depender)) {
-							selectionDependencies.put(depender, selectionDependencies.get(depender) - 1);
-							if (selectionDependencies.get(depender).intValue() <= 0) {
-								selectionDependencies.remove(depender);
-							}
-						}
-					}
-					if (depender instanceof EventBAttribute) {
-						attributeCheckboxTableViewer.update(depender, null);
-					} else {
-						conditionCheckboxTableViewer.update(depender, null);
-					}
-				}
-			}
-		});
-		
-		return checkboxTableViewer;
-	} 
-	
 	class EventBTreeSubcategory {
 		final String label;
 		final EventBUnit parentUnit;
@@ -707,7 +462,7 @@ public class SelectionEditor extends EditorPart {
 				return null;
 			}
 			element = ((EventBTreeElement) element).getOriginalElement();
-			if (!(element instanceof EventBCondition || element instanceof EventBAttribute)){
+			if (!(element instanceof EventBCondition || element instanceof EventBAttribute)) {
 				return null;
 			}
 			EventBElement eventBElement = (EventBElement) element;
@@ -717,19 +472,19 @@ public class SelectionEditor extends EditorPart {
 			case 1:
 				return eventBElement.getLabel();
 			case 2:
-				if (eventBElement instanceof EventBCondition){
-					return ((EventBCondition)eventBElement).getPredicate();
+				if (eventBElement instanceof EventBCondition) {
+					return ((EventBCondition) eventBElement).getPredicate();
 				}
-				return null; 
+				return null;
 			case 3:
 				return eventBElement.getComment();
 			default:
 				return null;
 			}
 		}
-		
+
 	}
-	
+
 	@Override
 	public void createPartControl(Composite parent) {
 		GridLayout layout = new GridLayout();
@@ -740,7 +495,7 @@ public class SelectionEditor extends EditorPart {
 		// createInvariantAndAxiomTable(parent);
 		// new Label(parent, SWT.NONE).setText("Variables");
 		// createVariableAndConstantTable(parent);
-		
+
 	}
 
 	@Override
