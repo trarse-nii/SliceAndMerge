@@ -14,6 +14,8 @@ import org.eclipse.jface.viewers.ITableColorProvider;
 import org.eclipse.jface.viewers.ITableFontProvider;
 import org.eclipse.jface.viewers.ITableLabelProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.ITreeViewerListener;
+import org.eclipse.jface.viewers.TreeExpansionEvent;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -163,6 +165,36 @@ public class SelectionEditor extends EditorPart {
 		treeViewer.setUseHashlookup(true);
 
 		treeViewer.setLabelProvider(new LabelProvider());
+
+		treeViewer.addTreeListener(new ITreeViewerListener() {
+
+			@Override
+			public void treeExpanded(TreeExpansionEvent event) {
+				Display.getDefault().asyncExec(new Runnable() {
+
+					@Override
+					public void run() {
+						for (TreeColumn column : tree.getColumns()) {
+							column.pack();
+						}
+					}
+				});
+
+			}
+
+			@Override
+			public void treeCollapsed(TreeExpansionEvent event) {
+				Display.getDefault().asyncExec(new Runnable() {
+
+					@Override
+					public void run() {
+						for (TreeColumn column : tree.getColumns()) {
+							column.pack();
+						}
+					}
+				});
+			}
+		});
 
 		treeViewer.addCheckStateListener(new ICheckStateListener() {
 
