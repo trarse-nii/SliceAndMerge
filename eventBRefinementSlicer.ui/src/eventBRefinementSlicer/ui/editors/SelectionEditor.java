@@ -53,6 +53,14 @@ import eventBRefinementSlicer.internal.datastructures.EventBMachine;
 import eventBRefinementSlicer.internal.datastructures.EventBUnit;
 import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
 
+/**
+ * The editor in charge of selecting which parts of an EventB machine to use in
+ * the slicing of refinements
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
+
 public class SelectionEditor extends EditorPart {
 
 	private String LABEL_CHECKBOX = "";

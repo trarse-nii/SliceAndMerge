@@ -1,6 +1,10 @@
 package eventBRefinementSlicer.internal.datastructures;
 
-
+/**
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBElement {
 
 	static final private String TYPE = "ELEMENT";
@@ -37,8 +41,7 @@ public class EventBElement {
 
 	@Override
 	public String toString() {
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + " ("
-				+ comment + ")";
+		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + " (" + comment + ")";
 	}
 
 	public Object[] toArray() {
@@ -49,7 +52,7 @@ public class EventBElement {
 	public void hasChanged() {
 		parent.changedElement(this);
 	}
-		
+
 	public EventBUnit getParent() {
 		return parent;
 	}
