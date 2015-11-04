@@ -210,19 +210,27 @@ public class SelectionEditor extends EditorPart {
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				treeViewer.update(event.getElement(), null);
+				assert (event.getElement() instanceof EventBTreeElement || event.getElement() instanceof EventBTreeSubcategory);
 				if (event.getElement() instanceof EventBTreeSubcategory) {
+					handleChildren(((EventBTreeSubcategory) event.getElement()), event);
 					return;
 				}
-				// TODO: Maybe put this in its own method
 				EventBDependencies dependencies = machine.getDependencies();
-				handleSelectionDependencies(dependencies, event);
+				handleSelectionDependenciesForElement((EventBTreeElement) event.getElement(), dependencies, event);
 			}
 
-			private void handleSelectionDependencies(EventBDependencies dependencies, CheckStateChangedEvent event) {
-				assert event.getElement() instanceof EventBTreeElement;
-				EventBElement element = ((EventBTreeElement) event.getElement()).getOriginalElement();
-				Set<EventBElement> dependees = dependencies.getDependeesForElement(element);
-				Set<EventBElement> dependers = dependencies.getDependersForElement(element);
+			private void handleChildren(EventBTreeSubcategory category, CheckStateChangedEvent event) {
+				for (EventBTreeElement child : category.getChildren()) {
+					treeViewer.update(child, null);
+					handleSelectionDependenciesForElement(child, machine.getDependencies(), event);
+				}
+			}
+
+			private void handleSelectionDependenciesForElement(EventBTreeElement element, EventBDependencies dependencies,
+					CheckStateChangedEvent event) {
+				EventBElement eventBElement = element.getOriginalElement();
+				Set<EventBElement> dependees = dependencies.getDependeesForElement(eventBElement);
+				Set<EventBElement> dependers = dependencies.getDependersForElement(eventBElement);
 				handleSingleDependencyDirection(dependees, event);
 				handleSingleDependencyDirection(dependers, event);
 			}
