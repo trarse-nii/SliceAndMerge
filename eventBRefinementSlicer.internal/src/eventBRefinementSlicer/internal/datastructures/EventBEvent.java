@@ -48,4 +48,16 @@ public class EventBEvent extends EventBElement {
 			actions.add(action);
 		}
 	}
+
+	public List<EventBGuard> getGuards() {
+		return guards;
+	}
+
+	public List<EventBAction> getActions() {
+		return actions;
+	}
+
+	public boolean isEmpty() {
+		return guards.isEmpty() && actions.isEmpty();
+	}
 }
