@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -213,48 +214,37 @@ public class SelectionEditor extends EditorPart {
 					return;
 				}
 				// TODO: Maybe put this in its own method
-				EventBElement element = ((EventBTreeElement) event.getElement()).getOriginalElement();
 				EventBDependencies dependencies = machine.getDependencies();
-				for (EventBElement dependee : dependencies.getDependeesForElement(element)) {
+				handleSelectionDependencies(dependencies, event);
+			}
+
+			private void handleSelectionDependencies(EventBDependencies dependencies, CheckStateChangedEvent event) {
+				assert event.getElement() instanceof EventBTreeElement;
+				EventBElement element = ((EventBTreeElement) event.getElement()).getOriginalElement();
+				Set<EventBElement> dependees = dependencies.getDependeesForElement(element);
+				Set<EventBElement> dependers = dependencies.getDependersForElement(element);
+				handleSingleDependencyDirection(dependees, event);
+				handleSingleDependencyDirection(dependers, event);
+			}
+
+			private void handleSingleDependencyDirection(Set<EventBElement> dependencySet, CheckStateChangedEvent event) {
+				for (EventBElement dependency : dependencySet) {
 					if (event.getChecked()) {
-						if (!selectionDependencies.containsKey(dependee)) {
-							selectionDependencies.put(dependee, 0);
+						if (!selectionDependencies.containsKey(dependency)) {
+							selectionDependencies.put(dependency, 0);
 						}
-						selectionDependencies.put(dependee, selectionDependencies.get(dependee) + 1);
+						selectionDependencies.put(dependency, selectionDependencies.get(dependency) + 1);
 					} else {
-						if (selectionDependencies.containsKey(dependee)) {
-							selectionDependencies.put(dependee, selectionDependencies.get(dependee) - 1);
-							if (selectionDependencies.get(dependee).intValue() <= 0) {
-								selectionDependencies.remove(dependee);
+						if (selectionDependencies.containsKey(dependency)) {
+							selectionDependencies.put(dependency, selectionDependencies.get(dependency) - 1);
+							if (selectionDependencies.get(dependency).intValue() <= 0) {
+								selectionDependencies.remove(dependency);
 							}
 						}
 					}
 					for (Object category : treeCategories) {
 						EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) category;
-						EventBTreeElement treeElement = treeCategory.findTreeElement(dependee);
-						if (treeElement != null) {
-							treeViewer.update(treeElement, null);
-							break;
-						}
-					}
-				}
-				for (EventBElement depender : dependencies.getDependersForElement(element)) {
-					if (event.getChecked()) {
-						if (!selectionDependencies.containsKey(depender)) {
-							selectionDependencies.put(depender, 0);
-						}
-						selectionDependencies.put(depender, selectionDependencies.get(depender) + 1);
-					} else {
-						if (selectionDependencies.containsKey(depender)) {
-							selectionDependencies.put(depender, selectionDependencies.get(depender) - 1);
-							if (selectionDependencies.get(depender).intValue() <= 0) {
-								selectionDependencies.remove(depender);
-							}
-						}
-					}
-					for (Object category : treeCategories) {
-						EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) category;
-						EventBTreeElement treeElement = treeCategory.findTreeElement(depender);
+						EventBTreeElement treeElement = treeCategory.findTreeElement(dependency);
 						if (treeElement != null) {
 							treeViewer.update(treeElement, null);
 							break;
@@ -262,6 +252,7 @@ public class SelectionEditor extends EditorPart {
 					}
 				}
 			}
+
 		});
 
 		treeViewer.setContentProvider(new ITreeContentProvider() {
