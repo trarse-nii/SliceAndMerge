@@ -6,8 +6,8 @@
       <editor
             class="eventBRefinementSlicer.ui.editors.SelectionEditor"
             default="true"
-            id="rodinneweditor.editors.NewEditor"
-            name="New Editor">
+            id="eventBRefinementSlicer.editors.RefinementSlicer"
+            name="Refinement Slicer">
          <contentTypeBinding
                contentTypeId="org.eventb.core.machineFile">
          </contentTypeBinding>

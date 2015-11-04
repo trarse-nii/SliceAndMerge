@@ -522,6 +522,7 @@ public class SelectionEditor extends EditorPart {
 		layout.numColumns = 1;
 		parent.setLayout(layout);
 		createTree(parent);
+		setPartName(machineRoot.getComponentName());
 		// new Label(parent, SWT.NONE).setText("Invariants");
 		// createInvariantAndAxiomTable(parent);
 		// new Label(parent, SWT.NONE).setText("Variables");
