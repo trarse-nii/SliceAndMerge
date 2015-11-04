@@ -43,13 +43,13 @@ import org.rodinp.core.IRodinFile;
 import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
-import eventBRefinementSlicer.internal.datastructures.EventBAttribute;
 import eventBRefinementSlicer.internal.datastructures.EventBAxiom;
 import eventBRefinementSlicer.internal.datastructures.EventBCondition;
 import eventBRefinementSlicer.internal.datastructures.EventBConstant;
 import eventBRefinementSlicer.internal.datastructures.EventBContext;
 import eventBRefinementSlicer.internal.datastructures.EventBDependencies;
 import eventBRefinementSlicer.internal.datastructures.EventBElement;
+import eventBRefinementSlicer.internal.datastructures.EventBEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBMachine;
 import eventBRefinementSlicer.internal.datastructures.EventBUnit;
 import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
@@ -281,6 +281,12 @@ public class SelectionEditor extends EditorPart {
 				if (element instanceof EventBTreeSubcategory) {
 					return ((EventBTreeSubcategory) element).getChildren().length > 0;
 				}
+				if (element instanceof EventBTreeElement) {
+					if (((EventBTreeElement) element).getOriginalElement() instanceof EventBEvent) {
+						EventBEvent event = (EventBEvent) ((EventBTreeElement) element).getOriginalElement();
+						return !(event.isEmpty());
+					}
+				}
 				return false;
 			}
 
@@ -297,6 +303,7 @@ public class SelectionEditor extends EditorPart {
 				EventBMachine machine = (EventBMachine) inputElement;
 				EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine, machine.getInvariants());
 				EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine, machine.getVariables());
+				EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents());
 				List<EventBAxiom> axes = new ArrayList<>();
 				List<EventBConstant> consts = new ArrayList<>();
 				for (EventBContext context : machine.getSeenContexts()) {
@@ -305,7 +312,7 @@ public class SelectionEditor extends EditorPart {
 				}
 				EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", machine, axes);
 				EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", machine, consts);
-				EventBTreeSubcategory[] treeChildren = { invariants, axioms, variables, constants };
+				EventBTreeSubcategory[] treeChildren = { invariants, axioms, variables, constants, events };
 				treeCategories = treeChildren;
 				return treeChildren;
 			}
@@ -317,6 +324,17 @@ public class SelectionEditor extends EditorPart {
 				}
 				if (parentElement instanceof EventBTreeSubcategory) {
 					return ((EventBTreeSubcategory) parentElement).children;
+				}
+				if (parentElement instanceof EventBTreeElement) {
+					if (!(((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent)) {
+						return null;
+					}
+					EventBEvent originalElement = (EventBEvent) ((EventBTreeElement) parentElement).getOriginalElement();
+					EventBTreeElement parent = (EventBTreeElement) parentElement;
+					EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent, originalElement.getGuards());
+					EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent, originalElement.getActions());
+					EventBTreeSubcategory[] children = { guards, actions };
+					return children;
 				}
 				return null;
 			}
@@ -493,7 +511,7 @@ public class SelectionEditor extends EditorPart {
 				return null;
 			}
 			element = ((EventBTreeElement) element).getOriginalElement();
-			if (!(element instanceof EventBCondition || element instanceof EventBAttribute)) {
+			if (!(element instanceof EventBElement)) {
 				return null;
 			}
 			EventBElement eventBElement = (EventBElement) element;
