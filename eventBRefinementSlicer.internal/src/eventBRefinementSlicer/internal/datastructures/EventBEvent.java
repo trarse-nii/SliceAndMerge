@@ -15,6 +15,8 @@ import org.rodinp.core.RodinDBException;
  */
 
 public class EventBEvent extends EventBElement {
+	private static final String TYPE = "EVENT";
+
 	List<EventBVariable> localVariables = new ArrayList<>();
 	List<EventBGuard> guards = new ArrayList<>();
 	List<EventBAction> actions = new ArrayList<>();
@@ -59,5 +61,10 @@ public class EventBEvent extends EventBElement {
 
 	public boolean isEmpty() {
 		return guards.isEmpty() && actions.isEmpty();
+	}
+
+	@Override
+	public String toString() {
+		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + " (" + comment + ")";
 	}
 }
