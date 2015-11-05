@@ -1,8 +1,7 @@
 package eventBRefinementSlicer.internal.datastructures;
 
 /**
- * Common parent class for EventBInvariant, EventBAxiom, EventBGuard and
- * EventBAction
+ * Common parent class for EventBInvariant, EventBAxiom, and EventBGuard
  * 
  * @author Aivar Kripsaar
  *
