@@ -41,11 +41,16 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
+import org.eventb.core.ICommentedElement;
 import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IContextRoot;
 import org.eventb.core.IEventBRoot;
+import org.eventb.core.IIdentifierElement;
 import org.eventb.core.IInvariant;
+import org.eventb.core.ILabeledElement;
 import org.eventb.core.IMachineRoot;
+import org.eventb.core.IPredicateElement;
+import org.eventb.core.IVariable;
 import org.eventb.core.ast.FormulaFactory;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
@@ -594,7 +599,7 @@ public class SelectionEditor extends EditorPart {
 			public void widgetSelected(SelectionEvent e) {
 				// TODO: Add functionality
 				try {
-					createMachineFromSelection();
+					createMachineFromSelection("test");
 				} catch (RodinDBException e1) {
 					e1.printStackTrace();
 				}
@@ -613,7 +618,7 @@ public class SelectionEditor extends EditorPart {
 
 	}
 
-	private void createMachineFromSelection() throws RodinDBException {
+	private void createMachineFromSelection(String machineName) throws RodinDBException {
 		List<Object> checkedElementsList = new ArrayList<>(Arrays.asList(treeViewer.getCheckedElements()));
 		List<EventBInvariant> invariants = new ArrayList<>();
 		List<EventBVariable> variables = new ArrayList<>();
@@ -645,7 +650,7 @@ public class SelectionEditor extends EditorPart {
 			public void run(IProgressMonitor monitor) throws CoreException {
 				// Get Rodin project and create new file
 				IRodinProject project = rodinFile.getRodinProject();
-				IRodinFile file = project.getRodinFile("test.bum");
+				IRodinFile file = project.getRodinFile(machineName.concat(".bum"));
 				file.create(true, null);
 				file.getResource().setDerived(true, null);
 				MachineRoot root = (MachineRoot) file.getRoot();
@@ -655,21 +660,38 @@ public class SelectionEditor extends EditorPart {
 
 				// Add selected invariants to file
 				for (EventBInvariant invariant : invariants) {
-					IInternalElementType<IInvariant> type = IInvariant.ELEMENT_TYPE;
-					IInternalElement rodinElement = root.getInternalElement(type, invariant.getLabel());
-					rodinElement.create(null, null);
-					IInvariant rodinInvariant = (IInvariant) rodinElement;
-					rodinInvariant.setLabel(invariant.getLabel(), null);
-					if (!invariant.getComment().equals("")) {
-						rodinInvariant.setComment(invariant.getComment(), null);
-					}
-					rodinInvariant.setPredicateString(invariant.getPredicate(), null);
+					addRodinElement(IInvariant.ELEMENT_TYPE, root, invariant);
+				}
+				// Add selected variables to file
+				for (EventBVariable variable : variables) {
+					addRodinElement(IVariable.ELEMENT_TYPE, root, variable);
 				}
 
 				// Save the final result
 				file.save(null, false);
 
 				// TODO: Open editor for new file
+			}
+
+			private IInternalElement addRodinElement(IInternalElementType<?> type, IInternalElement parent, EventBElement element)
+					throws RodinDBException {
+				IInternalElement rodinElement = parent.getInternalElement(type, element.getLabel());
+				rodinElement.create(null, null);
+				if (rodinElement instanceof ILabeledElement) {
+					((ILabeledElement) rodinElement).setLabel(element.getLabel(), null);
+				}
+				if (rodinElement instanceof IIdentifierElement) {
+					((IIdentifierElement) rodinElement).setIdentifierString(element.getLabel(), null);
+				}
+				if (rodinElement instanceof ICommentedElement) {
+					if (!element.getComment().equals("")) {
+						((ICommentedElement) rodinElement).setComment(element.getComment(), null);
+					}
+				}
+				if (rodinElement instanceof IPredicateElement && element instanceof EventBCondition) {
+					((IPredicateElement) rodinElement).setPredicateString(((EventBCondition) element).getPredicate(), null);
+				}
+				return rodinElement;
 			}
 		}, null);
 
