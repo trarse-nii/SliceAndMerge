@@ -1,9 +1,7 @@
-/**
- * 
- */
 package eventBRefinementSlicer.internal.datastructures;
 
 import org.eventb.core.IAction;
+import org.eventb.core.ISCAction;
 import org.rodinp.core.RodinDBException;
 
 /**
@@ -21,13 +19,13 @@ public class EventBAction extends EventBElement {
 		this.parentEvent = parentEvent;
 	}
 
-	public EventBAction(String label, String assignment, String comment, EventBEvent parentEvent, EventBUnit parentUnit) {
-		super(label, comment, parentUnit);
+	public EventBAction(String label, String assignment, String comment, ISCAction scAction, EventBEvent parentEvent, EventBUnit parentUnit) {
+		super(label, comment, scAction, parentUnit);
 		this.parentEvent = parentEvent;
 		this.assignment = assignment;
 	}
 
-	public EventBAction(IAction action, EventBEvent parentEvent, EventBUnit parentUnit) throws RodinDBException {
+	public EventBAction(IAction action, ISCAction scAction, EventBEvent parentEvent, EventBUnit parentUnit) throws RodinDBException {
 		super(parentUnit);
 		String label = "";
 		String comment = "";
@@ -42,15 +40,21 @@ public class EventBAction extends EventBElement {
 		}
 		this.label = label;
 		this.comment = comment;
+		this.scElement = scAction;
 		this.parentEvent = parentEvent;
 	}
-	
+
 	public String getAssignment() {
 		return assignment;
 	}
-	
+
 	public void setAssignment(String assignment) {
 		this.assignment = assignment;
+	}
+
+	@Override
+	public ISCAction getScElement() {
+		return (ISCAction) super.getScElement();
 	}
 
 	@Override

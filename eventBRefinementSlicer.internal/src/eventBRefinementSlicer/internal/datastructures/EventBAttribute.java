@@ -1,5 +1,7 @@
 package eventBRefinementSlicer.internal.datastructures;
 
+import org.rodinp.core.IInternalElement;
+
 /**
  * Common parent class for EventBVariable and EventBConstant
  * 
@@ -15,8 +17,8 @@ public class EventBAttribute extends EventBElement {
 		super(parent);
 	}
 	
-	public EventBAttribute(String label, String comment, EventBUnit parent){
-		super(label, comment, parent);
+	public EventBAttribute(String label, String comment, IInternalElement scElement, EventBUnit parent){
+		super(label, comment, scElement, parent);
 	}
 	
 	@Override
