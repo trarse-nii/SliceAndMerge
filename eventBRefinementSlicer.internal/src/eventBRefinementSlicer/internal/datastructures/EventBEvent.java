@@ -6,7 +6,13 @@ import java.util.List;
 import org.eventb.core.IAction;
 import org.eventb.core.IEvent;
 import org.eventb.core.IGuard;
+import org.eventb.core.ISCAction;
+import org.eventb.core.ISCEvent;
+import org.eventb.core.ISCGuard;
+import org.eventb.core.ITraceableElement;
 import org.rodinp.core.RodinDBException;
+
+import eventBRefinementSlicer.internal.util.SCUtil;
 
 /**
  * 
@@ -25,11 +31,11 @@ public class EventBEvent extends EventBElement {
 		super(parent);
 	}
 
-	public EventBEvent(String label, String comment, EventBUnit parent) {
-		super(label, comment, parent);
+	public EventBEvent(String label, String comment, ISCEvent scEvent, EventBUnit parent) {
+		super(label, comment, scEvent, parent);
 	}
 
-	public EventBEvent(IEvent event, EventBUnit parent) throws RodinDBException {
+	public EventBEvent(IEvent event, ISCEvent scEvent, EventBUnit parent) throws RodinDBException {
 		super(parent);
 		String label = "";
 		String comment = "";
@@ -41,12 +47,17 @@ public class EventBEvent extends EventBElement {
 		}
 		this.label = label;
 		this.comment = comment;
+		scElement = scEvent;
 		for (IGuard originalGuard : event.getGuards()) {
-			EventBGuard guard = new EventBGuard(originalGuard, this, parent);
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalGuard, scEvent.getSCGuards());
+			assert (originalSCElement instanceof ISCGuard);
+			EventBGuard guard = new EventBGuard(originalGuard, (ISCGuard) originalSCElement, this, parent);
 			guards.add(guard);
 		}
 		for (IAction originalAction : event.getActions()) {
-			EventBAction action = new EventBAction(originalAction, this, parent);
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalAction, scEvent.getSCActions());
+			assert (originalSCElement instanceof ISCAction);
+			EventBAction action = new EventBAction(originalAction, (ISCAction) originalSCElement, this, parent);
 			actions.add(action);
 		}
 	}
@@ -57,6 +68,11 @@ public class EventBEvent extends EventBElement {
 
 	public List<EventBAction> getActions() {
 		return actions;
+	}
+	
+	@Override
+	public ISCEvent getScElement() {
+		return (ISCEvent) scElement;
 	}
 
 	public boolean isEmpty() {

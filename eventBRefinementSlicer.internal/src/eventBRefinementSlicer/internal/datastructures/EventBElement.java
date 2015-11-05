@@ -1,5 +1,7 @@
 package eventBRefinementSlicer.internal.datastructures;
 
+import org.rodinp.core.IInternalElement;
+
 /**
  * 
  * @author Aivar Kripsaar
@@ -12,14 +14,16 @@ public class EventBElement {
 	protected boolean selected = false;
 	protected String label = "";
 	protected String comment = "";
+	protected IInternalElement scElement;
 
 	public EventBElement(EventBUnit parent) {
 		this.parent = parent;
 	}
 
-	public EventBElement(String label, String comment, EventBUnit parent) {
+	public EventBElement(String label, String comment, IInternalElement scElement, EventBUnit parent) {
 		this.label = label;
 		this.comment = comment;
+		this.scElement = scElement;
 		this.parent = parent;
 	}
 
@@ -37,6 +41,10 @@ public class EventBElement {
 
 	public String getComment() {
 		return comment;
+	}
+	
+	public IInternalElement getScElement() {
+		return scElement;
 	}
 
 	@Override
