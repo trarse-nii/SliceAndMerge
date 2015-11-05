@@ -1,12 +1,15 @@
 package eventBRefinementSlicer.ui.editors;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IWorkspaceRunnable;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.ICheckStateListener;
@@ -19,11 +22,15 @@ import org.eclipse.jface.viewers.ITreeViewerListener;
 import org.eclipse.jface.viewers.TreeExpansionEvent;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Tree;
@@ -34,15 +41,21 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
+import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IContextRoot;
 import org.eventb.core.IEventBRoot;
+import org.eventb.core.IInvariant;
 import org.eventb.core.IMachineRoot;
 import org.eventb.core.ast.FormulaFactory;
+import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
+import org.rodinp.core.IInternalElementType;
 import org.rodinp.core.IRodinFile;
+import org.rodinp.core.IRodinProject;
 import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
+import eventBRefinementSlicer.internal.datastructures.EventBAction;
 import eventBRefinementSlicer.internal.datastructures.EventBAxiom;
 import eventBRefinementSlicer.internal.datastructures.EventBCondition;
 import eventBRefinementSlicer.internal.datastructures.EventBConstant;
@@ -50,8 +63,11 @@ import eventBRefinementSlicer.internal.datastructures.EventBContext;
 import eventBRefinementSlicer.internal.datastructures.EventBDependencies;
 import eventBRefinementSlicer.internal.datastructures.EventBElement;
 import eventBRefinementSlicer.internal.datastructures.EventBEvent;
+import eventBRefinementSlicer.internal.datastructures.EventBGuard;
+import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
 import eventBRefinementSlicer.internal.datastructures.EventBMachine;
 import eventBRefinementSlicer.internal.datastructures.EventBUnit;
+import eventBRefinementSlicer.internal.datastructures.EventBVariable;
 import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
 
 /**
@@ -411,6 +427,11 @@ public class SelectionEditor extends EditorPart {
 			}
 			return null;
 		}
+
+		@Override
+		public String toString() {
+			return label;
+		}
 	}
 
 	class EventBTreeElement {
@@ -428,6 +449,11 @@ public class SelectionEditor extends EditorPart {
 
 		public EventBElement getOriginalElement() {
 			return originalElement;
+		}
+
+		@Override
+		public String toString() {
+			return originalElement.toString();
 		}
 	}
 
@@ -547,6 +573,7 @@ public class SelectionEditor extends EditorPart {
 		GridLayout layout = new GridLayout();
 		layout.numColumns = 1;
 		parent.setLayout(layout);
+		createButtons(parent);
 		createTree(parent);
 		setPartName(machineRoot.getComponentName());
 		// new Label(parent, SWT.NONE).setText("Invariants");
@@ -556,10 +583,97 @@ public class SelectionEditor extends EditorPart {
 
 	}
 
+	private void createButtons(Composite parent) {
+		Composite buttonBar = new Composite(parent, SWT.NONE);
+		buttonBar.setLayout(new RowLayout());
+		Button newMachineButton = new Button(buttonBar, SWT.PUSH);
+		newMachineButton.setText("Create Sub-Refinement");
+		newMachineButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// TODO: Add functionality
+				try {
+					createMachineFromSelection();
+				} catch (RodinDBException e1) {
+					e1.printStackTrace();
+				}
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+			}
+		});
+	}
+
 	@Override
 	public void setFocus() {
 		// TODO Auto-generated method stub
 
+	}
+
+	private void createMachineFromSelection() throws RodinDBException {
+		List<Object> checkedElementsList = new ArrayList<>(Arrays.asList(treeViewer.getCheckedElements()));
+		List<EventBInvariant> invariants = new ArrayList<>();
+		List<EventBVariable> variables = new ArrayList<>();
+		List<EventBEvent> events = new ArrayList<>();
+		List<EventBGuard> guards = new ArrayList<>();
+		List<EventBAction> actions = new ArrayList<>();
+
+		for (Object checkedElement : checkedElementsList) {
+			if (checkedElement instanceof EventBTreeSubcategory) {
+				continue;
+			}
+			EventBElement element = ((EventBTreeElement) checkedElement).getOriginalElement();
+			if (element instanceof EventBInvariant) {
+				invariants.add((EventBInvariant) element);
+			} else if (element instanceof EventBVariable) {
+				variables.add((EventBVariable) element);
+			} else if (element instanceof EventBGuard) {
+				guards.add((EventBGuard) element);
+			} else if (element instanceof EventBAction) {
+				actions.add((EventBAction) element);
+			} else if (element instanceof EventBEvent) {
+				events.add((EventBEvent) element);
+			}
+		}
+
+		RodinCore.run(new IWorkspaceRunnable() {
+
+			@Override
+			public void run(IProgressMonitor monitor) throws CoreException {
+				// Get Rodin project and create new file
+				IRodinProject project = rodinFile.getRodinProject();
+				IRodinFile file = project.getRodinFile("test.bum");
+				file.create(true, null);
+				file.getResource().setDerived(true, null);
+				MachineRoot root = (MachineRoot) file.getRoot();
+				root.setConfiguration(IConfigurationElement.DEFAULT_CONFIGURATION, monitor);
+
+				// Add Machine to file
+
+				// Add selected invariants to file
+				for (EventBInvariant invariant : invariants) {
+					IInternalElementType<IInvariant> type = IInvariant.ELEMENT_TYPE;
+					IInternalElement rodinElement = root.getInternalElement(type, invariant.getLabel());
+					rodinElement.create(null, null);
+					IInvariant rodinInvariant = (IInvariant) rodinElement;
+					rodinInvariant.setLabel(invariant.getLabel(), null);
+					if (!invariant.getComment().equals("")) {
+						rodinInvariant.setComment(invariant.getComment(), null);
+					}
+					rodinInvariant.setPredicateString(invariant.getPredicate(), null);
+				}
+
+				// Save the final result
+				file.save(null, false);
+
+				// TODO: Open editor for new file
+			}
+		}, null);
+
+		System.out.println();
 	}
 
 }
