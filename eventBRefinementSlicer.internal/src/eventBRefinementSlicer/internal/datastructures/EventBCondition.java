@@ -14,6 +14,7 @@ import org.rodinp.core.RodinDBException;
 public class EventBCondition extends EventBElement {
 
 	protected String predicate = "";
+	protected boolean isTheorem = false;
 
 	public EventBCondition(EventBUnit parent) {
 		super(parent);
@@ -33,7 +34,7 @@ public class EventBCondition extends EventBElement {
 		if (predicateElement.hasPredicateString()) {
 			this.predicate = predicateElement.getPredicateString();
 		}
-
+		this.isTheorem = predicateElement.isTheorem();
 	}
 
 	public String getPredicate() {
@@ -42,6 +43,10 @@ public class EventBCondition extends EventBElement {
 
 	public void setPredicate(String predicate) {
 		this.predicate = predicate;
+	}
+
+	public boolean isTheorem() {
+		return isTheorem;
 	}
 
 	@Override
