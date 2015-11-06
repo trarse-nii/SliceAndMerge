@@ -94,7 +94,7 @@ public class SelectionEditor extends EditorPart {
 	private static final String LABEL_SPECIAL = "Special";
 	private static final String LABEL_COMMENT = "Comment";
 
-	private static final int LABEL_COLUMN = 0;
+	private static final int ELEMENT_COLUMN = 0;
 	private static final int CONTENT_COLUMN = 1;
 	private static final int SPECIAL_COLUMN = 2;
 	private static final int COMMENT_COLUMN = 3;
@@ -502,7 +502,7 @@ public class SelectionEditor extends EditorPart {
 			}
 			if (element instanceof EventBTreeElement) {
 				switch (columnIndex) {
-				case LABEL_COLUMN:
+				case ELEMENT_COLUMN:
 					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_CYAN);
 				case CONTENT_COLUMN:
 					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_MAGENTA);
@@ -541,7 +541,7 @@ public class SelectionEditor extends EditorPart {
 		@Override
 		public String getColumnText(Object element, int columnIndex) {
 			if (element instanceof EventBTreeSubcategory) {
-				if (columnIndex == LABEL_COLUMN) {
+				if (columnIndex == ELEMENT_COLUMN) {
 					return ((EventBTreeSubcategory) element).getLabel();
 				}
 			}
@@ -554,7 +554,7 @@ public class SelectionEditor extends EditorPart {
 			}
 			EventBElement eventBElement = (EventBElement) element;
 			switch (columnIndex) {
-			case LABEL_COLUMN:
+			case ELEMENT_COLUMN:
 				return eventBElement.getLabel();
 			case CONTENT_COLUMN:
 				if (eventBElement instanceof EventBCondition) {
