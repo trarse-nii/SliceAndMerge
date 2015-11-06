@@ -12,8 +12,6 @@ import org.rodinp.core.RodinDBException;
 
 public class EventBInvariant extends EventBCondition {
 
-	private static final String TYPE = "INVARIANT";
-
 	public EventBInvariant(String label, String predicate, ISCInvariant scInvariant, String comment, EventBUnit parent) {
 		super(label, predicate, scInvariant, comment, parent);
 	}
@@ -37,14 +35,15 @@ public class EventBInvariant extends EventBCondition {
 		this.comment = comment;
 		this.scElement = scInvariant;
 	}
-	
+
 	@Override
 	public ISCInvariant getScElement() {
 		return (ISCInvariant) super.getScElement();
 	}
 
 	@Override
-	public String toString() {
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + ": " + predicate + " (" + comment + ")";
+	protected String getType() {
+		final String type = "INVARIANT";
+		return type;
 	}
 }

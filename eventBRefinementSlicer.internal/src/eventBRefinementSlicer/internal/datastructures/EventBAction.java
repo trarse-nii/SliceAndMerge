@@ -10,7 +10,6 @@ import org.rodinp.core.RodinDBException;
  */
 public class EventBAction extends EventBElement {
 
-	private static final String TYPE = "ACTION";
 	protected String assignment = "";
 	protected final EventBEvent parentEvent;
 
@@ -58,7 +57,13 @@ public class EventBAction extends EventBElement {
 	}
 
 	@Override
+	protected String getType() {
+		final String type = "ACTION";
+		return type;
+	}
+
+	@Override
 	public String toString() {
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + ": " + assignment + " (" + comment + ")";
+		return getType() + ": [" + (selected ? "x" : " ") + "] " + label + ": " + assignment + " (" + comment + ")";
 	}
 }

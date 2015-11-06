@@ -10,8 +10,6 @@ import org.eventb.core.ISCPredicateElement;
  */
 public class EventBCondition extends EventBElement {
 
-	private static final String TYPE = "CONDITION";
-
 	protected String predicate = "";
 
 	public EventBCondition(EventBUnit parent) {
@@ -35,10 +33,16 @@ public class EventBCondition extends EventBElement {
 	public ISCPredicateElement getScElement() {
 		return (ISCPredicateElement) super.getScElement();
 	}
-	
+
+	@Override
+	protected String getType() {
+		final String type = "CONDITION";
+		return type;
+	}
+
 	@Override
 	public String toString() {
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + ": " + predicate + " (" + comment + ")";
+		return getType() + ": [" + (selected ? "x" : " ") + "] " + label + ": " + predicate + " (" + comment + ")";
 	}
 
 	@Override

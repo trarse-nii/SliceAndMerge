@@ -6,25 +6,23 @@ import org.eventb.core.ISCPredicateElement;
 import org.rodinp.core.RodinDBException;
 
 public class EventBAxiom extends EventBCondition {
-	
-	private static final String TYPE = "AXIOM";
-	
-	public EventBAxiom(String label, String predicate, ISCPredicateElement scPredicateElement, String comment, EventBUnit parent){
+
+	public EventBAxiom(String label, String predicate, ISCPredicateElement scPredicateElement, String comment, EventBUnit parent) {
 		super(label, predicate, scPredicateElement, comment, parent);
 	}
-	
-	public EventBAxiom(IAxiom axiom, ISCAxiom scAxiom, EventBUnit parent) throws RodinDBException{
+
+	public EventBAxiom(IAxiom axiom, ISCAxiom scAxiom, EventBUnit parent) throws RodinDBException {
 		super(parent);
 		String label = "";
 		String predicate = "";
 		String comment = "";
-		if (axiom.hasLabel()){
+		if (axiom.hasLabel()) {
 			label = axiom.getLabel();
 		}
-		if (axiom.hasPredicateString()){
+		if (axiom.hasPredicateString()) {
 			predicate = axiom.getPredicateString();
 		}
-		if (axiom.hasComment()){
+		if (axiom.hasComment()) {
 			comment = axiom.getComment();
 		}
 		this.label = label;
@@ -32,14 +30,15 @@ public class EventBAxiom extends EventBCondition {
 		this.comment = comment;
 		this.scElement = scAxiom;
 	}
-	
+
 	@Override
 	public ISCAxiom getScElement() {
 		return (ISCAxiom) super.getScElement();
 	}
-	
+
 	@Override
-	public String toString(){
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + ": " + predicate + " (" + comment + ")"; 
+	protected String getType() {
+		final String type = "AXIOM";
+		return type;
 	}
 }

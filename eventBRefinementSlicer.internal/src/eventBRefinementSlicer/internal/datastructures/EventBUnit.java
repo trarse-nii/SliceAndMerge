@@ -12,25 +12,25 @@ import org.eclipse.jface.viewers.StructuredViewer;
  *
  */
 public class EventBUnit {
-	
+
 	protected EventBDependencies dependencies = null;
 
 	protected Set<StructuredViewer> changeListeners = new HashSet<>();
-	
-	public void addChangeListener(StructuredViewer viewer){
+
+	public void addChangeListener(StructuredViewer viewer) {
 		changeListeners.add(viewer);
 	}
-	
-	public void removeChangeListener(StructuredViewer viewer){
+
+	public void removeChangeListener(StructuredViewer viewer) {
 		changeListeners.remove(viewer);
 	}
-	
-	public void changedElement(EventBElement element){
-		for(StructuredViewer viewer : changeListeners){
+
+	public void changedElement(EventBElement element) {
+		for (StructuredViewer viewer : changeListeners) {
 			viewer.update(element, null);
 		}
 	}
-	
+
 	public void setDependencies(EventBDependencies dependencies) {
 		this.dependencies = dependencies;
 	}

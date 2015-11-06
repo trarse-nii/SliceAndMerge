@@ -22,7 +22,7 @@ import eventBRefinementSlicer.internal.util.SCUtil;
  */
 
 public class EventBEvent extends EventBElement {
-	private static final String TYPE = "EVENT";
+	protected final String TYPE = "EVENT";
 
 	private boolean isExtended = false;
 	private Convergence convergence = Convergence.ORDINARY;
