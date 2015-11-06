@@ -1,8 +1,9 @@
 package eventBRefinementSlicer.internal.datastructures;
 
+import org.eventb.core.ISCPredicateElement;
+
 /**
- * Common parent class for EventBInvariant, EventBAxiom, EventBGuard and
- * EventBAction
+ * Common parent class for EventBInvariant, EventBAxiom, and EventBGuard
  * 
  * @author Aivar Kripsaar
  *
@@ -17,8 +18,8 @@ public class EventBCondition extends EventBElement {
 		super(parent);
 	}
 
-	public EventBCondition(String label, String predicate, String comment, EventBUnit parent) {
-		super(label, comment, parent);
+	public EventBCondition(String label, String predicate, ISCPredicateElement scPredicateElement, String comment, EventBUnit parent) {
+		super(label, comment, scPredicateElement, parent);
 		this.predicate = predicate;
 	}
 
@@ -30,6 +31,11 @@ public class EventBCondition extends EventBElement {
 		this.predicate = predicate;
 	}
 
+	@Override
+	public ISCPredicateElement getScElement() {
+		return (ISCPredicateElement) super.getScElement();
+	}
+	
 	@Override
 	public String toString() {
 		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + ": " + predicate + " (" + comment + ")";

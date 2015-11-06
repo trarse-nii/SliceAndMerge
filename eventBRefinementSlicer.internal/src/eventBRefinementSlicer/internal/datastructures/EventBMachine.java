@@ -9,9 +9,16 @@ import org.eventb.core.IContextRoot;
 import org.eventb.core.IEvent;
 import org.eventb.core.IInvariant;
 import org.eventb.core.IMachineRoot;
+import org.eventb.core.ISCEvent;
+import org.eventb.core.ISCInvariant;
+import org.eventb.core.ISCMachineRoot;
+import org.eventb.core.ISCVariable;
 import org.eventb.core.ISeesContext;
+import org.eventb.core.ITraceableElement;
 import org.eventb.core.IVariable;
 import org.rodinp.core.RodinDBException;
+
+import eventBRefinementSlicer.internal.util.SCUtil;
 
 public class EventBMachine extends EventBUnit {
 
@@ -19,14 +26,20 @@ public class EventBMachine extends EventBUnit {
 	private List<EventBVariable> variables = new ArrayList<>();
 	private Set<EventBContext> seenContexts = new HashSet<>();
 	private List<EventBEvent> events = new ArrayList<>();
+	private ISCMachineRoot scMachineRoot = null;
 
 	public EventBMachine(IMachineRoot machineRoot) throws RodinDBException {
+		ISCMachineRoot scMachineRoot = SCUtil.makeStaticCheckedMachine(machineRoot);
 		for (IInvariant originalInvariant : machineRoot.getInvariants()) {
-			EventBInvariant invariant = new EventBInvariant(originalInvariant, this);
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalInvariant, scMachineRoot.getSCInvariants());
+			assert (originalSCElement instanceof ISCInvariant);
+			EventBInvariant invariant = new EventBInvariant(originalInvariant, (ISCInvariant) originalSCElement, this);
 			invariants.add(invariant);
 		}
 		for (IVariable originalVariable : machineRoot.getVariables()) {
-			EventBVariable variable = new EventBVariable(originalVariable, this);
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalVariable, scMachineRoot.getSCVariables());
+			assert (originalSCElement instanceof ISCVariable);
+			EventBVariable variable = new EventBVariable(originalVariable, (ISCVariable) originalSCElement, this);
 			variables.add(variable);
 		}
 		for (ISeesContext seenContext : machineRoot.getSeesClauses()) {
@@ -35,9 +48,12 @@ public class EventBMachine extends EventBUnit {
 			seenContexts.add(context);
 		}
 		for (IEvent originalEvent : machineRoot.getEvents()) {
-			EventBEvent event = new EventBEvent(originalEvent, this);
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalEvent, scMachineRoot.getSCEvents());
+			assert (originalSCElement instanceof ISCEvent);
+			EventBEvent event = new EventBEvent(originalEvent, (ISCEvent) originalSCElement, this);
 			events.add(event);
 		}
+		this.scMachineRoot = scMachineRoot;
 	}
 
 	public List<EventBInvariant> getInvariants() {
@@ -54,6 +70,10 @@ public class EventBMachine extends EventBUnit {
 
 	public List<EventBEvent> getEvents() {
 		return events;
+	}
+	
+	public ISCMachineRoot getScMachineRoot() {
+		return scMachineRoot;
 	}
 
 	public void addSeenContext(EventBContext context) {

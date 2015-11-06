@@ -1,17 +1,19 @@
 package eventBRefinementSlicer.internal.datastructures;
 
 import org.eventb.core.IAxiom;
+import org.eventb.core.ISCAxiom;
+import org.eventb.core.ISCPredicateElement;
 import org.rodinp.core.RodinDBException;
 
 public class EventBAxiom extends EventBCondition {
 	
 	private static final String TYPE = "AXIOM";
 	
-	public EventBAxiom(String label, String predicate, String comment, EventBUnit parent){
-		super(label, predicate, comment, parent);
+	public EventBAxiom(String label, String predicate, ISCPredicateElement scPredicateElement, String comment, EventBUnit parent){
+		super(label, predicate, scPredicateElement, comment, parent);
 	}
 	
-	public EventBAxiom(IAxiom axiom, EventBUnit parent) throws RodinDBException{
+	public EventBAxiom(IAxiom axiom, ISCAxiom scAxiom, EventBUnit parent) throws RodinDBException{
 		super(parent);
 		String label = "";
 		String predicate = "";
@@ -28,6 +30,12 @@ public class EventBAxiom extends EventBCondition {
 		this.label = label;
 		this.predicate = predicate;
 		this.comment = comment;
+		this.scElement = scAxiom;
+	}
+	
+	@Override
+	public ISCAxiom getScElement() {
+		return (ISCAxiom) super.getScElement();
 	}
 	
 	@Override

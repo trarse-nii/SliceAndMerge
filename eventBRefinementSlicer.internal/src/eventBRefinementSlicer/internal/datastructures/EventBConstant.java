@@ -2,17 +2,18 @@ package eventBRefinementSlicer.internal.datastructures;
 
 import org.eventb.core.EventBAttributes;
 import org.eventb.core.IConstant;
+import org.eventb.core.ISCConstant;
 import org.rodinp.core.RodinDBException;
 
 public class EventBConstant extends EventBAttribute {
 	
 	private static final String TYPE = "CONSTANT";
 	
-	public EventBConstant(String label, String comment, EventBUnit parent){
-		super(label, comment, parent);
+	public EventBConstant(String label, String comment, ISCConstant scConstant, EventBUnit parent){
+		super(label, comment, scConstant, parent);
 	}
 	
-	public EventBConstant(IConstant constant, EventBUnit parent) throws RodinDBException{
+	public EventBConstant(IConstant constant, ISCConstant scConstant, EventBUnit parent) throws RodinDBException{
 		super(parent);
 		String label = "";
 		String comment = "";
@@ -24,6 +25,12 @@ public class EventBConstant extends EventBAttribute {
 		}
 		this.label = label;
 		this.comment = comment;
+		this.scElement = scConstant;
+	}
+	
+	@Override
+	public ISCConstant getScElement() {
+		return (ISCConstant) super.getScElement();
 	}
 	
 	@Override
