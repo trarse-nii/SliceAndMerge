@@ -46,6 +46,7 @@ import org.eventb.core.IAssignmentElement;
 import org.eventb.core.ICommentedElement;
 import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IContextRoot;
+import org.eventb.core.IDerivedPredicateElement;
 import org.eventb.core.IEvent;
 import org.eventb.core.IEventBRoot;
 import org.eventb.core.IGuard;
@@ -53,7 +54,6 @@ import org.eventb.core.IIdentifierElement;
 import org.eventb.core.IInvariant;
 import org.eventb.core.ILabeledElement;
 import org.eventb.core.IMachineRoot;
-import org.eventb.core.IPredicateElement;
 import org.eventb.core.IVariable;
 import org.eventb.core.ast.FormulaFactory;
 import org.eventb.core.basis.MachineRoot;
@@ -699,8 +699,9 @@ public class SelectionEditor extends EditorPart {
 						((ICommentedElement) rodinElement).setComment(element.getComment(), null);
 					}
 				}
-				if (rodinElement instanceof IPredicateElement && element instanceof EventBCondition) {
-					((IPredicateElement) rodinElement).setPredicateString(((EventBCondition) element).getPredicate(), null);
+				if (rodinElement instanceof IDerivedPredicateElement && element instanceof EventBCondition) {
+					((IDerivedPredicateElement) rodinElement).setPredicateString(((EventBCondition) element).getPredicate(), null);
+					((IDerivedPredicateElement) rodinElement).setTheorem(((EventBCondition) element).isTheorem(), null);
 				}
 				if (rodinElement instanceof IAssignmentElement && element instanceof EventBAction) {
 					((IAssignmentElement) rodinElement).setAssignmentString(((EventBAction) element).getAssignment(), null);
