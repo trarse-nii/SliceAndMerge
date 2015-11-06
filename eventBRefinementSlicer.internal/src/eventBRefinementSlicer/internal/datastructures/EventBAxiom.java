@@ -12,23 +12,7 @@ public class EventBAxiom extends EventBCondition {
 	}
 
 	public EventBAxiom(IAxiom axiom, ISCAxiom scAxiom, EventBUnit parent) throws RodinDBException {
-		super(parent);
-		String label = "";
-		String predicate = "";
-		String comment = "";
-		if (axiom.hasLabel()) {
-			label = axiom.getLabel();
-		}
-		if (axiom.hasPredicateString()) {
-			predicate = axiom.getPredicateString();
-		}
-		if (axiom.hasComment()) {
-			comment = axiom.getComment();
-		}
-		this.label = label;
-		this.predicate = predicate;
-		this.comment = comment;
-		this.scElement = scAxiom;
+		super(axiom, scAxiom, parent);
 	}
 
 	@Override

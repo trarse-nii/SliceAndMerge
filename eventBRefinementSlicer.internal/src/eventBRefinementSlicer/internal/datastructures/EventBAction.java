@@ -25,20 +25,15 @@ public class EventBAction extends EventBElement {
 	}
 
 	public EventBAction(IAction action, ISCAction scAction, EventBEvent parentEvent, EventBUnit parentUnit) throws RodinDBException {
-		super(parentUnit);
+		super(action, scAction, parentUnit);
 		String label = "";
-		String comment = "";
 		if (action.hasLabel()) {
 			label = action.getLabel();
 		}
 		if (action.hasAssignmentString()) {
 			this.assignment = action.getAssignmentString();
 		}
-		if (action.hasComment()) {
-			comment = action.getComment();
-		}
 		this.label = label;
-		this.comment = comment;
 		this.scElement = scAction;
 		this.parentEvent = parentEvent;
 	}

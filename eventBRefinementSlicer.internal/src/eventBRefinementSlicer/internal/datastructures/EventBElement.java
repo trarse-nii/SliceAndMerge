@@ -1,6 +1,8 @@
 package eventBRefinementSlicer.internal.datastructures;
 
+import org.eventb.core.ICommentedElement;
 import org.rodinp.core.IInternalElement;
+import org.rodinp.core.RodinDBException;
 
 /**
  * 
@@ -12,7 +14,7 @@ public class EventBElement {
 	protected EventBUnit parent = null;
 	protected String label = "";
 	protected String comment = "";
-	protected IInternalElement scElement;
+	protected IInternalElement scElement = null;
 
 	public EventBElement(EventBUnit parent) {
 		this.parent = parent;
@@ -23,6 +25,14 @@ public class EventBElement {
 		this.comment = comment;
 		this.scElement = scElement;
 		this.parent = parent;
+	}
+
+	public EventBElement(IInternalElement internalElement, IInternalElement scElement, EventBUnit parent) throws RodinDBException {
+		this.parent = parent;
+		this.scElement = scElement;
+		if (internalElement instanceof ICommentedElement && ((ICommentedElement) internalElement).hasComment()) {
+			this.comment = ((ICommentedElement) internalElement).getComment();
+		}
 	}
 
 	public String getLabel() {

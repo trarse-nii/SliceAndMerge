@@ -10,39 +10,36 @@ import org.rodinp.core.RodinDBException;
  *
  */
 
-public class EventBGuard extends EventBEventCondition {
+public class EventBGuard extends EventBCondition {
+
+	private EventBEvent parentEvent = null;
 
 	public EventBGuard(EventBEvent parentEvent, EventBUnit parentUnit) {
-		super(parentEvent, parentUnit);
+		super(parentUnit);
+		this.parentEvent = parentEvent;
 	}
 
 	public EventBGuard(String label, String predicate, String comment, ISCGuard scGuard, EventBEvent parentEvent, EventBUnit parentUnit) {
-		super(label, predicate, comment, scGuard, parentEvent, parentUnit);
+		super(label, predicate, scGuard, comment, parentUnit);
+		this.parentEvent = parentEvent;
 	}
 
 	public EventBGuard(IGuard guard, ISCGuard scGuard, EventBEvent parentEvent, EventBUnit parentUnit) throws RodinDBException {
-		super(parentEvent, parentUnit);
-		String label = "";
-		String predicate = "";
-		String comment = "";
-		if (guard.hasLabel()) {
-			label = guard.getLabel();
-		}
-		if (guard.hasComment()) {
-			comment = guard.getComment();
-		}
-		if (guard.hasPredicateString()) {
-			predicate = guard.getPredicateString();
-		}
-		this.label = label;
-		this.predicate = predicate;
-		this.comment = comment;
-		this.scElement = scGuard;
+		super(guard, scGuard, parentUnit);
+		this.parentEvent = parentEvent;
 	}
 
 	@Override
 	public ISCGuard getScElement() {
 		return (ISCGuard) super.getScElement();
+	}
+
+	public EventBEvent getParentEvent() {
+		return parentEvent;
+	}
+
+	public EventBUnit getParentUnit() {
+		return getParent();
 	}
 
 	@Override

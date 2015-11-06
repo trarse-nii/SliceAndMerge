@@ -1,6 +1,9 @@
 package eventBRefinementSlicer.internal.datastructures;
 
+import org.eventb.core.IDerivedPredicateElement;
+import org.eventb.core.ILabeledElement;
 import org.eventb.core.ISCPredicateElement;
+import org.rodinp.core.RodinDBException;
 
 /**
  * Common parent class for EventBInvariant, EventBAxiom, and EventBGuard
@@ -19,6 +22,18 @@ public class EventBCondition extends EventBElement {
 	public EventBCondition(String label, String predicate, ISCPredicateElement scPredicateElement, String comment, EventBUnit parent) {
 		super(label, comment, scPredicateElement, parent);
 		this.predicate = predicate;
+	}
+
+	public EventBCondition(IDerivedPredicateElement predicateElement, ISCPredicateElement scPredicateElement, EventBUnit parent)
+			throws RodinDBException {
+		super(predicateElement, scPredicateElement, parent);
+		if (predicateElement instanceof ILabeledElement && ((ILabeledElement) predicateElement).hasLabel()) {
+			this.label = ((ILabeledElement) predicateElement).getLabel();
+		}
+		if (predicateElement.hasPredicateString()) {
+			this.predicate = predicateElement.getPredicateString();
+		}
+
 	}
 
 	public String getPredicate() {
