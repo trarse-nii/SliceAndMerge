@@ -89,10 +89,17 @@ import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
 
 public class SelectionEditor extends EditorPart {
 
-	private String LABEL_CHECKBOX = "";
-	private String LABEL_LABEL = "Label";
-	private String LABEL_CONTENT = "Content";
-	private String LABEL_COMMENT = "Comment";
+	private static final String LABEL_CHECKBOX = "";
+	private static final String LABEL_ELEMENT = "Element";
+	private static final String LABEL_CONTENT = "Content";
+	private static final String LABEL_SPECIAL = "Special";
+	private static final String LABEL_COMMENT = "Comment";
+
+	private static final int CHECKBOX_COLUMN = 0;
+	private static final int LABEL_COLUMN = 0;
+	private static final int CONTENT_COLUMN = 1;
+	private static final int SPECIAL_COLUMN = 2;
+	private static final int COMMENT_COLUMN = 3;
 
 	private IRodinFile rodinFile;
 	private IMachineRoot machineRoot;
@@ -173,7 +180,7 @@ public class SelectionEditor extends EditorPart {
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		tree.setLayoutData(gridData);
 
-		String[] titles = { LABEL_CHECKBOX, LABEL_LABEL, LABEL_CONTENT, LABEL_COMMENT };
+		String[] titles = { LABEL_ELEMENT, LABEL_CONTENT, LABEL_SPECIAL, LABEL_COMMENT };
 
 		TreeColumn column;
 
@@ -497,13 +504,13 @@ public class SelectionEditor extends EditorPart {
 			}
 			if (element instanceof EventBTreeElement) {
 				switch (columnIndex) {
-				case 0: // Selection Column
-					break;
-				case 1:
+				case LABEL_COLUMN:
 					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_CYAN);
-				case 2:
+				case CONTENT_COLUMN:
 					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_MAGENTA);
-				case 3:
+				case SPECIAL_COLUMN:
+					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY);
+				case COMMENT_COLUMN:
 					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN);
 				default:
 					break;
@@ -536,7 +543,7 @@ public class SelectionEditor extends EditorPart {
 		@Override
 		public String getColumnText(Object element, int columnIndex) {
 			if (element instanceof EventBTreeSubcategory) {
-				if (columnIndex == 1) {
+				if (columnIndex == LABEL_COLUMN) {
 					return ((EventBTreeSubcategory) element).getLabel();
 				}
 			}
@@ -549,18 +556,48 @@ public class SelectionEditor extends EditorPart {
 			}
 			EventBElement eventBElement = (EventBElement) element;
 			switch (columnIndex) {
-			case 0: // Selection Column
-				return null;
-			case 1:
+			case LABEL_COLUMN:
 				return eventBElement.getLabel();
-			case 2:
+			case CONTENT_COLUMN:
 				if (eventBElement instanceof EventBCondition) {
 					return ((EventBCondition) eventBElement).getPredicate();
 				} else if (eventBElement instanceof EventBAction) {
 					return ((EventBAction) eventBElement).getAssignment();
 				}
 				return null;
-			case 3:
+			case SPECIAL_COLUMN:
+				if (eventBElement instanceof EventBCondition) {
+					if (((EventBCondition) eventBElement).isTheorem()) {
+						return "theorem";
+					} else {
+						return "not theorem";
+					}
+				}
+				if (eventBElement instanceof EventBEvent) {
+					EventBEvent event = (EventBEvent) eventBElement;
+					String res = "";
+					if (event.isExtended()) {
+						res = res + "extended";
+					} else {
+						res = res + "not extended";
+					}
+					switch (event.getConvergence()) {
+					case ORDINARY:
+						res = res + ", ordinary";
+						break;
+					case CONVERGENT:
+						res = res + ", convergent";
+						break;
+					case ANTICIPATED:
+						res = res + ", anticipated";
+						break;
+					default:
+						break;
+					}
+					return res;
+				}
+				return null;
+			case COMMENT_COLUMN:
 				return eventBElement.getComment();
 			default:
 				return null;
