@@ -89,13 +89,11 @@ import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
 
 public class SelectionEditor extends EditorPart {
 
-	private static final String LABEL_CHECKBOX = "";
 	private static final String LABEL_ELEMENT = "Element";
 	private static final String LABEL_CONTENT = "Content";
 	private static final String LABEL_SPECIAL = "Special";
 	private static final String LABEL_COMMENT = "Comment";
 
-	private static final int CHECKBOX_COLUMN = 0;
 	private static final int LABEL_COLUMN = 0;
 	private static final int CONTENT_COLUMN = 1;
 	private static final int SPECIAL_COLUMN = 2;
