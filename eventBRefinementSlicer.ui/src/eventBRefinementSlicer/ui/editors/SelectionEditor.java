@@ -44,6 +44,7 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eventb.core.ICommentedElement;
 import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IContextRoot;
+import org.eventb.core.IEvent;
 import org.eventb.core.IEventBRoot;
 import org.eventb.core.IIdentifierElement;
 import org.eventb.core.IInvariant;
@@ -126,7 +127,7 @@ public class SelectionEditor extends EditorPart {
 		machineRoot = (IMachineRoot) internalElementRoot;
 		try {
 			machine = new EventBMachine(machineRoot);
-		} catch (RodinDBException e) {
+		} catch (CoreException e) {
 			e.printStackTrace();
 		}
 		EventBDependencyAnalysisJob.doEventBDependencyAnalysis(machine);
@@ -651,6 +652,11 @@ public class SelectionEditor extends EditorPart {
 				// Add selected variables to file
 				for (EventBVariable variable : variables) {
 					addRodinElement(IVariable.ELEMENT_TYPE, root, variable);
+				}
+				for (EventBEvent event : events) {
+					IEvent rodinEvent = (IEvent) addRodinElement(IEvent.ELEMENT_TYPE, root, event);
+					rodinEvent.setExtended(event.isExtended(), null);
+					rodinEvent.setConvergence(event.getConvergence(), null);
 				}
 
 				// Save the final result
