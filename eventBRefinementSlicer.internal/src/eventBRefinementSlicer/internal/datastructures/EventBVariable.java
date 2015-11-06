@@ -11,18 +11,7 @@ public class EventBVariable extends EventBAttribute {
 	}
 
 	public EventBVariable(IVariable variable, ISCVariable scVariable, EventBUnit parent) throws RodinDBException {
-		super(parent);
-		String label = "";
-		String comment = "";
-		if (variable.hasIdentifierString()) {
-			label = variable.getIdentifierString();
-		}
-		if (variable.hasComment()) {
-			comment = variable.getComment();
-		}
-		this.label = label;
-		this.comment = comment;
-		this.scElement = scVariable;
+		super(variable, scVariable, parent);
 	}
 
 	@Override

@@ -39,14 +39,9 @@ public class EventBEvent extends EventBElement {
 	}
 
 	public EventBEvent(IEvent event, ISCEvent scEvent, EventBUnit parent) throws CoreException {
-		super(parent);
-		String label = "";
-		String comment = "";
+		super(event, scEvent, parent);
 		if (event.hasLabel()) {
-			label = event.getLabel();
-		}
-		if (event.hasComment()) {
-			comment = event.getComment();
+			this.label = event.getLabel();
 		}
 		if (event.hasExtended()) {
 			this.isExtended = event.isExtended();
@@ -54,9 +49,6 @@ public class EventBEvent extends EventBElement {
 		if (event.hasConvergence()) {
 			this.convergence = event.getConvergence();
 		}
-		this.label = label;
-		this.comment = comment;
-		scElement = scEvent;
 		for (IGuard originalGuard : event.getGuards()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalGuard, scEvent.getSCGuards());
 			assert (originalSCElement instanceof ISCGuard);

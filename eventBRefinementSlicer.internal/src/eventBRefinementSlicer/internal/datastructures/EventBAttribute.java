@@ -1,6 +1,8 @@
 package eventBRefinementSlicer.internal.datastructures;
 
-import org.rodinp.core.IInternalElement;
+import org.eventb.core.IIdentifierElement;
+import org.eventb.core.ISCIdentifierElement;
+import org.rodinp.core.RodinDBException;
 
 /**
  * Common parent class for EventBVariable and EventBConstant
@@ -15,8 +17,20 @@ public class EventBAttribute extends EventBElement {
 		super(parent);
 	}
 
-	public EventBAttribute(String label, String comment, IInternalElement scElement, EventBUnit parent) {
+	public EventBAttribute(String label, String comment, ISCIdentifierElement scElement, EventBUnit parent) {
 		super(label, comment, scElement, parent);
+	}
+
+	public EventBAttribute(IIdentifierElement identifierElement, ISCIdentifierElement scElement, EventBUnit parent) throws RodinDBException {
+		super(identifierElement, identifierElement, parent);
+		if (identifierElement.hasIdentifierString()) {
+			this.label = identifierElement.getIdentifierString();
+		}
+	}
+
+	@Override
+	public ISCIdentifierElement getScElement() {
+		return (ISCIdentifierElement) super.getScElement();
 	}
 
 	@Override
