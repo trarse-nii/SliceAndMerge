@@ -556,6 +556,8 @@ public class SelectionEditor extends EditorPart {
 			case 2:
 				if (eventBElement instanceof EventBCondition) {
 					return ((EventBCondition) eventBElement).getPredicate();
+				} else if (eventBElement instanceof EventBAction) {
+					return ((EventBAction) eventBElement).getAssignment();
 				}
 				return null;
 			case 3:
