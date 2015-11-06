@@ -6,8 +6,6 @@ import org.rodinp.core.RodinDBException;
 
 public class EventBVariable extends EventBAttribute {
 
-	private static final String TYPE = "VARIABLE";
-
 	public EventBVariable(String label, String comment, ISCVariable scVariable, EventBUnit parent) {
 		super(label, comment, scVariable, parent);
 	}
@@ -26,14 +24,16 @@ public class EventBVariable extends EventBAttribute {
 		this.comment = comment;
 		this.scElement = scVariable;
 	}
-	
+
 	@Override
 	public ISCVariable getScElement() {
 		return (ISCVariable) super.getScElement();
 	}
 
 	@Override
-	public String toString() {
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + " (" + comment + ")";
+	protected String getType() {
+		final String type = "VARIABLE";
+		return type;
 	}
+
 }

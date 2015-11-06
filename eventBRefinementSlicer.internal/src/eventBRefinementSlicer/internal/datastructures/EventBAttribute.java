@@ -10,19 +10,19 @@ import org.rodinp.core.IInternalElement;
  */
 
 public class EventBAttribute extends EventBElement {
-	
-	private static final String TYPE = "ATTRIBUTE";
-	
-	public EventBAttribute(EventBUnit parent){
+
+	public EventBAttribute(EventBUnit parent) {
 		super(parent);
 	}
-	
-	public EventBAttribute(String label, String comment, IInternalElement scElement, EventBUnit parent){
+
+	public EventBAttribute(String label, String comment, IInternalElement scElement, EventBUnit parent) {
 		super(label, comment, scElement, parent);
 	}
-	
+
 	@Override
-	public String toString(){
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + " (" + comment + ")"; 
+	protected String getType() {
+		final String type = "ATTRIBUTE";
+		return type;
 	}
+
 }

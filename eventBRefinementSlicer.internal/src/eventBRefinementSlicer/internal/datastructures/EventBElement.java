@@ -9,7 +9,6 @@ import org.rodinp.core.IInternalElement;
  */
 public class EventBElement {
 
-	static final private String TYPE = "ELEMENT";
 	protected EventBUnit parent = null;
 	protected boolean selected = false;
 	protected String label = "";
@@ -42,14 +41,19 @@ public class EventBElement {
 	public String getComment() {
 		return comment;
 	}
-	
+
 	public IInternalElement getScElement() {
 		return scElement;
 	}
 
+	protected String getType() {
+		final String type = "ELEMENT";
+		return type;
+	}
+
 	@Override
 	public String toString() {
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + " (" + comment + ")";
+		return getType() + ": [" + (selected ? "x" : " ") + "] " + label + " (" + comment + ")";
 	}
 
 	public Object[] toArray() {

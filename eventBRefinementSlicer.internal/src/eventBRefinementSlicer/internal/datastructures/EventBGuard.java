@@ -12,8 +12,6 @@ import org.rodinp.core.RodinDBException;
 
 public class EventBGuard extends EventBEventCondition {
 
-	private final static String TYPE = "GUARD";
-
 	public EventBGuard(EventBEvent parentEvent, EventBUnit parentUnit) {
 		super(parentEvent, parentUnit);
 	}
@@ -48,7 +46,8 @@ public class EventBGuard extends EventBEventCondition {
 	}
 
 	@Override
-	public String toString() {
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + ": " + predicate + " (" + comment + ")";
+	protected String getType() {
+		final String type = "GUARD";
+		return type;
 	}
 }
