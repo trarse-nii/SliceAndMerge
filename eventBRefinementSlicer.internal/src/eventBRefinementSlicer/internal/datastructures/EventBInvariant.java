@@ -1,6 +1,7 @@
 package eventBRefinementSlicer.internal.datastructures;
 
 import org.eventb.core.IInvariant;
+import org.eventb.core.ISCInvariant;
 import org.rodinp.core.RodinDBException;
 
 /**
@@ -13,11 +14,11 @@ public class EventBInvariant extends EventBCondition {
 
 	private static final String TYPE = "INVARIANT";
 
-	public EventBInvariant(String label, String predicate, String comment, EventBUnit parent) {
-		super(label, predicate, comment, parent);
+	public EventBInvariant(String label, String predicate, ISCInvariant scInvariant, String comment, EventBUnit parent) {
+		super(label, predicate, scInvariant, comment, parent);
 	}
 
-	public EventBInvariant(IInvariant invariant, EventBUnit parent) throws RodinDBException {
+	public EventBInvariant(IInvariant invariant, ISCInvariant scInvariant, EventBUnit parent) throws RodinDBException {
 		super(parent);
 		String label = "";
 		String predicate = "";
@@ -34,6 +35,12 @@ public class EventBInvariant extends EventBCondition {
 		this.label = label;
 		this.predicate = predicate;
 		this.comment = comment;
+		this.scElement = scInvariant;
+	}
+	
+	@Override
+	public ISCInvariant getScElement() {
+		return (ISCInvariant) super.getScElement();
 	}
 
 	@Override

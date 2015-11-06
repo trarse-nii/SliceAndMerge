@@ -1,6 +1,7 @@
 package eventBRefinementSlicer.internal.datastructures;
 
 import org.eventb.core.IGuard;
+import org.eventb.core.ISCGuard;
 import org.rodinp.core.RodinDBException;
 
 /**
@@ -17,11 +18,11 @@ public class EventBGuard extends EventBEventCondition {
 		super(parentEvent, parentUnit);
 	}
 
-	public EventBGuard(String label, String predicate, String comment, EventBEvent parentEvent, EventBUnit parentUnit) {
-		super(label, predicate, comment, parentEvent, parentUnit);
+	public EventBGuard(String label, String predicate, String comment, ISCGuard scGuard, EventBEvent parentEvent, EventBUnit parentUnit) {
+		super(label, predicate, comment, scGuard, parentEvent, parentUnit);
 	}
 
-	public EventBGuard(IGuard guard, EventBEvent parentEvent, EventBUnit parentUnit) throws RodinDBException {
+	public EventBGuard(IGuard guard, ISCGuard scGuard, EventBEvent parentEvent, EventBUnit parentUnit) throws RodinDBException {
 		super(parentEvent, parentUnit);
 		String label = "";
 		String predicate = "";
@@ -38,6 +39,12 @@ public class EventBGuard extends EventBEventCondition {
 		this.label = label;
 		this.predicate = predicate;
 		this.comment = comment;
+		this.scElement = scGuard;
+	}
+
+	@Override
+	public ISCGuard getScElement() {
+		return (ISCGuard) super.getScElement();
 	}
 
 	@Override
