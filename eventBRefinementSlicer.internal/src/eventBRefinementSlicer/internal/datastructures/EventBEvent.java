@@ -98,6 +98,6 @@ public class EventBEvent extends EventBElement {
 
 	@Override
 	public String toString() {
-		return TYPE + ": [" + (selected ? "x" : " ") + "] " + label + " (" + comment + ")";
+		return TYPE + ": " + label + " (" + comment + ")";
 	}
 }

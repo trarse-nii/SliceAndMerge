@@ -64,6 +64,6 @@ public class EventBAction extends EventBElement {
 
 	@Override
 	public String toString() {
-		return getType() + ": [" + (selected ? "x" : " ") + "] " + label + ": " + assignment + " (" + comment + ")";
+		return getType() + ": " + label + ": " + assignment + " (" + comment + ")";
 	}
 }
