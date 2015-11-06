@@ -3,14 +3,15 @@ package eventBRefinementSlicer.internal.datastructures;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eventb.core.IAction;
+import org.eventb.core.IConvergenceElement.Convergence;
 import org.eventb.core.IEvent;
 import org.eventb.core.IGuard;
 import org.eventb.core.ISCAction;
 import org.eventb.core.ISCEvent;
 import org.eventb.core.ISCGuard;
 import org.eventb.core.ITraceableElement;
-import org.rodinp.core.RodinDBException;
 
 import eventBRefinementSlicer.internal.util.SCUtil;
 
@@ -23,9 +24,11 @@ import eventBRefinementSlicer.internal.util.SCUtil;
 public class EventBEvent extends EventBElement {
 	private static final String TYPE = "EVENT";
 
-	List<EventBVariable> localVariables = new ArrayList<>();
-	List<EventBGuard> guards = new ArrayList<>();
-	List<EventBAction> actions = new ArrayList<>();
+	private boolean isExtended = false;
+	private Convergence convergence = Convergence.ORDINARY;
+
+	private List<EventBGuard> guards = new ArrayList<>();
+	private List<EventBAction> actions = new ArrayList<>();
 
 	public EventBEvent(EventBUnit parent) {
 		super(parent);
@@ -35,7 +38,7 @@ public class EventBEvent extends EventBElement {
 		super(label, comment, scEvent, parent);
 	}
 
-	public EventBEvent(IEvent event, ISCEvent scEvent, EventBUnit parent) throws RodinDBException {
+	public EventBEvent(IEvent event, ISCEvent scEvent, EventBUnit parent) throws CoreException {
 		super(parent);
 		String label = "";
 		String comment = "";
@@ -44,6 +47,12 @@ public class EventBEvent extends EventBElement {
 		}
 		if (event.hasComment()) {
 			comment = event.getComment();
+		}
+		if (event.hasExtended()) {
+			this.isExtended = event.isExtended();
+		}
+		if (event.hasConvergence()) {
+			this.convergence = event.getConvergence();
 		}
 		this.label = label;
 		this.comment = comment;
@@ -69,7 +78,7 @@ public class EventBEvent extends EventBElement {
 	public List<EventBAction> getActions() {
 		return actions;
 	}
-	
+
 	@Override
 	public ISCEvent getScElement() {
 		return (ISCEvent) scElement;
@@ -77,6 +86,14 @@ public class EventBEvent extends EventBElement {
 
 	public boolean isEmpty() {
 		return guards.isEmpty() && actions.isEmpty();
+	}
+
+	public boolean isExtended() {
+		return isExtended;
+	}
+
+	public Convergence getConvergence() {
+		return convergence;
 	}
 
 	@Override

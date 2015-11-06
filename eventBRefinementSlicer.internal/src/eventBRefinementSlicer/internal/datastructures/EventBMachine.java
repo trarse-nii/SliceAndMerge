@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eventb.core.IContextRoot;
 import org.eventb.core.IEvent;
 import org.eventb.core.IInvariant;
@@ -16,7 +17,6 @@ import org.eventb.core.ISCVariable;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.ITraceableElement;
 import org.eventb.core.IVariable;
-import org.rodinp.core.RodinDBException;
 
 import eventBRefinementSlicer.internal.util.SCUtil;
 
@@ -28,7 +28,7 @@ public class EventBMachine extends EventBUnit {
 	private List<EventBEvent> events = new ArrayList<>();
 	private ISCMachineRoot scMachineRoot = null;
 
-	public EventBMachine(IMachineRoot machineRoot) throws RodinDBException {
+	public EventBMachine(IMachineRoot machineRoot) throws CoreException {
 		ISCMachineRoot scMachineRoot = SCUtil.makeStaticCheckedMachine(machineRoot);
 		for (IInvariant originalInvariant : machineRoot.getInvariants()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalInvariant, scMachineRoot.getSCInvariants());
@@ -71,7 +71,7 @@ public class EventBMachine extends EventBUnit {
 	public List<EventBEvent> getEvents() {
 		return events;
 	}
-	
+
 	public ISCMachineRoot getScMachineRoot() {
 		return scMachineRoot;
 	}
