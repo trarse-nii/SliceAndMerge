@@ -41,11 +41,14 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
+import org.eventb.core.IAction;
+import org.eventb.core.IAssignmentElement;
 import org.eventb.core.ICommentedElement;
 import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IContextRoot;
 import org.eventb.core.IEvent;
 import org.eventb.core.IEventBRoot;
+import org.eventb.core.IGuard;
 import org.eventb.core.IIdentifierElement;
 import org.eventb.core.IInvariant;
 import org.eventb.core.ILabeledElement;
@@ -657,6 +660,20 @@ public class SelectionEditor extends EditorPart {
 					IEvent rodinEvent = (IEvent) addRodinElement(IEvent.ELEMENT_TYPE, root, event);
 					rodinEvent.setExtended(event.isExtended(), null);
 					rodinEvent.setConvergence(event.getConvergence(), null);
+					// Add guards to the event
+					List<EventBGuard> relevantGuards = new ArrayList<>(event.getGuards());
+					relevantGuards.retainAll(guards);
+					for (EventBGuard guard : relevantGuards) {
+						addRodinElement(IGuard.ELEMENT_TYPE, rodinEvent, guard);
+					}
+					guards.removeAll(relevantGuards);
+					// Add actions to the event
+					List<EventBAction> relevantActions = new ArrayList<>(event.getActions());
+					relevantActions.retainAll(actions);
+					for (EventBAction action : relevantActions) {
+						addRodinElement(IAction.ELEMENT_TYPE, rodinEvent, action);
+					}
+					actions.removeAll(relevantActions);
 				}
 
 				// Save the final result
@@ -682,6 +699,9 @@ public class SelectionEditor extends EditorPart {
 				}
 				if (rodinElement instanceof IPredicateElement && element instanceof EventBCondition) {
 					((IPredicateElement) rodinElement).setPredicateString(((EventBCondition) element).getPredicate(), null);
+				}
+				if (rodinElement instanceof IAssignmentElement && element instanceof EventBAction) {
+					((IAssignmentElement) rodinElement).setAssignmentString(((EventBAction) element).getAssignment(), null);
 				}
 				return rodinElement;
 			}
