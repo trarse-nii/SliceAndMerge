@@ -176,10 +176,6 @@ public class SelectionEditor extends EditorPart {
 		for (String title : titles) {
 			column = new TreeColumn(tree, SWT.NONE);
 			column.setText(title);
-			if (title.equals(LABEL_CHECKBOX)) {
-				// column.setResizable(false);
-				// column.setWidth(27);
-			}
 		}
 
 		createContainerCheckedTreeViewer(tree, titles);
@@ -521,12 +517,6 @@ public class SelectionEditor extends EditorPart {
 			if (treeViewer.getChecked(element)) {
 				return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
 			}
-			// element = ((EventBTreeElement) element).getOriginalElement();
-			// EventBElement eventBElement = (EventBElement) element;
-			// if (eventBElement.isSelected()){
-			// return
-			// Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
-			// }
 			if (selectionDependencies.containsKey(((EventBTreeElement) element).getOriginalElement())) {
 				return Display.getDefault().getSystemColor(SWT.COLOR_RED);
 			}
@@ -581,10 +571,6 @@ public class SelectionEditor extends EditorPart {
 		createButtons(parent);
 		createTree(parent);
 		setPartName(machineRoot.getComponentName());
-		// new Label(parent, SWT.NONE).setText("Invariants");
-		// createInvariantAndAxiomTable(parent);
-		// new Label(parent, SWT.NONE).setText("Variables");
-		// createVariableAndConstantTable(parent);
 
 	}
 
