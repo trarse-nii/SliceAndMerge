@@ -42,12 +42,12 @@ public class EventBCondition extends EventBElement {
 
 	@Override
 	public String toString() {
-		return getType() + ": [" + (selected ? "x" : " ") + "] " + label + ": " + predicate + " (" + comment + ")";
+		return getType() + ": " + label + ": " + predicate + " (" + comment + ")";
 	}
 
 	@Override
 	public Object[] toArray() {
-		Object[] array = { isSelected(), getLabel(), getPredicate(), getComment() };
+		Object[] array = { getLabel(), getPredicate(), getComment() };
 		return array;
 	}
 }
