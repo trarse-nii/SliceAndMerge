@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eventb.core.IAxiom;
+import org.eventb.core.ICarrierSet;
 import org.eventb.core.IConstant;
 import org.eventb.core.IContextRoot;
 import org.eventb.core.ISCAction;
 import org.eventb.core.ISCAxiom;
+import org.eventb.core.ISCCarrierSet;
 import org.eventb.core.ISCConstant;
 import org.eventb.core.ISCContextRoot;
 import org.eventb.core.ITraceableElement;
@@ -17,12 +19,19 @@ import eventBRefinementSlicer.internal.util.SCUtil;
 
 public class EventBContext extends EventBUnit {
 
+	private List<EventBCarrierSet> carrierSets = new ArrayList<>();
 	private List<EventBConstant> constants = new ArrayList<>();
 	private List<EventBAxiom> axioms = new ArrayList<>();
 	private ISCContextRoot scContextRoot = null;
 
 	public EventBContext(IContextRoot contextRoot) throws RodinDBException {
 		ISCContextRoot scContextRoot = SCUtil.makeStaticCheckedContext(contextRoot);
+		for (ICarrierSet originalCarrierSet : contextRoot.getCarrierSets()) {
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalCarrierSet, scContextRoot.getSCCarrierSets());
+			assert (originalSCElement instanceof ISCCarrierSet);
+			EventBCarrierSet carrierSet = new EventBCarrierSet(originalCarrierSet, (ISCCarrierSet) originalSCElement, this);
+			carrierSets.add(carrierSet);
+		}
 		for (IConstant originalConstant : contextRoot.getConstants()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalConstant, scContextRoot.getSCConstants());
 			assert (originalSCElement instanceof ISCConstant);
@@ -38,6 +47,10 @@ public class EventBContext extends EventBUnit {
 		this.scContextRoot = scContextRoot;
 	}
 
+	public List<EventBCarrierSet> getCarrierSets() {
+		return carrierSets;
+	}
+
 	public List<EventBConstant> getConstants() {
 		return constants;
 	}
@@ -51,6 +64,11 @@ public class EventBContext extends EventBUnit {
 	}
 	
 	public EventBAttribute findAttributeByLabel(String identifierName) {
+		for (EventBCarrierSet carrierSet : carrierSets) {
+			if (carrierSet.getLabel().equals(identifierName)) {
+				return carrierSet;
+			}
+		}
 		for (EventBConstant constant : constants) {
 			if (constant.getLabel().equals(identifierName)) {
 				return constant;
