@@ -49,4 +49,13 @@ public class EventBContext extends EventBUnit {
 	public ISCContextRoot getScContextRoot() {
 		return scContextRoot;
 	}
+	
+	public EventBAttribute findAttributeByLabel(String identifierName) {
+		for (EventBConstant constant : constants) {
+			if (constant.getLabel().equals(identifierName)) {
+				return constant;
+			}
+		}
+		return null;
+	}
 }

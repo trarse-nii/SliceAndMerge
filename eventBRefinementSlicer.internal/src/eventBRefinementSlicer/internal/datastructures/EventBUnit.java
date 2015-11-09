@@ -11,7 +11,7 @@ import org.eclipse.jface.viewers.StructuredViewer;
  * @author Aivar Kripsaar
  *
  */
-public class EventBUnit {
+public abstract class EventBUnit {
 
 	protected EventBDependencies dependencies = null;
 
@@ -38,4 +38,6 @@ public class EventBUnit {
 	public EventBDependencies getDependencies() {
 		return dependencies;
 	}
+	
+	public abstract EventBAttribute findAttributeByLabel(String label);
 }

@@ -83,4 +83,19 @@ public class EventBMachine extends EventBUnit {
 	public void removeSeenContext(EventBContext context) {
 		seenContexts.remove(context);
 	}
+	
+	public EventBAttribute findAttributeByLabel(String identifierName) {
+		for (EventBVariable variable : variables) {
+			if (variable.getLabel().equals(identifierName)) {
+				return variable;
+			}
+		}
+		for (EventBContext context : seenContexts) {
+			EventBAttribute attribute = context.findAttributeByLabel(identifierName);
+			if (attribute != null) {
+				return attribute;
+			}
+		}
+		return null;
+	}
 }

@@ -1,6 +1,12 @@
 package eventBRefinementSlicer.internal.analyzers;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eventb.core.ast.FreeIdentifier;
+import org.eventb.core.ast.ITypeEnvironment;
+import org.eventb.core.ast.Predicate;
+
 import eventBRefinementSlicer.internal.datastructures.EventBDependencies;
+import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
 import eventBRefinementSlicer.internal.datastructures.EventBMachine;
 
 public class EventBDependencyAnalyzer {
@@ -18,20 +24,28 @@ public class EventBDependencyAnalyzer {
 	 * @return True if Analysis was successful, false otherwise
 	 */
 	public boolean runAnalysis() {
-		// TODO: Implement actual analysis.
 		if (analyzedMachine == null) {
 			return false;
 		}
 
-		// This is a fake analysis for testing purposes.
 		EventBDependencies dependencies = new EventBDependencies();
-		dependencies.addDependency(analyzedMachine.getInvariants().get(0),
-				analyzedMachine.getVariables().get(0));
-		dependencies.addDependency(analyzedMachine.getInvariants().get(1),
-				analyzedMachine.getVariables().get(0));
+		for (EventBInvariant invariant : analyzedMachine.getInvariants()) {
+			addDependencyOfInvariant(dependencies, invariant);
+		}
 
 		analyzedMachine.setDependencies(dependencies);
 		return true;
 	}
-
+	
+	private void addDependencyOfInvariant(EventBDependencies dependencies, EventBInvariant invariant) {
+		try {
+			ITypeEnvironment typeEnvironment = analyzedMachine.getScMachineRoot().getTypeEnvironment();
+			Predicate pred = invariant.getScElement().getPredicate(typeEnvironment);
+			for (FreeIdentifier freeIdentifier : pred.getFreeIdentifiers()) {
+				dependencies.addDependency(invariant, analyzedMachine.findAttributeByLabel(freeIdentifier.getName()));
+			}
+		} catch (CoreException e) {
+			e.printStackTrace();
+		}
+	}
 }
