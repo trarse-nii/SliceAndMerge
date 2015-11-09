@@ -35,9 +35,11 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
+import org.eclipse.ui.IEditorDescriptor;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
@@ -683,16 +685,15 @@ public class SelectionEditor extends EditorPart {
 				MachineRoot root = (MachineRoot) file.getRoot();
 				root.setConfiguration(IConfigurationElement.DEFAULT_CONFIGURATION, monitor);
 
-				// Add Machine to file
-
-				// Add selected invariants to file
+				// Add selected invariants to new machine
 				for (EventBInvariant invariant : invariants) {
 					addRodinElement(IInvariant.ELEMENT_TYPE, root, invariant);
 				}
-				// Add selected variables to file
+				// Add selected variables to new machine
 				for (EventBVariable variable : variables) {
 					addRodinElement(IVariable.ELEMENT_TYPE, root, variable);
 				}
+				// Add selected events to new machine
 				for (EventBEvent event : events) {
 					IEvent rodinEvent = (IEvent) addRodinElement(IEvent.ELEMENT_TYPE, root, event);
 					rodinEvent.setExtended(event.isExtended(), null);
@@ -716,7 +717,10 @@ public class SelectionEditor extends EditorPart {
 				// Save the final result
 				file.save(null, false);
 
-				// TODO: Open editor for new file
+				// Open new editor window for newly created machine
+				IFile resource = file.getResource();
+				IEditorDescriptor editorDesc = PlatformUI.getWorkbench().getEditorRegistry().getDefaultEditor(resource.getName());
+				getSite().getPage().openEditor(new FileEditorInput(resource), editorDesc.getId());
 			}
 
 			private IInternalElement addRodinElement(IInternalElementType<?> type, IInternalElement parent, EventBElement element)
@@ -744,8 +748,6 @@ public class SelectionEditor extends EditorPart {
 				return rodinElement;
 			}
 		}, null);
-
-		System.out.println();
 	}
 
 }
