@@ -109,7 +109,8 @@ public class SelectionEditor extends EditorPart {
 
 	private EventBTreeSubcategory[] treeCategories;
 
-	private Map<EventBElement, Integer> selectionDependencies = new HashMap<>();
+	private Map<EventBElement, Integer> selectionDependees = new HashMap<>();
+	private Map<EventBElement, Integer> selectionDependers = new HashMap<>();
 
 	private ContainerCheckedTreeViewer treeViewer = null;
 
@@ -261,22 +262,28 @@ public class SelectionEditor extends EditorPart {
 				EventBElement eventBElement = element.getOriginalElement();
 				Set<EventBElement> dependees = dependencies.getDependeesForElement(eventBElement);
 				Set<EventBElement> dependers = dependencies.getDependersForElement(eventBElement);
-				handleSingleDependencyDirection(dependees, event);
-				handleSingleDependencyDirection(dependers, event);
+				handleSingleDependencyDirection(dependees, event, true);
+				handleSingleDependencyDirection(dependers, event, false);
 			}
 
-			private void handleSingleDependencyDirection(Set<EventBElement> dependencySet, CheckStateChangedEvent event) {
+			private void handleSingleDependencyDirection(Set<EventBElement> dependencySet, CheckStateChangedEvent event, boolean dependeeSet) {
+				Map<EventBElement, Integer> dependencyMap;
+				if (dependeeSet) {
+					dependencyMap = selectionDependees;
+				} else {
+					dependencyMap = selectionDependers;
+				}
 				for (EventBElement dependency : dependencySet) {
 					if (event.getChecked()) {
-						if (!selectionDependencies.containsKey(dependency)) {
-							selectionDependencies.put(dependency, 0);
+						if (!dependencyMap.containsKey(dependency)) {
+							dependencyMap.put(dependency, 0);
 						}
-						selectionDependencies.put(dependency, selectionDependencies.get(dependency) + 1);
+						dependencyMap.put(dependency, dependencyMap.get(dependency) + 1);
 					} else {
-						if (selectionDependencies.containsKey(dependency)) {
-							selectionDependencies.put(dependency, selectionDependencies.get(dependency) - 1);
-							if (selectionDependencies.get(dependency).intValue() <= 0) {
-								selectionDependencies.remove(dependency);
+						if (dependencyMap.containsKey(dependency)) {
+							dependencyMap.put(dependency, dependencyMap.get(dependency) - 1);
+							if (dependencyMap.get(dependency).intValue() <= 0) {
+								dependencyMap.remove(dependency);
 							}
 						}
 					}
@@ -530,8 +537,11 @@ public class SelectionEditor extends EditorPart {
 			if (treeViewer.getChecked(element)) {
 				return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
 			}
-			if (selectionDependencies.containsKey(((EventBTreeElement) element).getOriginalElement())) {
+			if (selectionDependees.containsKey(((EventBTreeElement) element).getOriginalElement())) {
 				return Display.getDefault().getSystemColor(SWT.COLOR_RED);
+			}
+			if (selectionDependers.containsKey(((EventBTreeElement) element).getOriginalElement())) {
+				return Display.getDefault().getSystemColor(SWT.COLOR_CYAN);
 			}
 			return null;
 		}
