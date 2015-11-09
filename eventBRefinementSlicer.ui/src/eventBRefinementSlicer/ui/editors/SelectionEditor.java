@@ -28,6 +28,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -35,8 +36,11 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
+import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.IEditorDescriptor;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
@@ -193,6 +197,21 @@ public class SelectionEditor extends EditorPart {
 		}
 
 		createContainerCheckedTreeViewer(tree, titles);
+
+		tree.addListener(SWT.EraseItem, new Listener() {
+
+			@Override
+			public void handleEvent(Event event) {
+				GC gc = event.gc;
+				TreeItem item = (TreeItem) event.item;
+				if ((event.detail & SWT.SELECTED) != 0 && (treeViewer.getChecked(item.getData()))) {
+					gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_DARK_BLUE));
+					gc.setForeground(item.getForeground(event.index));
+					gc.fillRectangle(event.x, event.y, event.width, event.height);
+					event.detail &= ~SWT.SELECTED;
+				}
+			}
+		});
 
 		for (TreeColumn oneColumn : tree.getColumns()) {
 			oneColumn.pack();
