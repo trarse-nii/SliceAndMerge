@@ -512,18 +512,34 @@ public class SelectionEditor extends EditorPart {
 				return null;
 			}
 			if (element instanceof EventBTreeElement) {
-				switch (columnIndex) {
-				case ELEMENT_COLUMN:
-					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_CYAN);
-				case CONTENT_COLUMN:
-					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_MAGENTA);
-				case SPECIAL_COLUMN:
-					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY);
-				case COMMENT_COLUMN:
-					return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN);
-				default:
-					break;
+				if (treeViewer.getChecked(element) || selectionDependees.containsKey(((EventBTreeElement) element).getOriginalElement())) {
+					switch (columnIndex) {
+					case ELEMENT_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_CYAN);
+					case CONTENT_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_MAGENTA);
+					case SPECIAL_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_GRAY);
+					case COMMENT_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_GREEN);
+					default:
+						break;
+					}
+				} else {
+					switch (columnIndex) {
+					case ELEMENT_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_DARK_CYAN);
+					case CONTENT_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_DARK_MAGENTA);
+					case SPECIAL_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GRAY);
+					case COMMENT_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_DARK_GREEN);
+					default:
+						break;
+					}
 				}
+
 			}
 			return null;
 		}
