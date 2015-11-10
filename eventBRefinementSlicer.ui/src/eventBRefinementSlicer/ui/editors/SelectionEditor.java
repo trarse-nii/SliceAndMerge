@@ -30,6 +30,7 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
@@ -206,12 +207,25 @@ public class SelectionEditor extends EditorPart {
 			public void handleEvent(Event event) {
 				GC gc = event.gc;
 				TreeItem item = (TreeItem) event.item;
+				int width = tree.getClientArea().x + tree.getClientArea().width - event.x;
+				if (event.index == tree.getColumnCount() - 1 || tree.getColumnCount() == 0) {
+					if (width > 0) {
+						Region region = new Region();
+						gc.getClipping(region);
+						region.add(event.x, event.y, width, event.height);
+						gc.setClipping(region);
+						region.dispose();
+					}
+				}
 				if ((event.detail & SWT.SELECTED) != 0 && (treeViewer.getChecked(item.getData()))) {
 					gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_DARK_BLUE));
 					gc.setForeground(item.getForeground(event.index));
-					gc.fillRectangle(event.x, event.y, event.width, event.height);
+					gc.fillRectangle(event.x, event.y, width, event.height);
 					event.detail &= ~SWT.SELECTED;
+					return;
 				}
+				gc.setBackground(item.getBackground(event.index));
+				gc.fillRectangle(event.x, event.y, width, event.height);
 			}
 		});
 
