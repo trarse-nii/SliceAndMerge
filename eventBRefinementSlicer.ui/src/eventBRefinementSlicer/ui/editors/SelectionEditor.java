@@ -62,11 +62,13 @@ import org.eventb.core.IIdentifierElement;
 import org.eventb.core.IInvariant;
 import org.eventb.core.ILabeledElement;
 import org.eventb.core.IMachineRoot;
+import org.eventb.core.IRefinesMachine;
 import org.eventb.core.IVariable;
 import org.eventb.core.ast.FormulaFactory;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IInternalElementType;
+import org.rodinp.core.IRefinementManager;
 import org.rodinp.core.IRodinFile;
 import org.rodinp.core.IRodinProject;
 import org.rodinp.core.RodinCore;
@@ -773,6 +775,13 @@ public class SelectionEditor extends EditorPart {
 						addRodinElement(IAction.ELEMENT_TYPE, rodinEvent, action);
 					}
 					actions.removeAll(relevantActions);
+				}
+
+				// Add refinement information from existing machine to new
+				// machine
+				for (IRefinesMachine refines : machineRoot.getRefinesClauses()) {
+					IRefinementManager refinementManager = RodinCore.getRefinementManager();
+					refinementManager.refine(refines.getAbstractMachineRoot(), root, null);
 				}
 
 				// Save the final result
