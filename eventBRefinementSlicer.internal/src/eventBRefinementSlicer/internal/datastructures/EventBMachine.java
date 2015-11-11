@@ -24,6 +24,7 @@ public class EventBMachine extends EventBUnit {
 
 	private List<EventBInvariant> invariants = new ArrayList<>();
 	private List<EventBVariable> variables = new ArrayList<>();
+	private List<EventBVariable> abstractVariables = new ArrayList<>();
 	private Set<EventBContext> seenContexts = new HashSet<>();
 	private List<EventBEvent> events = new ArrayList<>();
 	private ISCMachineRoot scMachineRoot = null;
@@ -41,6 +42,12 @@ public class EventBMachine extends EventBUnit {
 			assert (originalSCElement instanceof ISCVariable);
 			EventBVariable variable = new EventBVariable(originalVariable, (ISCVariable) originalSCElement, this);
 			variables.add(variable);
+		}
+		for (ISCVariable scVariable : scMachineRoot.getSCVariables()) {
+			if (scVariable.isAbstract()) {
+				EventBVariable abstractVariable = new EventBVariable(scVariable, this);
+				abstractVariables.add(abstractVariable);
+			}
 		}
 		for (ISeesContext seenContext : machineRoot.getSeesClauses()) {
 			IContextRoot contextRoot = seenContext.getSeenContextRoot();
@@ -88,6 +95,11 @@ public class EventBMachine extends EventBUnit {
 		for (EventBVariable variable : variables) {
 			if (variable.getLabel().equals(identifierName)) {
 				return variable;
+			}
+		}
+		for (EventBVariable abstractVariable : abstractVariables) {
+			if (abstractVariable.getLabel().equals(identifierName)) {
+				return abstractVariable;
 			}
 		}
 		for (EventBContext context : seenContexts) {

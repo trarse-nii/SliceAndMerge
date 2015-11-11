@@ -35,6 +35,11 @@ public class EventBElement {
 		}
 	}
 
+	public EventBElement(IInternalElement scElement, EventBUnit parent) throws RodinDBException {
+		this.parent = parent;
+		this.scElement = scElement;
+	}
+
 	public String getLabel() {
 		return label;
 	}
