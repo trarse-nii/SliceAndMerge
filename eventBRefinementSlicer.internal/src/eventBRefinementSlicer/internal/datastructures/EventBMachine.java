@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eventb.core.ast.FormulaFactory;
+import org.eventb.core.ast.ITypeEnvironmentBuilder;
 import org.eventb.core.IContextRoot;
 import org.eventb.core.IEvent;
 import org.eventb.core.IInvariant;
@@ -30,7 +32,7 @@ public class EventBMachine extends EventBUnit {
 	private ISCMachineRoot scMachineRoot = null;
 
 	public EventBMachine(IMachineRoot machineRoot) throws CoreException {
-		ISCMachineRoot scMachineRoot = SCUtil.makeStaticCheckedMachine(machineRoot);
+		this.scMachineRoot = SCUtil.makeStaticCheckedMachine(machineRoot);
 		for (IInvariant originalInvariant : machineRoot.getInvariants()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalInvariant, scMachineRoot.getSCInvariants());
 			assert (originalSCElement instanceof ISCInvariant);
@@ -60,7 +62,12 @@ public class EventBMachine extends EventBUnit {
 			EventBEvent event = new EventBEvent(originalEvent, (ISCEvent) originalSCElement, this);
 			events.add(event);
 		}
-		this.scMachineRoot = scMachineRoot;
+		for (EventBInvariant invariant : invariants) {
+			invariant.setDependees(invariant.calculateDependees());
+		}
+		for (EventBVariable variable : variables) {
+			variable.setDependees(variable.calculateDependees());
+		}
 	}
 
 	public List<EventBInvariant> getInvariants() {
@@ -109,5 +116,13 @@ public class EventBMachine extends EventBUnit {
 			}
 		}
 		return null;
+	}
+
+	public ITypeEnvironmentBuilder getTypeEnvironment() throws CoreException {
+		return scMachineRoot.getTypeEnvironment();
+	}
+	
+	public FormulaFactory getFormulaFactory() {
+		return scMachineRoot.getFormulaFactory();
 	}
 }
