@@ -17,7 +17,7 @@ public class SCUtil {
 	public static ITraceableElement findSCElement(IInternalElement element, ITraceableElement[] scElements) {
 		try {
 			for (ITraceableElement scElement : scElements) {
-				if (scElement.getSource().getElementName().equals(element.getElementName())) {
+				if (scElement.getSource().getHandleIdentifier().equals(element.getHandleIdentifier())) {
 					return scElement;
 				}
 			}
