@@ -24,12 +24,15 @@ import org.eclipse.jface.viewers.TreeExpansionEvent;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.window.Window;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.ControlAdapter;
+import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -197,9 +200,17 @@ public class SelectionEditor extends EditorPart {
 		for (String title : titles) {
 			column = new TreeColumn(tree, SWT.NONE);
 			column.setText(title);
+			column.setResizable(false);
 		}
 
 		createContainerCheckedTreeViewer(tree, titles);
+
+		tree.addControlListener(new ControlAdapter() {
+			@Override
+			public void controlResized(ControlEvent e) {
+				packColumns();
+			}
+		});
 
 		tree.addListener(SWT.EraseItem, new Listener() {
 
@@ -217,20 +228,32 @@ public class SelectionEditor extends EditorPart {
 						region.dispose();
 					}
 				}
-				if ((event.detail & SWT.SELECTED) != 0 && (treeViewer.getChecked(item.getData()))) {
-					gc.setBackground(Display.getDefault().getSystemColor(SWT.COLOR_DARK_BLUE));
-					gc.setForeground(item.getForeground(event.index));
-					gc.fillRectangle(event.x, event.y, width, event.height);
-					event.detail &= ~SWT.SELECTED;
-					return;
-				}
 				gc.setBackground(item.getBackground(event.index));
+				gc.setForeground(item.getForeground(event.index));
 				gc.fillRectangle(event.x, event.y, width, event.height);
 			}
 		});
 
-		for (TreeColumn oneColumn : tree.getColumns()) {
-			oneColumn.pack();
+		packColumns();
+	}
+
+	private void packColumns() {
+		Tree tree = treeViewer.getTree();
+		int columnsWidth = 0;
+		for (TreeColumn column : tree.getColumns()) {
+			column.pack();
+		}
+		for (TreeColumn column : tree.getColumns()) {
+			columnsWidth += column.getWidth();
+		}
+		TreeColumn lastColumn = tree.getColumn(tree.getColumnCount() - 1);
+		columnsWidth -= lastColumn.getWidth();
+
+		Rectangle area = tree.getClientArea();
+		int width = area.width;
+
+		if (lastColumn.getWidth() < width - columnsWidth) {
+			lastColumn.setWidth(width - columnsWidth);
 		}
 	}
 
@@ -249,9 +272,7 @@ public class SelectionEditor extends EditorPart {
 
 					@Override
 					public void run() {
-						for (TreeColumn column : tree.getColumns()) {
-							column.pack();
-						}
+						packColumns();
 					}
 				});
 
@@ -263,9 +284,7 @@ public class SelectionEditor extends EditorPart {
 
 					@Override
 					public void run() {
-						for (TreeColumn column : tree.getColumns()) {
-							column.pack();
-						}
+						packColumns();
 					}
 				});
 			}
