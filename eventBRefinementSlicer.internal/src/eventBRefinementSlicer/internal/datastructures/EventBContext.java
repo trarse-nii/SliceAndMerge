@@ -3,6 +3,7 @@ package eventBRefinementSlicer.internal.datastructures;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eventb.core.IAxiom;
 import org.eventb.core.ICarrierSet;
 import org.eventb.core.IConstant;
@@ -13,6 +14,8 @@ import org.eventb.core.ISCCarrierSet;
 import org.eventb.core.ISCConstant;
 import org.eventb.core.ISCContextRoot;
 import org.eventb.core.ITraceableElement;
+import org.eventb.core.ast.FormulaFactory;
+import org.eventb.core.ast.ITypeEnvironmentBuilder;
 import org.rodinp.core.RodinDBException;
 
 import eventBRefinementSlicer.internal.util.SCUtil;
@@ -25,7 +28,7 @@ public class EventBContext extends EventBUnit {
 	private ISCContextRoot scContextRoot = null;
 
 	public EventBContext(IContextRoot contextRoot) throws RodinDBException {
-		ISCContextRoot scContextRoot = SCUtil.makeStaticCheckedContext(contextRoot);
+		this.scContextRoot = SCUtil.makeStaticCheckedContext(contextRoot);
 		for (ICarrierSet originalCarrierSet : contextRoot.getCarrierSets()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalCarrierSet, scContextRoot.getSCCarrierSets());
 			assert (originalSCElement instanceof ISCCarrierSet);
@@ -44,7 +47,15 @@ public class EventBContext extends EventBUnit {
 			EventBAxiom axiom = new EventBAxiom(originalAxiom, (ISCAxiom) originalSCElement, this);
 			axioms.add(axiom);
 		}
-		this.scContextRoot = scContextRoot;
+		for (EventBCarrierSet carrierSet : carrierSets) {
+			carrierSet.setDependees(carrierSet.calculateDependees());
+		}
+		for (EventBConstant constant : constants) {
+			constant.setDependees(constant.calculateDependees());
+		}
+		for (EventBAxiom axiom : axioms) {
+			axiom.setDependees(axiom.calculateDependees());
+		}
 	}
 
 	public List<EventBCarrierSet> getCarrierSets() {
@@ -75,5 +86,13 @@ public class EventBContext extends EventBUnit {
 			}
 		}
 		return null;
+	}
+	
+	public ITypeEnvironmentBuilder getTypeEnvironment() throws CoreException {
+		return this.scContextRoot.getTypeEnvironment();
+	}
+
+	public FormulaFactory getFormulaFactory() {
+		return scContextRoot.getFormulaFactory();
 	}
 }

@@ -3,7 +3,10 @@ package eventBRefinementSlicer.internal.datastructures;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.viewers.StructuredViewer;
+import org.eventb.core.ast.FormulaFactory;
+import org.eventb.core.ast.ITypeEnvironmentBuilder;
 
 /**
  * Common super class for EventBMachine and EventBContext
@@ -40,4 +43,6 @@ public abstract class EventBUnit {
 	}
 	
 	public abstract EventBAttribute findAttributeByLabel(String label);
+	public abstract ITypeEnvironmentBuilder getTypeEnvironment() throws CoreException;
+	public abstract FormulaFactory getFormulaFactory();
 }
