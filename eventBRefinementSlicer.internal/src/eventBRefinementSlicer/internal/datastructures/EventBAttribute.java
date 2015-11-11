@@ -28,6 +28,11 @@ public class EventBAttribute extends EventBElement {
 		}
 	}
 
+	public EventBAttribute(ISCIdentifierElement scElement, EventBUnit parent) throws RodinDBException {
+		super(scElement, parent);
+		this.label = scElement.getElementName();
+	}
+
 	@Override
 	public ISCIdentifierElement getScElement() {
 		return (ISCIdentifierElement) super.getScElement();
