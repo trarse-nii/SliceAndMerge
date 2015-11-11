@@ -22,7 +22,7 @@ public class EventBAttribute extends EventBElement {
 	}
 
 	public EventBAttribute(IIdentifierElement identifierElement, ISCIdentifierElement scElement, EventBUnit parent) throws RodinDBException {
-		super(identifierElement, identifierElement, parent);
+		super(identifierElement, scElement, parent);
 		if (identifierElement.hasIdentifierString()) {
 			this.label = identifierElement.getIdentifierString();
 		}
