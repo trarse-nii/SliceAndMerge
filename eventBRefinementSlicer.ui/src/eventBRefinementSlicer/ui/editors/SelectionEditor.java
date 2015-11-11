@@ -302,12 +302,32 @@ public class SelectionEditor extends EditorPart {
 				}
 				EventBDependencies dependencies = machine.getDependencies();
 				handleSelectionDependenciesForElement((EventBTreeElement) event.getElement(), dependencies, event);
+				if (((EventBTreeElement) event.getElement()).getOriginalElement() instanceof EventBEvent) {
+					handleEventChildren((EventBTreeElement) event.getElement(), event);
+				}
 			}
 
 			private void handleChildren(EventBTreeSubcategory category, CheckStateChangedEvent event) {
 				for (EventBTreeElement child : category.getChildren()) {
 					treeViewer.update(child, null);
 					handleSelectionDependenciesForElement(child, machine.getDependencies(), event);
+					if (child.getOriginalElement() instanceof EventBEvent) {
+						handleEventChildren(child, event);
+					}
+				}
+			}
+
+			private void handleEventChildren(EventBTreeElement eventElement, CheckStateChangedEvent event) {
+				assert eventElement.getOriginalElement() instanceof EventBEvent;
+				ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
+				if (!contentProvider.hasChildren(eventElement)) {
+					return;
+				}
+				for (Object childObject : contentProvider.getChildren(eventElement)) {
+					assert childObject instanceof EventBTreeSubcategory;
+					EventBTreeSubcategory child = (EventBTreeSubcategory) childObject;
+					treeViewer.update(child, null);
+					handleChildren(child, event);
 				}
 			}
 
@@ -355,6 +375,8 @@ public class SelectionEditor extends EditorPart {
 		});
 
 		treeViewer.setContentProvider(new ITreeContentProvider() {
+
+			private Map<EventBEvent, EventBTreeSubcategory[]> eventSubcategories = new HashMap<>();
 
 			@Override
 			public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
@@ -430,10 +452,13 @@ public class SelectionEditor extends EditorPart {
 					}
 					EventBEvent originalElement = (EventBEvent) ((EventBTreeElement) parentElement).getOriginalElement();
 					EventBTreeElement parent = (EventBTreeElement) parentElement;
-					EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent, originalElement.getGuards());
-					EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent, originalElement.getActions());
-					EventBTreeSubcategory[] children = { guards, actions };
-					return children;
+					if (!eventSubcategories.containsKey(originalElement)) {
+						EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent, originalElement.getGuards());
+						EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent, originalElement.getActions());
+						EventBTreeSubcategory[] children = { guards, actions };
+						eventSubcategories.put(originalElement, children);
+					}
+					return eventSubcategories.get(originalElement);
 				}
 				return null;
 			}
@@ -507,6 +532,7 @@ public class SelectionEditor extends EditorPart {
 		public String toString() {
 			return label;
 		}
+
 	}
 
 	class EventBTreeElement {
@@ -530,6 +556,7 @@ public class SelectionEditor extends EditorPart {
 		public String toString() {
 			return originalElement.toString();
 		}
+
 	}
 
 	class LabelProvider implements ITableLabelProvider, ITableColorProvider, ITableFontProvider {
