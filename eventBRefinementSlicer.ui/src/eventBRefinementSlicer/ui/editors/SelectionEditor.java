@@ -79,9 +79,7 @@ import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
 import eventBRefinementSlicer.internal.datastructures.EventBAction;
-import eventBRefinementSlicer.internal.datastructures.EventBAxiom;
 import eventBRefinementSlicer.internal.datastructures.EventBCondition;
-import eventBRefinementSlicer.internal.datastructures.EventBConstant;
 import eventBRefinementSlicer.internal.datastructures.EventBContext;
 import eventBRefinementSlicer.internal.datastructures.EventBDependencies;
 import eventBRefinementSlicer.internal.datastructures.EventBElement;
@@ -302,8 +300,9 @@ public class SelectionEditor extends EditorPart {
 				}
 				EventBDependencies dependencies = machine.getDependencies();
 				handleSelectionDependenciesForElement((EventBTreeElement) event.getElement(), dependencies, event);
-				if (((EventBTreeElement) event.getElement()).getOriginalElement() instanceof EventBEvent) {
-					handleEventChildren((EventBTreeElement) event.getElement(), event);
+				if (((EventBTreeElement) event.getElement()).getOriginalElement() instanceof EventBEvent
+						|| ((EventBTreeElement) event.getElement()).getOriginalElement() instanceof EventBContext) {
+					handleEventOrContextChildren((EventBTreeElement) event.getElement(), event);
 				}
 			}
 
@@ -311,14 +310,14 @@ public class SelectionEditor extends EditorPart {
 				for (EventBTreeElement child : category.getChildren()) {
 					treeViewer.update(child, null);
 					handleSelectionDependenciesForElement(child, machine.getDependencies(), event);
-					if (child.getOriginalElement() instanceof EventBEvent) {
-						handleEventChildren(child, event);
+					if (child.getOriginalElement() instanceof EventBEvent || child.getOriginalElement() instanceof EventBContext) {
+						handleEventOrContextChildren(child, event);
 					}
 				}
 			}
 
-			private void handleEventChildren(EventBTreeElement eventElement, CheckStateChangedEvent event) {
-				assert eventElement.getOriginalElement() instanceof EventBEvent;
+			private void handleEventOrContextChildren(EventBTreeElement eventElement, CheckStateChangedEvent event) {
+				assert (eventElement.getOriginalElement() instanceof EventBEvent || eventElement.getOriginalElement() instanceof EventBContext);
 				ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 				if (!contentProvider.hasChildren(eventElement)) {
 					return;
@@ -377,6 +376,7 @@ public class SelectionEditor extends EditorPart {
 		treeViewer.setContentProvider(new ITreeContentProvider() {
 
 			private Map<EventBEvent, EventBTreeSubcategory[]> eventSubcategories = new HashMap<>();
+			private Map<EventBContext, EventBTreeSubcategory[]> contextSubcategories = new HashMap<>();
 
 			@Override
 			public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
@@ -407,6 +407,10 @@ public class SelectionEditor extends EditorPart {
 						EventBEvent event = (EventBEvent) ((EventBTreeElement) element).getOriginalElement();
 						return !(event.isEmpty());
 					}
+					if (((EventBTreeElement) element).getOriginalElement() instanceof EventBContext) {
+						EventBContext context = (EventBContext) ((EventBTreeElement) element).getOriginalElement();
+						return !(context.isEmpty());
+					}
 				}
 				return false;
 			}
@@ -425,15 +429,20 @@ public class SelectionEditor extends EditorPart {
 				EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine, machine.getInvariants());
 				EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine, machine.getVariables());
 				EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents());
-				List<EventBAxiom> axes = new ArrayList<>();
-				List<EventBConstant> consts = new ArrayList<>();
-				for (EventBContext context : machine.getSeenContexts()) {
-					axes.addAll(context.getAxioms());
-					consts.addAll(context.getConstants());
-				}
-				EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", machine, axes);
-				EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", machine, consts);
-				EventBTreeSubcategory[] treeChildren = { invariants, axioms, variables, constants, events };
+				EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine, machine.getSeenContexts());
+				// List<EventBAxiom> axes = new ArrayList<>();
+				// List<EventBConstant> consts = new ArrayList<>();
+				// for (EventBContext context : machine.getSeenContexts()) {
+				// axes.addAll(context.getAxioms());
+				// consts.addAll(context.getConstants());
+				// }
+				// EventBTreeSubcategory axioms = new
+				// EventBTreeSubcategory("Axioms", machine, axes);
+				// EventBTreeSubcategory constants = new
+				// EventBTreeSubcategory("Constants", machine, consts);
+				// EventBTreeSubcategory[] treeChildren = { invariants, axioms,
+				// variables, constants, events };
+				EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
 				treeCategories = treeChildren;
 				return treeChildren;
 			}
@@ -447,18 +456,32 @@ public class SelectionEditor extends EditorPart {
 					return ((EventBTreeSubcategory) parentElement).children;
 				}
 				if (parentElement instanceof EventBTreeElement) {
-					if (!(((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent)) {
+					if (!(((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent || ((EventBTreeElement) parentElement)
+							.getOriginalElement() instanceof EventBContext)) {
 						return null;
 					}
-					EventBEvent originalElement = (EventBEvent) ((EventBTreeElement) parentElement).getOriginalElement();
-					EventBTreeElement parent = (EventBTreeElement) parentElement;
-					if (!eventSubcategories.containsKey(originalElement)) {
-						EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent, originalElement.getGuards());
-						EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent, originalElement.getActions());
-						EventBTreeSubcategory[] children = { guards, actions };
-						eventSubcategories.put(originalElement, children);
+					if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent) {
+						EventBEvent originalElement = (EventBEvent) ((EventBTreeElement) parentElement).getOriginalElement();
+						EventBTreeElement parent = (EventBTreeElement) parentElement;
+						if (!eventSubcategories.containsKey(originalElement)) {
+							EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent, originalElement.getGuards());
+							EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent, originalElement.getActions());
+							EventBTreeSubcategory[] children = { guards, actions };
+							eventSubcategories.put(originalElement, children);
+						}
+						return eventSubcategories.get(originalElement);
 					}
-					return eventSubcategories.get(originalElement);
+					if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBContext) {
+						EventBContext originalElement = (EventBContext) ((EventBTreeElement) parentElement).getOriginalElement();
+						EventBTreeElement parent = (EventBTreeElement) parentElement;
+						if (!contextSubcategories.containsKey(originalElement)) {
+							EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", parent, originalElement.getAxioms());
+							EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", parent, originalElement.getConstants());
+							EventBTreeSubcategory[] children = { axioms, constants };
+							contextSubcategories.put(originalElement, children);
+						}
+						return contextSubcategories.get(originalElement);
+					}
 				}
 				return null;
 			}
