@@ -878,10 +878,20 @@ public class SelectionEditor extends EditorPart {
 					refinementManager.refine(refines.getAbstractMachineRoot(), root, null);
 				}
 
-				// Adds seen contexts to new machine
-				// If whole context selected, we just add it directly
+				// Adds seen contexts to new machine.
+				// If whole context selected, we just add it directly,
+				// unless it is already included (because of refinement)
 				for (EventBContext context : contexts) {
-					addRodinElement(ISeesContext.ELEMENT_TYPE, root, context);
+					boolean alreadyIncluded = false;
+					for (ISeesContext seenContext : root.getSeesClauses()) {
+						if (seenContext.getSeenContextName().equals(context.getLabel())) {
+							alreadyIncluded = true;
+							break;
+						}
+					}
+					if (!alreadyIncluded) {
+						addRodinElement(ISeesContext.ELEMENT_TYPE, root, context);
+					}
 				}
 
 				// Save the final result
