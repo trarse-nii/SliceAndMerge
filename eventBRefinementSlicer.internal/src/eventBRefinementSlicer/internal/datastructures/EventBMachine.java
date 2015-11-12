@@ -1,13 +1,9 @@
 package eventBRefinementSlicer.internal.datastructures;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eventb.core.ast.FormulaFactory;
-import org.eventb.core.ast.ITypeEnvironmentBuilder;
 import org.eventb.core.IContextRoot;
 import org.eventb.core.IEvent;
 import org.eventb.core.IInvariant;
@@ -19,6 +15,8 @@ import org.eventb.core.ISCVariable;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.ITraceableElement;
 import org.eventb.core.IVariable;
+import org.eventb.core.ast.FormulaFactory;
+import org.eventb.core.ast.ITypeEnvironmentBuilder;
 
 import eventBRefinementSlicer.internal.util.SCUtil;
 
@@ -27,7 +25,7 @@ public class EventBMachine extends EventBUnit {
 	private List<EventBInvariant> invariants = new ArrayList<>();
 	private List<EventBVariable> variables = new ArrayList<>();
 	private List<EventBVariable> abstractVariables = new ArrayList<>();
-	private Set<EventBContext> seenContexts = new HashSet<>();
+	private List<EventBContext> seenContexts = new ArrayList<>();
 	private List<EventBEvent> events = new ArrayList<>();
 	private ISCMachineRoot scMachineRoot = null;
 
@@ -78,7 +76,7 @@ public class EventBMachine extends EventBUnit {
 		return variables;
 	}
 
-	public Set<EventBContext> getSeenContexts() {
+	public List<EventBContext> getSeenContexts() {
 		return seenContexts;
 	}
 
@@ -97,7 +95,8 @@ public class EventBMachine extends EventBUnit {
 	public void removeSeenContext(EventBContext context) {
 		seenContexts.remove(context);
 	}
-	
+
+	@Override
 	public EventBAttribute findAttributeByLabel(String identifierName) {
 		for (EventBVariable variable : variables) {
 			if (variable.getLabel().equals(identifierName)) {
@@ -118,10 +117,12 @@ public class EventBMachine extends EventBUnit {
 		return null;
 	}
 
+	@Override
 	public ITypeEnvironmentBuilder getTypeEnvironment() throws CoreException {
 		return scMachineRoot.getTypeEnvironment();
 	}
-	
+
+	@Override
 	public FormulaFactory getFormulaFactory() {
 		return scMachineRoot.getFormulaFactory();
 	}
