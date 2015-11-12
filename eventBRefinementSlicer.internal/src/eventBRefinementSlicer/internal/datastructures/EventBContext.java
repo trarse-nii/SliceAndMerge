@@ -107,4 +107,8 @@ public class EventBContext extends EventBUnit {
 	public FormulaFactory getFormulaFactory() {
 		return scContextRoot.getFormulaFactory();
 	}
+
+	public boolean isEmpty() {
+		return (axioms.isEmpty() && constants.isEmpty());
+	}
 }
