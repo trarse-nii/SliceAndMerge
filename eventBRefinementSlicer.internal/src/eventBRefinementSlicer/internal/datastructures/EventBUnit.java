@@ -14,7 +14,11 @@ import org.eventb.core.ast.ITypeEnvironmentBuilder;
  * @author Aivar Kripsaar
  *
  */
-public abstract class EventBUnit {
+public abstract class EventBUnit extends EventBElement {
+
+	public EventBUnit() {
+		super(null);
+	}
 
 	protected EventBDependencies dependencies = null;
 
@@ -41,8 +45,10 @@ public abstract class EventBUnit {
 	public EventBDependencies getDependencies() {
 		return dependencies;
 	}
-	
+
 	public abstract EventBAttribute findAttributeByLabel(String label);
+
 	public abstract ITypeEnvironmentBuilder getTypeEnvironment() throws CoreException;
+
 	public abstract FormulaFactory getFormulaFactory();
 }

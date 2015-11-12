@@ -56,6 +56,15 @@ public class EventBContext extends EventBUnit {
 		for (EventBAxiom axiom : axioms) {
 			axiom.setDependees(axiom.calculateDependees());
 		}
+		this.label = contextRoot.getElementName();
+		if (contextRoot.hasComment()) {
+			this.comment = contextRoot.getComment();
+		}
+	}
+
+	public EventBContext(IContextRoot contextRoot, EventBMachine parentMachine) throws RodinDBException {
+		this(contextRoot);
+		this.parent = parentMachine;
 	}
 
 	public List<EventBCarrierSet> getCarrierSets() {
@@ -73,7 +82,8 @@ public class EventBContext extends EventBUnit {
 	public ISCContextRoot getScContextRoot() {
 		return scContextRoot;
 	}
-	
+
+	@Override
 	public EventBAttribute findAttributeByLabel(String identifierName) {
 		for (EventBCarrierSet carrierSet : carrierSets) {
 			if (carrierSet.getLabel().equals(identifierName)) {
@@ -87,11 +97,13 @@ public class EventBContext extends EventBUnit {
 		}
 		return null;
 	}
-	
+
+	@Override
 	public ITypeEnvironmentBuilder getTypeEnvironment() throws CoreException {
 		return this.scContextRoot.getTypeEnvironment();
 	}
 
+	@Override
 	public FormulaFactory getFormulaFactory() {
 		return scContextRoot.getFormulaFactory();
 	}
