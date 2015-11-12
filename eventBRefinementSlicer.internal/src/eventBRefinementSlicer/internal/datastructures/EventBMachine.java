@@ -51,7 +51,7 @@ public class EventBMachine extends EventBUnit {
 		}
 		for (ISeesContext seenContext : machineRoot.getSeesClauses()) {
 			IContextRoot contextRoot = seenContext.getSeenContextRoot();
-			EventBContext context = new EventBContext(contextRoot);
+			EventBContext context = new EventBContext(contextRoot, this);
 			seenContexts.add(context);
 		}
 		for (IEvent originalEvent : machineRoot.getEvents()) {
