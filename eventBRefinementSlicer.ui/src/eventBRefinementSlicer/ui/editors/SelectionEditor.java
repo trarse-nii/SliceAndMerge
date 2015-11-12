@@ -68,6 +68,7 @@ import org.eventb.core.IInvariant;
 import org.eventb.core.ILabeledElement;
 import org.eventb.core.IMachineRoot;
 import org.eventb.core.IRefinesMachine;
+import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
 import org.eventb.core.ast.FormulaFactory;
 import org.eventb.core.basis.MachineRoot;
@@ -803,6 +804,7 @@ public class SelectionEditor extends EditorPart {
 		List<EventBEvent> events = new ArrayList<>();
 		List<EventBGuard> guards = new ArrayList<>();
 		List<EventBAction> actions = new ArrayList<>();
+		List<EventBContext> contexts = new ArrayList<>();
 
 		for (Object checkedElement : checkedElementsList) {
 			if (checkedElement instanceof EventBTreeSubcategory) {
@@ -819,6 +821,12 @@ public class SelectionEditor extends EditorPart {
 				actions.add((EventBAction) element);
 			} else if (element instanceof EventBEvent) {
 				events.add((EventBEvent) element);
+			} else if (element instanceof EventBContext) {
+				// We only add completely checked Contexts (no partial
+				// selections)
+				if (!treeViewer.getGrayed(checkedElement)) {
+					contexts.add((EventBContext) element);
+				}
 			}
 		}
 
@@ -870,6 +878,12 @@ public class SelectionEditor extends EditorPart {
 					refinementManager.refine(refines.getAbstractMachineRoot(), root, null);
 				}
 
+				// Adds seen contexts to new machine
+				// If whole context selected, we just add it directly
+				for (EventBContext context : contexts) {
+					addRodinElement(ISeesContext.ELEMENT_TYPE, root, context);
+				}
+
 				// Save the final result
 				file.save(null, false);
 
@@ -900,6 +914,9 @@ public class SelectionEditor extends EditorPart {
 				}
 				if (rodinElement instanceof IAssignmentElement && element instanceof EventBAction) {
 					((IAssignmentElement) rodinElement).setAssignmentString(((EventBAction) element).getAssignment(), null);
+				}
+				if (rodinElement instanceof ISeesContext && element instanceof EventBContext) {
+					((ISeesContext) rodinElement).setSeenContextName(((EventBContext) element).getLabel(), null);
 				}
 				return rodinElement;
 			}
