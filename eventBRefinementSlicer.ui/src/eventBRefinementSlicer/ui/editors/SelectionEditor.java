@@ -3,6 +3,7 @@ package eventBRefinementSlicer.ui.editors;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -115,7 +116,7 @@ public class SelectionEditor extends EditorPart {
 	private IMachineRoot machineRoot;
 	private EventBMachine machine;
 
-	private EventBTreeSubcategory[] treeCategories;
+	private Set<EventBTreeSubcategory> treeCategories = new HashSet<>();
 
 	private Map<EventBElement, Integer> selectionDependees = new HashMap<>();
 	private Map<EventBElement, Integer> selectionDependers = new HashMap<>();
@@ -443,7 +444,7 @@ public class SelectionEditor extends EditorPart {
 				// EventBTreeSubcategory[] treeChildren = { invariants, axioms,
 				// variables, constants, events };
 				EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
-				treeCategories = treeChildren;
+				treeCategories.addAll(Arrays.asList(treeChildren));
 				return treeChildren;
 			}
 
@@ -467,6 +468,7 @@ public class SelectionEditor extends EditorPart {
 							EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent, originalElement.getGuards());
 							EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent, originalElement.getActions());
 							EventBTreeSubcategory[] children = { guards, actions };
+							treeCategories.addAll(Arrays.asList(children));
 							eventSubcategories.put(originalElement, children);
 						}
 						return eventSubcategories.get(originalElement);
@@ -478,6 +480,7 @@ public class SelectionEditor extends EditorPart {
 							EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", parent, originalElement.getAxioms());
 							EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", parent, originalElement.getConstants());
 							EventBTreeSubcategory[] children = { axioms, constants };
+							treeCategories.addAll(Arrays.asList(children));
 							contextSubcategories.put(originalElement, children);
 						}
 						return contextSubcategories.get(originalElement);
