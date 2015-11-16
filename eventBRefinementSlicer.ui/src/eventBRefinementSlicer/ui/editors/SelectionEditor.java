@@ -12,7 +12,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ILabelProviderListener;
@@ -760,21 +759,26 @@ public class SelectionEditor extends EditorPart {
 			public void widgetSelected(SelectionEvent e) {
 				// TODO: Add functionality
 				try {
-					String input = "newMachine";
-					InputDialog inputDialog = new InputDialog(parent.getShell(), "Create Sub-Refinement", "Input name for new sub-refinement", input,
-							null);
-					inputDialog.setBlockOnOpen(true);
-					inputDialog.open();
-					if (inputDialog.getReturnCode() == Window.OK) {
-						input = inputDialog.getValue();
-						if (input.endsWith(".bum") || input.endsWith(".buc") || input.endsWith(".bcm") || input.endsWith(".bcc")) {
-							int end = input.lastIndexOf(".");
-							input = input.substring(0, end);
-						}
+					String machineNameInput = "newMachine";
+					boolean needNewContext = false; // TODO: get info from context selection
+					if (needNewContext) {
+						// TODO: Implement new input dialog
 					} else {
-						return;
+						MachineCreationDialog inputDialog = new MachineCreationDialog(parent.getShell());
+						inputDialog.setBlockOnOpen(true);
+						inputDialog.open();
+						if (inputDialog.getReturnCode() == Window.OK) {
+							machineNameInput = inputDialog.getMachineNameInput();
+							if (machineNameInput.endsWith(".bum") || machineNameInput.endsWith(".buc") || machineNameInput.endsWith(".bcm")
+									|| machineNameInput.endsWith(".bcc")) {
+								int end = machineNameInput.lastIndexOf(".");
+								machineNameInput = machineNameInput.substring(0, end);
+							}
+						} else {
+							return;
+						}
 					}
-					createMachineFromSelection(input);
+					createMachineFromSelection(machineNameInput);
 				} catch (RodinDBException e1) {
 					e1.printStackTrace();
 				}
