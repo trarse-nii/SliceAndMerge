@@ -437,18 +437,6 @@ public class SelectionEditor extends EditorPart {
 				EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine, machine.getVariables());
 				EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents());
 				EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine, machine.getSeenContexts());
-				// List<EventBAxiom> axes = new ArrayList<>();
-				// List<EventBConstant> consts = new ArrayList<>();
-				// for (EventBContext context : machine.getSeenContexts()) {
-				// axes.addAll(context.getAxioms());
-				// consts.addAll(context.getConstants());
-				// }
-				// EventBTreeSubcategory axioms = new
-				// EventBTreeSubcategory("Axioms", machine, axes);
-				// EventBTreeSubcategory constants = new
-				// EventBTreeSubcategory("Constants", machine, consts);
-				// EventBTreeSubcategory[] treeChildren = { invariants, axioms,
-				// variables, constants, events };
 				EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
 				treeCategories.addAll(Arrays.asList(treeChildren));
 				return treeChildren;
