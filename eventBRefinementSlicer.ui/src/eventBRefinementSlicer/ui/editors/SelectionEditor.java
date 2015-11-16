@@ -473,7 +473,8 @@ public class SelectionEditor extends EditorPart {
 						if (!contextSubcategories.containsKey(originalElement)) {
 							EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", parent, originalElement.getAxioms());
 							EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", parent, originalElement.getConstants());
-							EventBTreeSubcategory[] children = { axioms, constants };
+							EventBTreeSubcategory carrierSets = new EventBTreeSubcategory("Carrier Sets", parent, originalElement.getCarrierSets());
+							EventBTreeSubcategory[] children = { axioms, constants, carrierSets };
 							treeCategories.addAll(Arrays.asList(children));
 							contextSubcategories.put(originalElement, children);
 						}
