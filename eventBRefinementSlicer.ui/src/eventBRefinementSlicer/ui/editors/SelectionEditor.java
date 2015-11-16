@@ -57,6 +57,7 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eventb.core.IAction;
 import org.eventb.core.IAssignmentElement;
 import org.eventb.core.IAxiom;
+import org.eventb.core.ICarrierSet;
 import org.eventb.core.ICommentedElement;
 import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IConstant;
@@ -86,6 +87,7 @@ import org.rodinp.core.RodinDBException;
 
 import eventBRefinementSlicer.internal.datastructures.EventBAction;
 import eventBRefinementSlicer.internal.datastructures.EventBAxiom;
+import eventBRefinementSlicer.internal.datastructures.EventBCarrierSet;
 import eventBRefinementSlicer.internal.datastructures.EventBCondition;
 import eventBRefinementSlicer.internal.datastructures.EventBConstant;
 import eventBRefinementSlicer.internal.datastructures.EventBContext;
@@ -952,6 +954,7 @@ public class SelectionEditor extends EditorPart {
 				List<Object> checkedElementsList = new ArrayList<>(Arrays.asList(treeViewer.getCheckedElements()));
 				List<EventBAxiom> axioms = new ArrayList<>();
 				List<EventBConstant> constants = new ArrayList<>();
+				List<EventBCarrierSet> carrierSets = new ArrayList<>();
 
 				for (Object checkedElement : checkedElementsList) {
 					if (checkedElement instanceof EventBTreeSubcategory) {
@@ -962,6 +965,8 @@ public class SelectionEditor extends EditorPart {
 						axioms.add((EventBAxiom) originalElement);
 					} else if (originalElement instanceof EventBConstant) {
 						constants.add((EventBConstant) originalElement);
+					} else if (originalElement instanceof EventBCarrierSet) {
+						carrierSets.add((EventBCarrierSet) originalElement);
 					}
 				}
 
@@ -980,6 +985,11 @@ public class SelectionEditor extends EditorPart {
 				// Add selected constants to context
 				for (EventBConstant constant : constants) {
 					addRodinElement(IConstant.ELEMENT_TYPE, root, constant);
+				}
+
+				// Add selected carrier sets to context
+				for (EventBCarrierSet carrierSet : carrierSets) {
+					addRodinElement(ICarrierSet.ELEMENT_TYPE, root, carrierSet);
 				}
 
 				IExtendsContext[] extendedContextsFromOriginal = originalContext.getScContextRoot().getContextRoot().getExtendsClauses();
