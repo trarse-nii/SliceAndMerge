@@ -300,6 +300,7 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
+				treeViewer.setSubtreeChecked(event.getElement(), event.getChecked());
 				treeViewer.update(event.getElement(), null);
 				assert (event.getElement() instanceof EventBTreeElement || event.getElement() instanceof EventBTreeSubcategory);
 				if (event.getElement() instanceof EventBTreeSubcategory) {
@@ -383,6 +384,7 @@ public class SelectionEditor extends EditorPart {
 
 		treeViewer.setContentProvider(new ITreeContentProvider() {
 
+			private EventBTreeSubcategory[] treeRootCategories;
 			private Map<EventBEvent, EventBTreeSubcategory[]> eventSubcategories = new HashMap<>();
 			private Map<EventBContext, EventBTreeSubcategory[]> contextSubcategories = new HashMap<>();
 
@@ -434,13 +436,17 @@ public class SelectionEditor extends EditorPart {
 			@Override
 			public Object[] getElements(Object inputElement) {
 				EventBMachine machine = (EventBMachine) inputElement;
-				EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine, machine.getInvariants());
-				EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine, machine.getVariables());
-				EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents());
-				EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine, machine.getSeenContexts());
-				EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
-				treeCategories.addAll(Arrays.asList(treeChildren));
-				return treeChildren;
+				if (treeRootCategories == null) {
+					EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine, machine.getInvariants());
+					EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine, machine.getVariables());
+					EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents());
+					EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine, machine.getSeenContexts());
+					EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
+					treeCategories.addAll(Arrays.asList(treeChildren));
+					treeRootCategories = treeChildren;
+				}
+
+				return treeRootCategories;
 			}
 
 			@Override
