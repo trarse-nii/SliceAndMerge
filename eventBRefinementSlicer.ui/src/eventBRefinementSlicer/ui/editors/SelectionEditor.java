@@ -789,6 +789,26 @@ public class SelectionEditor extends EditorPart {
 				widgetSelected(e);
 			}
 		});
+
+		Button selectAllButton = new Button(buttonBar, SWT.PUSH);
+		selectAllButton.setText("Select All");
+		selectAllButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
+				for (Object category : categories) {
+					treeViewer.setSubtreeChecked(category, true);
+				}
+				treeViewer.refresh();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+
+			}
+		});
 	}
 
 	@Override
