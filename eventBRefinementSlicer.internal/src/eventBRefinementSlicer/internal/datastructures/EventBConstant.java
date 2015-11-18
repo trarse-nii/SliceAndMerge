@@ -21,7 +21,7 @@ public class EventBConstant extends EventBAttribute {
 
 	@Override
 	public String getType() {
-		final String type = "CONSTANT";
+		final String type = EventBTypes.CONSTANT;
 		return type;
 	}
 }

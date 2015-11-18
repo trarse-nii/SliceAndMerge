@@ -34,7 +34,7 @@ public class EventBCarrierSet extends EventBAttribute {
 		}
 		return contents;
 	}
-	
+
 	@Override
 	public ISCCarrierSet getScElement() {
 		return (ISCCarrierSet) super.getScElement();
@@ -42,7 +42,7 @@ public class EventBCarrierSet extends EventBAttribute {
 
 	@Override
 	public String getType() {
-		final String type = "CARRIER_SET";
+		final String type = EventBTypes.CARRIER_SET;
 		return type;
 	}
 

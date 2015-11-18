@@ -46,6 +46,12 @@ public abstract class EventBUnit extends EventBElement {
 		return dependencies;
 	}
 
+	@Override
+	public String getType() {
+		final String type = EventBTypes.UNIT;
+		return type;
+	}
+
 	public abstract EventBAttribute findAttributeByLabel(String label);
 
 	public abstract ITypeEnvironmentBuilder getTypeEnvironment() throws CoreException;
