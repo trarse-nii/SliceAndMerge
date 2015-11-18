@@ -128,6 +128,8 @@ public class SelectionEditor extends EditorPart {
 	private Map<EventBElement, Integer> selectionDependees = new HashMap<>();
 	private Map<EventBElement, Integer> selectionDependers = new HashMap<>();
 
+	private Map<EventBElement, EventBTreeElement> elementToTreeElementMap = new HashMap<>();
+
 	private ContainerCheckedTreeViewer treeViewer = null;
 
 	public SelectionEditor() {
@@ -369,13 +371,8 @@ public class SelectionEditor extends EditorPart {
 							}
 						}
 					}
-					for (Object category : treeCategories) {
-						EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) category;
-						EventBTreeElement treeElement = treeCategory.findTreeElement(dependency);
-						if (treeElement != null) {
-							treeViewer.update(treeElement, null);
-							break;
-						}
+					if (elementToTreeElementMap.containsKey(dependency)) {
+						treeViewer.update(elementToTreeElementMap.get(dependency), null);
 					}
 				}
 			}
@@ -570,6 +567,7 @@ public class SelectionEditor extends EditorPart {
 		public EventBTreeElement(EventBTreeSubcategory parent, EventBElement originalElement) {
 			this.parent = parent;
 			this.originalElement = originalElement;
+			elementToTreeElementMap.put(originalElement, this);
 		}
 
 		public EventBTreeSubcategory getParent() {
