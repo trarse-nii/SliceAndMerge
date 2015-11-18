@@ -108,6 +108,12 @@ public class EventBContext extends EventBUnit {
 		return scContextRoot.getFormulaFactory();
 	}
 
+	@Override
+	public String getType() {
+		final String type = EventBTypes.CONTEXT;
+		return type;
+	}
+
 	public boolean isEmpty() {
 		return (axioms.isEmpty() && constants.isEmpty());
 	}

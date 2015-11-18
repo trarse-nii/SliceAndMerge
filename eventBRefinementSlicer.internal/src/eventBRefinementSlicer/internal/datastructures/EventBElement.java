@@ -53,7 +53,7 @@ public class EventBElement {
 	}
 
 	public String getType() {
-		final String type = "ELEMENT";
+		final String type = EventBTypes.ELEMENT;
 		return type;
 	}
 

@@ -53,7 +53,7 @@ public class EventBAction extends EventBElement {
 
 	@Override
 	public String getType() {
-		final String type = "ACTION";
+		final String type = EventBTypes.ACTION;
 		return type;
 	}
 

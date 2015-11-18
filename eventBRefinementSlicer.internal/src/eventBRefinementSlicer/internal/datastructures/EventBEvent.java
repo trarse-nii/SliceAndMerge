@@ -22,8 +22,6 @@ import eventBRefinementSlicer.internal.util.SCUtil;
  */
 
 public class EventBEvent extends EventBElement {
-	protected final String TYPE = "EVENT";
-
 	private boolean isExtended = false;
 	private Convergence convergence = Convergence.ORDINARY;
 
@@ -89,7 +87,13 @@ public class EventBEvent extends EventBElement {
 	}
 
 	@Override
+	public String getType() {
+		final String type = EventBTypes.EVENT;
+		return type;
+	}
+
+	@Override
 	public String toString() {
-		return TYPE + ": " + label + " (" + comment + ")";
+		return getType() + ": " + label + " (" + comment + ")";
 	}
 }

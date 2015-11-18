@@ -126,4 +126,10 @@ public class EventBMachine extends EventBUnit {
 	public FormulaFactory getFormulaFactory() {
 		return scMachineRoot.getFormulaFactory();
 	}
+
+	@Override
+	public String getType() {
+		final String type = EventBTypes.MACHINE;
+		return type;
+	}
 }

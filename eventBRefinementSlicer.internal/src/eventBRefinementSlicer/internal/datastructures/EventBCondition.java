@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
-
 import org.eventb.core.IDerivedPredicateElement;
 import org.eventb.core.ILabeledElement;
 import org.eventb.core.ISCPredicateElement;
@@ -67,7 +66,7 @@ public class EventBCondition extends EventBElement implements Depender {
 
 	@Override
 	public String getType() {
-		final String type = "CONDITION";
+		final String type = EventBTypes.CONDITION;
 		return type;
 	}
 
@@ -81,15 +80,15 @@ public class EventBCondition extends EventBElement implements Depender {
 		Object[] array = { getLabel(), getPredicate(), getComment() };
 		return array;
 	}
-	
+
 	@Override
 	public Set<EventBAttribute> getDependees() {
 		return dependees;
 	}
-	
+
 	@Override
 	public void setDependees(Set<EventBAttribute> dependees) {
-      this.dependees = dependees;
+		this.dependees = dependees;
 	}
 
 	public Set<EventBAttribute> calculateDependees() {

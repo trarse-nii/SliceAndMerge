@@ -5,7 +5,7 @@ import org.eventb.core.IVariable;
 import org.rodinp.core.RodinDBException;
 
 public class EventBVariable extends EventBAttribute {
-	
+
 	private boolean mAbstract = false;
 
 	public EventBVariable(String label, String comment, ISCVariable scVariable, EventBUnit parent) {
@@ -30,7 +30,7 @@ public class EventBVariable extends EventBAttribute {
 
 	@Override
 	public String getType() {
-		final String type = "VARIABLE";
+		final String type = EventBTypes.VARIABLE;
 		return type;
 	}
 
