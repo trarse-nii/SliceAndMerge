@@ -20,7 +20,7 @@ public class EventBConstant extends EventBAttribute {
 	}
 
 	@Override
-	protected String getType() {
+	public String getType() {
 		final String type = "CONSTANT";
 		return type;
 	}

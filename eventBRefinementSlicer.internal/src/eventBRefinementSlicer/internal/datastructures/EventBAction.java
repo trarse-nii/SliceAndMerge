@@ -52,7 +52,7 @@ public class EventBAction extends EventBElement {
 	}
 
 	@Override
-	protected String getType() {
+	public String getType() {
 		final String type = "ACTION";
 		return type;
 	}

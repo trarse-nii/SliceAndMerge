@@ -41,7 +41,7 @@ public class EventBCarrierSet extends EventBAttribute {
 	}
 
 	@Override
-	protected String getType() {
+	public String getType() {
 		final String type = "CARRIER_SET";
 		return type;
 	}

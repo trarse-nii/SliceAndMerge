@@ -48,7 +48,7 @@ public class EventBAttribute extends EventBElement implements Depender {
 	}
 
 	@Override
-	protected String getType() {
+	public String getType() {
 		final String type = "ATTRIBUTE";
 		return type;
 	}
