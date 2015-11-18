@@ -3,7 +3,6 @@ package eventBRefinementSlicer.ui.editors;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -96,6 +95,7 @@ import eventBRefinementSlicer.internal.datastructures.EventBEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBGuard;
 import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
 import eventBRefinementSlicer.internal.datastructures.EventBMachine;
+import eventBRefinementSlicer.internal.datastructures.EventBTypes;
 import eventBRefinementSlicer.internal.datastructures.EventBUnit;
 import eventBRefinementSlicer.internal.datastructures.EventBVariable;
 import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
@@ -123,7 +123,7 @@ public class SelectionEditor extends EditorPart {
 	private IMachineRoot machineRoot;
 	private EventBMachine machine;
 
-	private Set<EventBTreeSubcategory> treeCategories = new HashSet<>();
+	private Map<String, EventBTreeSubcategory> treeCategories = new HashMap<>();
 
 	private Map<EventBElement, Integer> selectionDependees = new HashMap<>();
 	private Map<EventBElement, Integer> selectionDependers = new HashMap<>();
@@ -371,9 +371,7 @@ public class SelectionEditor extends EditorPart {
 							}
 						}
 					}
-					if (elementToTreeElementMap.containsKey(dependency)) {
-						treeViewer.update(elementToTreeElementMap.get(dependency), null);
-					}
+					treeViewer.update(findTreeElement(dependency, false), null);
 				}
 			}
 
@@ -439,7 +437,7 @@ public class SelectionEditor extends EditorPart {
 					EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents());
 					EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine, machine.getSeenContexts());
 					EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
-					treeCategories.addAll(Arrays.asList(treeChildren));
+					addCategories(treeChildren);
 					treeRootCategories = treeChildren;
 				}
 
@@ -466,7 +464,7 @@ public class SelectionEditor extends EditorPart {
 							EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent, originalElement.getGuards());
 							EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent, originalElement.getActions());
 							EventBTreeSubcategory[] children = { guards, actions };
-							treeCategories.addAll(Arrays.asList(children));
+							addCategories(children);
 							eventSubcategories.put(originalElement, children);
 						}
 						return eventSubcategories.get(originalElement);
@@ -479,7 +477,7 @@ public class SelectionEditor extends EditorPart {
 							EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", parent, originalElement.getConstants());
 							EventBTreeSubcategory carrierSets = new EventBTreeSubcategory("Carrier Sets", parent, originalElement.getCarrierSets());
 							EventBTreeSubcategory[] children = { axioms, constants, carrierSets };
-							treeCategories.addAll(Arrays.asList(children));
+							addCategories(children);
 							contextSubcategories.put(originalElement, children);
 						}
 						return contextSubcategories.get(originalElement);
@@ -819,6 +817,60 @@ public class SelectionEditor extends EditorPart {
 	public void setFocus() {
 		// TODO Auto-generated method stub
 
+	}
+
+	private EventBTreeElement findTreeElement(EventBElement element, boolean expand) {
+		EventBTreeElement treeElement = null;
+		if (!expand && elementToTreeElementMap.containsKey(element)) {
+			return elementToTreeElementMap.get(element);
+		}
+
+		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
+
+		switch (element.getType()) {
+		case EventBTypes.INVARIANT:
+			treeViewer.expandToLevel(treeCategories.get("Invariants"), 1);
+			treeElement = elementToTreeElementMap.get(element);
+			return treeElement;
+		case EventBTypes.VARIABLE:
+			treeViewer.expandToLevel(treeCategories.get("Variables"), 1);
+			return elementToTreeElementMap.get(element);
+		case EventBTypes.CONSTANT:
+			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
+			for (EventBTreeElement treeContext : treeContexts.getChildren()) {
+				assert treeContext.getOriginalElement() instanceof EventBContext;
+				EventBContext context = (EventBContext) treeContext.getOriginalElement();
+				if (!context.getConstants().contains(element)) {
+					continue;
+				}
+				if (expand) {
+					treeViewer.expandToLevel(treeContext, 1);
+				}
+				Object[] childrenOfContext = contentProvider.getChildren(treeContext);
+				for (Object child : childrenOfContext) {
+					assert child instanceof EventBTreeSubcategory;
+					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
+					if (subcategory.getLabel() == "Constants") {
+						if (expand) {
+							treeViewer.expandToLevel(subcategory, 1);
+							packColumns();
+						}
+						return elementToTreeElementMap.get(element);
+					}
+				}
+
+			}
+		default:
+			break;
+		}
+
+		return treeElement;
+	}
+
+	private void addCategories(EventBTreeSubcategory[] categories) {
+		for (EventBTreeSubcategory category : categories) {
+			treeCategories.put(category.getLabel(), category);
+		}
 	}
 
 	private void createMachineFromSelection(String machineName) throws RodinDBException {
