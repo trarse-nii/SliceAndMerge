@@ -29,7 +29,7 @@ public class EventBVariable extends EventBAttribute {
 	}
 
 	@Override
-	protected String getType() {
+	public String getType() {
 		final String type = "VARIABLE";
 		return type;
 	}

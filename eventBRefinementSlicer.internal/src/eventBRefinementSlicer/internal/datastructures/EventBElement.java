@@ -52,7 +52,7 @@ public class EventBElement {
 		return scElement;
 	}
 
-	protected String getType() {
+	public String getType() {
 		final String type = "ELEMENT";
 		return type;
 	}

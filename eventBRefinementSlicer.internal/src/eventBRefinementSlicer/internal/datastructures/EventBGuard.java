@@ -43,7 +43,7 @@ public class EventBGuard extends EventBCondition {
 	}
 
 	@Override
-	protected String getType() {
+	public String getType() {
 		final String type = "GUARD";
 		return type;
 	}

@@ -26,7 +26,7 @@ public class EventBInvariant extends EventBCondition {
 	}
 
 	@Override
-	protected String getType() {
+	public String getType() {
 		final String type = "INVARIANT";
 		return type;
 	}
