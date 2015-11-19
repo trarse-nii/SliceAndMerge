@@ -556,6 +556,50 @@ public class SelectionEditor extends EditorPart {
 			return label;
 		}
 
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getOuterType().hashCode();
+			result = prime * result + ((label == null) ? 0 : label.hashCode());
+			result = prime * result + ((parentElement == null) ? 0 : parentElement.hashCode());
+			result = prime * result + ((parentUnit == null) ? 0 : parentUnit.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			EventBTreeSubcategory other = (EventBTreeSubcategory) obj;
+			if (!getOuterType().equals(other.getOuterType()))
+				return false;
+			if (label == null) {
+				if (other.label != null)
+					return false;
+			} else if (!label.equals(other.label))
+				return false;
+			if (parentElement == null) {
+				if (other.parentElement != null)
+					return false;
+			} else if (!parentElement.equals(other.parentElement))
+				return false;
+			if (parentUnit == null) {
+				if (other.parentUnit != null)
+					return false;
+			} else if (!parentUnit.equals(other.parentUnit))
+				return false;
+			return true;
+		}
+
+		private SelectionEditor getOuterType() {
+			return SelectionEditor.this;
+		}
+
 	}
 
 	class EventBTreeElement {
@@ -579,6 +623,38 @@ public class SelectionEditor extends EditorPart {
 		@Override
 		public String toString() {
 			return originalElement.toString();
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getOuterType().hashCode();
+			result = prime * result + ((originalElement == null) ? 0 : originalElement.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			EventBTreeElement other = (EventBTreeElement) obj;
+			if (!getOuterType().equals(other.getOuterType()))
+				return false;
+			if (originalElement == null) {
+				if (other.originalElement != null)
+					return false;
+			} else if (!originalElement.equals(other.originalElement))
+				return false;
+			return true;
+		}
+
+		private SelectionEditor getOuterType() {
+			return SelectionEditor.this;
 		}
 
 	}
@@ -811,6 +887,27 @@ public class SelectionEditor extends EditorPart {
 
 			}
 		});
+
+		Button selectAllDependenciesButton = new Button(buttonBar, SWT.PUSH);
+		selectAllDependenciesButton.setText("Select All Dependencies");
+		selectAllDependenciesButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				for (EventBElement dependee : selectionDependees.keySet()) {
+					EventBTreeElement element = findTreeElement(dependee, true);
+					if (element != null) {
+						treeViewer.setChecked(element, true);
+					}
+				}
+				treeViewer.refresh();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+			}
+		});
 	}
 
 	@Override
@@ -835,7 +932,7 @@ public class SelectionEditor extends EditorPart {
 		case EventBTypes.VARIABLE:
 			treeViewer.expandToLevel(treeCategories.get("Variables"), 1);
 			return elementToTreeElementMap.get(element);
-		case EventBTypes.CONSTANT:
+		case EventBTypes.CONSTANT: {
 			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
 			for (EventBTreeElement treeContext : treeContexts.getChildren()) {
 				assert treeContext.getOriginalElement() instanceof EventBContext;
@@ -858,8 +955,33 @@ public class SelectionEditor extends EditorPart {
 						return elementToTreeElementMap.get(element);
 					}
 				}
-
 			}
+		}
+		case EventBTypes.AXIOM: {
+			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
+			for (EventBTreeElement treeContext : treeContexts.getChildren()) {
+				assert treeContext.getOriginalElement() instanceof EventBContext;
+				EventBContext context = (EventBContext) treeContext.getOriginalElement();
+				if (!context.getAxioms().contains(element)) {
+					continue;
+				}
+				if (expand) {
+					treeViewer.expandToLevel(treeContext, 1);
+				}
+				Object[] childrenOfContext = contentProvider.getChildren(treeContext);
+				for (Object child : childrenOfContext) {
+					assert child instanceof EventBTreeSubcategory;
+					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
+					if (subcategory.getLabel() == "Axioms") {
+						if (expand) {
+							treeViewer.expandToLevel(subcategory, 1);
+							packColumns();
+						}
+						return elementToTreeElementMap.get(element);
+					}
+				}
+			}
+		}
 		default:
 			break;
 		}
