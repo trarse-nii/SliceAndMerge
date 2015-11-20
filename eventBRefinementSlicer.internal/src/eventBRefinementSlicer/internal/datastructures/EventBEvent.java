@@ -69,6 +69,13 @@ public class EventBEvent extends EventBElement {
 		return actions;
 	}
 
+	public boolean containsElement(EventBElement element) {
+		if (guards.contains(element) || actions.contains(element)) {
+			return true;
+		}
+		return false;
+	}
+
 	@Override
 	public ISCEvent getScElement() {
 		return (ISCEvent) scElement;
