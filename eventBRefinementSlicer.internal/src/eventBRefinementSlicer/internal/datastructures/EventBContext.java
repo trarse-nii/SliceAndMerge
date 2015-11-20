@@ -79,6 +79,13 @@ public class EventBContext extends EventBUnit {
 		return axioms;
 	}
 
+	public boolean containsElement(EventBElement element) {
+		if (constants.contains(element) || axioms.contains(element) || carrierSets.contains(element)) {
+			return true;
+		}
+		return false;
+	}
+
 	public ISCContextRoot getScContextRoot() {
 		return scContextRoot;
 	}
