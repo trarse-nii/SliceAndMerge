@@ -932,12 +932,19 @@ public class SelectionEditor extends EditorPart {
 		case EventBTypes.VARIABLE:
 			treeViewer.expandToLevel(treeCategories.get("Variables"), 1);
 			return elementToTreeElementMap.get(element);
-		case EventBTypes.CONSTANT: {
+		case EventBTypes.CONTEXT: {
+			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
+			treeViewer.expandToLevel(treeContexts, 1);
+			return elementToTreeElementMap.get(element);
+		}
+		case EventBTypes.CONSTANT:
+		case EventBTypes.AXIOM:
+		case EventBTypes.CARRIER_SET: {
 			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
 			for (EventBTreeElement treeContext : treeContexts.getChildren()) {
 				assert treeContext.getOriginalElement() instanceof EventBContext;
 				EventBContext context = (EventBContext) treeContext.getOriginalElement();
-				if (!context.getConstants().contains(element)) {
+				if (!context.containsElement(element)) {
 					continue;
 				}
 				if (expand) {
@@ -947,7 +954,15 @@ public class SelectionEditor extends EditorPart {
 				for (Object child : childrenOfContext) {
 					assert child instanceof EventBTreeSubcategory;
 					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
-					if (subcategory.getLabel() == "Constants") {
+					String label = "";
+					if (element.getType().equals(EventBTypes.CONSTANT)) {
+						label = "Constants";
+					} else if (element.getType().equals(EventBTypes.AXIOM)) {
+						label = "Axioms";
+					} else if (element.getType().equals(EventBTypes.CARRIER_SET)) {
+						label = "Carrier Sets";
+					}
+					if (subcategory.getLabel().equals(label)) {
 						if (expand) {
 							treeViewer.expandToLevel(subcategory, 1);
 							packColumns();
@@ -957,22 +972,34 @@ public class SelectionEditor extends EditorPart {
 				}
 			}
 		}
-		case EventBTypes.AXIOM: {
-			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
-			for (EventBTreeElement treeContext : treeContexts.getChildren()) {
-				assert treeContext.getOriginalElement() instanceof EventBContext;
-				EventBContext context = (EventBContext) treeContext.getOriginalElement();
-				if (!context.getAxioms().contains(element)) {
+		case EventBTypes.EVENT: {
+			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
+			treeViewer.expandToLevel(treeEvents, 1);
+			return elementToTreeElementMap.get(element);
+		}
+		case EventBTypes.GUARD:
+		case EventBTypes.ACTION: {
+			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
+			for (EventBTreeElement treeEvent : treeEvents.getChildren()) {
+				assert treeEvent.getOriginalElement() instanceof EventBEvent;
+				EventBEvent event = (EventBEvent) treeEvent.getOriginalElement();
+				if (!event.containsElement(element)) {
 					continue;
 				}
 				if (expand) {
-					treeViewer.expandToLevel(treeContext, 1);
+					treeViewer.expandToLevel(treeEvent, 1);
 				}
-				Object[] childrenOfContext = contentProvider.getChildren(treeContext);
-				for (Object child : childrenOfContext) {
+				Object[] childrenofContext = contentProvider.getChildren(treeEvent);
+				for (Object child : childrenofContext) {
 					assert child instanceof EventBTreeSubcategory;
 					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
-					if (subcategory.getLabel() == "Axioms") {
+					String label = "";
+					if (element.getType().equals(EventBTypes.GUARD)) {
+						label = "Guards";
+					} else if (element.getType().equals(EventBTypes.ACTION)) {
+						label = "Actions";
+					}
+					if (subcategory.getLabel().equals(label)) {
 						if (expand) {
 							treeViewer.expandToLevel(subcategory, 1);
 							packColumns();
