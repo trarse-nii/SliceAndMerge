@@ -123,6 +123,7 @@ public class SelectionEditor extends EditorPart {
 	private IMachineRoot machineRoot;
 	private EventBMachine machine;
 
+	// TODO: Replace with something more reasonable. Or get rid of it altogether.
 	private Map<String, EventBTreeSubcategory> treeCategories = new HashMap<>();
 
 	private Map<EventBElement, Integer> selectionDependees = new HashMap<>();
@@ -303,7 +304,7 @@ public class SelectionEditor extends EditorPart {
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				treeViewer.setSubtreeChecked(event.getElement(), event.getChecked());
-				treeViewer.update(event.getElement(), null);
+				updateElement(event.getElement());
 				assert (event.getElement() instanceof EventBTreeElement || event.getElement() instanceof EventBTreeSubcategory);
 				if (event.getElement() instanceof EventBTreeSubcategory) {
 					handleChildren(((EventBTreeSubcategory) event.getElement()), event);
@@ -319,7 +320,7 @@ public class SelectionEditor extends EditorPart {
 
 			private void handleChildren(EventBTreeSubcategory category, CheckStateChangedEvent event) {
 				for (EventBTreeElement child : category.getChildren()) {
-					treeViewer.update(child, null);
+					updateElement(child);
 					handleSelectionDependenciesForElement(child, machine.getDependencies(), event);
 					if (child.getOriginalElement() instanceof EventBEvent || child.getOriginalElement() instanceof EventBContext) {
 						handleEventOrContextChildren(child, event);
@@ -336,7 +337,7 @@ public class SelectionEditor extends EditorPart {
 				for (Object childObject : contentProvider.getChildren(eventElement)) {
 					assert childObject instanceof EventBTreeSubcategory;
 					EventBTreeSubcategory child = (EventBTreeSubcategory) childObject;
-					treeViewer.update(child, null);
+					updateElement(child);
 					handleChildren(child, event);
 				}
 			}
@@ -371,7 +372,7 @@ public class SelectionEditor extends EditorPart {
 							}
 						}
 					}
-					treeViewer.update(findTreeElement(dependency, false), null);
+					updateElement(findTreeElement(dependency, false));
 				}
 			}
 
@@ -490,6 +491,25 @@ public class SelectionEditor extends EditorPart {
 		treeViewer.setInput(machine);
 
 		this.treeViewer = treeViewer;
+	}
+
+	/*
+	 * We update both the element and all of its parents, just in case.
+	 */
+	private void updateElement(Object element) {
+		treeViewer.update(element, null);
+		if (element instanceof EventBTreeElement) {
+			EventBTreeElement treeElement = (EventBTreeElement) element;
+			if (treeElement.getParent() != null) {
+				updateElement(treeElement.getParent());
+			}
+		}
+		if (element instanceof EventBTreeSubcategory) {
+			EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) element;
+			if (treeCategory.getParentElement() != null) {
+				updateElement(treeCategory.getParentElement());
+			}
+		}
 	}
 
 	class EventBTreeSubcategory {
