@@ -303,77 +303,7 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
-				treeViewer.setSubtreeChecked(event.getElement(), event.getChecked());
-				updateElement(event.getElement());
-				assert (event.getElement() instanceof EventBTreeElement || event.getElement() instanceof EventBTreeSubcategory);
-				if (event.getElement() instanceof EventBTreeSubcategory) {
-					handleChildren(((EventBTreeSubcategory) event.getElement()), event);
-					return;
-				}
-				EventBDependencies dependencies = machine.getDependencies();
-				handleSelectionDependenciesForElement((EventBTreeElement) event.getElement(), dependencies, event);
-				if (((EventBTreeElement) event.getElement()).getOriginalElement() instanceof EventBEvent
-						|| ((EventBTreeElement) event.getElement()).getOriginalElement() instanceof EventBContext) {
-					handleEventOrContextChildren((EventBTreeElement) event.getElement(), event);
-				}
-			}
-
-			private void handleChildren(EventBTreeSubcategory category, CheckStateChangedEvent event) {
-				for (EventBTreeElement child : category.getChildren()) {
-					updateElement(child);
-					handleSelectionDependenciesForElement(child, machine.getDependencies(), event);
-					if (child.getOriginalElement() instanceof EventBEvent || child.getOriginalElement() instanceof EventBContext) {
-						handleEventOrContextChildren(child, event);
-					}
-				}
-			}
-
-			private void handleEventOrContextChildren(EventBTreeElement eventElement, CheckStateChangedEvent event) {
-				assert (eventElement.getOriginalElement() instanceof EventBEvent || eventElement.getOriginalElement() instanceof EventBContext);
-				ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
-				if (!contentProvider.hasChildren(eventElement)) {
-					return;
-				}
-				for (Object childObject : contentProvider.getChildren(eventElement)) {
-					assert childObject instanceof EventBTreeSubcategory;
-					EventBTreeSubcategory child = (EventBTreeSubcategory) childObject;
-					updateElement(child);
-					handleChildren(child, event);
-				}
-			}
-
-			private void handleSelectionDependenciesForElement(EventBTreeElement element, EventBDependencies dependencies,
-					CheckStateChangedEvent event) {
-				EventBElement eventBElement = element.getOriginalElement();
-				Set<EventBElement> dependees = dependencies.getDependeesForElement(eventBElement);
-				Set<EventBElement> dependers = dependencies.getDependersForElement(eventBElement);
-				handleSingleDependencyDirection(dependees, event, true);
-				handleSingleDependencyDirection(dependers, event, false);
-			}
-
-			private void handleSingleDependencyDirection(Set<EventBElement> dependencySet, CheckStateChangedEvent event, boolean dependeeSet) {
-				Map<EventBElement, Integer> dependencyMap;
-				if (dependeeSet) {
-					dependencyMap = selectionDependees;
-				} else {
-					dependencyMap = selectionDependers;
-				}
-				for (EventBElement dependency : dependencySet) {
-					if (event.getChecked()) {
-						if (!dependencyMap.containsKey(dependency)) {
-							dependencyMap.put(dependency, 0);
-						}
-						dependencyMap.put(dependency, dependencyMap.get(dependency) + 1);
-					} else {
-						if (dependencyMap.containsKey(dependency)) {
-							dependencyMap.put(dependency, dependencyMap.get(dependency) - 1);
-							if (dependencyMap.get(dependency).intValue() <= 0) {
-								dependencyMap.remove(dependency);
-							}
-						}
-					}
-					updateElement(findTreeElement(dependency, false));
-				}
+				setCheckedElement(event.getElement(), event.getChecked());
 			}
 
 		});
@@ -491,6 +421,57 @@ public class SelectionEditor extends EditorPart {
 		treeViewer.setInput(machine);
 
 		this.treeViewer = treeViewer;
+	}
+
+	private void setCheckedElement(Object element, boolean checked) {
+		treeViewer.setSubtreeChecked(element, checked);
+		updateElement(element);
+
+		//
+
+		// Get dependency information and add it to the local maps
+		if (element instanceof EventBTreeElement) {
+			EventBDependencies dependencies = machine.getDependencies();
+			Set<EventBElement> dependees = dependencies.getDependeesForElement(((EventBTreeElement) element).getOriginalElement());
+			for (EventBElement dependee : dependees) {
+				updateSelectionDependency(dependee, true, checked);
+			}
+			Set<EventBElement> dependers = dependencies.getDependersForElement(((EventBTreeElement) element).getOriginalElement());
+			for (EventBElement depender : dependers) {
+				updateSelectionDependency(depender, false, checked);
+			}
+		}
+
+		// Update selected children and update their dependencies
+		handleChildren(element, checked);
+
+	}
+
+	private void handleChildren(Object parent, boolean checked) {
+		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
+		if (!contentProvider.hasChildren(parent)) {
+			return;
+		}
+		for (Object child : contentProvider.getChildren(parent)) {
+			setCheckedElement(child, checked);
+		}
+	}
+
+	private void updateSelectionDependency(EventBElement dependecy, boolean dependee, boolean increase) {
+		Map<EventBElement, Integer> dependencyMap;
+		if (dependee) {
+			dependencyMap = selectionDependees;
+		} else {
+			dependencyMap = selectionDependers;
+		}
+		int count = dependencyMap.containsKey(dependecy) ? dependencyMap.get(dependecy) : 0;
+		count += increase ? 1 : -1;
+		if (count > 0) {
+			dependencyMap.put(dependecy, count);
+		} else {
+			dependencyMap.remove(dependecy);
+		}
+		updateElement(findTreeElement(dependecy, false));
 	}
 
 	/*
