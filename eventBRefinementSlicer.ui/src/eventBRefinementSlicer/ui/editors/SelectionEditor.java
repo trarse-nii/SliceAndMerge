@@ -877,7 +877,7 @@ public class SelectionEditor extends EditorPart {
 			public void widgetSelected(SelectionEvent e) {
 				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
 				for (Object category : categories) {
-					treeViewer.setSubtreeChecked(category, true);
+					setCheckedElement(category, true);
 				}
 				treeViewer.refresh();
 			}
@@ -898,7 +898,7 @@ public class SelectionEditor extends EditorPart {
 				for (EventBElement dependee : selectionDependees.keySet()) {
 					EventBTreeElement element = findTreeElement(dependee, true);
 					if (element != null) {
-						treeViewer.setChecked(element, true);
+						setCheckedElement(element, true);
 					}
 				}
 				treeViewer.refresh();
