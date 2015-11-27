@@ -93,6 +93,11 @@ public class MachineCreationDialog extends Dialog {
 	}
 
 	public String getMachineNameInput() {
+		if (machineNameInput.endsWith(".bum") || machineNameInput.endsWith(".buc") || machineNameInput.endsWith(".bcm")
+				|| machineNameInput.endsWith(".bcc")) {
+			int end = machineNameInput.lastIndexOf(".");
+			machineNameInput = machineNameInput.substring(0, end);
+		}
 		return machineNameInput;
 	}
 

@@ -848,11 +848,6 @@ public class SelectionEditor extends EditorPart {
 						inputDialog.open();
 						if (inputDialog.getReturnCode() == Window.OK) {
 							machineNameInput = inputDialog.getMachineNameInput();
-							if (machineNameInput.endsWith(".bum") || machineNameInput.endsWith(".buc") || machineNameInput.endsWith(".bcm")
-									|| machineNameInput.endsWith(".bcc")) {
-								int end = machineNameInput.lastIndexOf(".");
-								machineNameInput = machineNameInput.substring(0, end);
-							}
 						} else {
 							return;
 						}
