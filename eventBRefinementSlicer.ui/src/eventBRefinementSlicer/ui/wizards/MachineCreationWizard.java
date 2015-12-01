@@ -1,7 +1,9 @@
 package eventBRefinementSlicer.ui.wizards;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -51,6 +53,7 @@ import eventBRefinementSlicer.internal.datastructures.EventBElement;
 import eventBRefinementSlicer.internal.datastructures.EventBEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBGuard;
 import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
+import eventBRefinementSlicer.internal.datastructures.EventBTypes;
 import eventBRefinementSlicer.internal.datastructures.EventBVariable;
 import eventBRefinementSlicer.ui.editors.SelectionEditor.EventBTreeElement;
 import eventBRefinementSlicer.ui.editors.SelectionEditor.EventBTreeSubcategory;
@@ -59,33 +62,54 @@ public class MachineCreationWizard extends Wizard {
 
 	private IRodinProject rodinProject;
 	private IMachineRoot originalMachineRoot;
-	private List<Object> selectedElements;
-	private List<Object> partiallySelectedElements;
+	private Object[] selectedElements;
 
-	private MachineNamingWizardPage namingPage;
+	private List<EventBContext> partiallySelectedContexts = new ArrayList<>();
+
+	private Map<EventBContext, ContextNamingWizardPage> contextNamingPageMap = new HashMap<>();
+
+	private MachineNamingWizardPage machineNamingPage;
 
 	private String machineName;
 
-	public MachineCreationWizard(IRodinProject rodinProject, IMachineRoot originalMachineRoot, List<Object> selectedElements,
-			List<Object> partiallySelectedElements) {
+	public MachineCreationWizard(IRodinProject rodinProject, IMachineRoot originalMachineRoot, Object[] selectedElements,
+			Object[] partiallySelectedElements) {
 		super();
 		this.rodinProject = rodinProject;
 		this.originalMachineRoot = originalMachineRoot;
 		this.selectedElements = selectedElements;
-		this.partiallySelectedElements = partiallySelectedElements;
+
+		for (Object element : partiallySelectedElements) {
+			if (element instanceof EventBTreeSubcategory) {
+				continue;
+			}
+			EventBElement eventBElement = ((EventBTreeElement) element).getOriginalElement();
+			if (eventBElement.getType().equals(EventBTypes.CONTEXT)) {
+				partiallySelectedContexts.add((EventBContext) eventBElement);
+			}
+		}
 	}
 
 	@Override
 	public void addPages() {
-		namingPage = new MachineNamingWizardPage();
-		addPage(namingPage);
+		machineNamingPage = new MachineNamingWizardPage();
+		addPage(machineNamingPage);
+		for (EventBContext context : partiallySelectedContexts) {
+			ContextNamingWizardPage contextNamingPage = new ContextNamingWizardPage(context);
+			contextNamingPageMap.put(context, contextNamingPage);
+			addPage(contextNamingPage);
+		}
 	}
 
 	@Override
 	public boolean performFinish() {
 
-		namingPage.finish();
-		machineName = namingPage.getMachineNameInput();
+		machineNamingPage.finish();
+		machineName = machineNamingPage.getMachineNameInput();
+
+		for (ContextNamingWizardPage contextNamingPage : contextNamingPageMap.values()) {
+			contextNamingPage.finish();
+		}
 
 		try {
 			createMachineFromSelection(machineName);
@@ -102,7 +126,7 @@ public class MachineCreationWizard extends Wizard {
 		List<EventBGuard> guards = new ArrayList<>();
 		List<EventBAction> actions = new ArrayList<>();
 		List<EventBContext> contexts = new ArrayList<>();
-		List<EventBContext> partialContexts = new ArrayList<>();
+		List<EventBContext> partialContexts = partiallySelectedContexts;
 
 		for (Object checkedElement : selectedElements) {
 			if (checkedElement instanceof EventBTreeSubcategory) {
@@ -122,9 +146,7 @@ public class MachineCreationWizard extends Wizard {
 			} else if (element instanceof EventBContext) {
 				// We only add completely checked Contexts (no partial
 				// selections)
-				if (partiallySelectedElements.contains(element)) {
-					partialContexts.add((EventBContext) element);
-				} else {
+				if (!partiallySelectedContexts.contains(element)) {
 					contexts.add((EventBContext) element);
 				}
 			}
@@ -209,7 +231,8 @@ public class MachineCreationWizard extends Wizard {
 					if (alreadyIncluded) {
 						continue;
 					}
-					createSeenContext("TestName", context, root);
+					String newContextName = contextNamingPageMap.get(context).getContextNameInput();
+					createSeenContext(newContextName, context, root);
 
 				}
 

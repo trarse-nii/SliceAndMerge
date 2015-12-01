@@ -1,7 +1,6 @@
 package eventBRefinementSlicer.ui.editors;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -811,7 +810,7 @@ public class SelectionEditor extends EditorPart {
 					// TODO: Implement new input dialog
 				} else {
 					WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MachineCreationWizard(rodinFile.getRodinProject(),
-							machineRoot, Arrays.asList(treeViewer.getCheckedElements()), Arrays.asList(treeViewer.getGrayedElements())));
+							machineRoot, treeViewer.getCheckedElements(), treeViewer.getGrayedElements()));
 
 					wizardDialog.setBlockOnOpen(true);
 					wizardDialog.open();
