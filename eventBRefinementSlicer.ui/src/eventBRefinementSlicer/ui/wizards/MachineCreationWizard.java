@@ -95,7 +95,7 @@ public class MachineCreationWizard extends Wizard {
 		machineNamingPage = new MachineNamingWizardPage();
 		addPage(machineNamingPage);
 		for (EventBContext context : partiallySelectedContexts) {
-			ContextNamingWizardPage contextNamingPage = new ContextNamingWizardPage(context);
+			ContextNamingWizardPage contextNamingPage = new ContextNamingWizardPage(context, selectedElements);
 			contextNamingPageMap.put(context, contextNamingPage);
 			addPage(contextNamingPage);
 		}
