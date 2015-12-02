@@ -20,12 +20,24 @@ import org.rodinp.core.RodinDBException;
 
 import eventBRefinementSlicer.internal.util.SCUtil;
 
+/**
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBContext extends EventBUnit {
 
 	private List<EventBCarrierSet> carrierSets = new ArrayList<>();
 	private List<EventBConstant> constants = new ArrayList<>();
 	private List<EventBAxiom> axioms = new ArrayList<>();
 	private ISCContextRoot scContextRoot = null;
+
+	/**
+	 * Creates an empty context. Not recommended.
+	 */
+	public EventBContext() {
+		// Intentionally left empty.
+	}
 
 	public EventBContext(IContextRoot contextRoot) throws RodinDBException {
 		this.scContextRoot = SCUtil.makeStaticCheckedContext(contextRoot);
@@ -69,6 +81,18 @@ public class EventBContext extends EventBUnit {
 
 	public List<EventBCarrierSet> getCarrierSets() {
 		return carrierSets;
+	}
+
+	public void addCarrierSet(EventBCarrierSet carrierSet) {
+		carrierSets.add(carrierSet);
+	}
+
+	public void addConstant(EventBConstant constant) {
+		constants.add(constant);
+	}
+
+	public void addAxiom(EventBAxiom axiom) {
+		axioms.add(axiom);
 	}
 
 	public List<EventBConstant> getConstants() {
