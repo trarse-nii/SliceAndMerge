@@ -36,16 +36,18 @@ import eventBRefinementSlicer.internal.datastructures.EventBTypes;
 public class PreviewTableViewerFactory {
 
 	private static final String LABEL_ELEMENT = "Element";
+	private static final String LABEL_TYPE = "Type";
 	private static final String LABEL_CONTENT = "Content";
 	private static final String LABEL_SPECIAL = "Special";
 	private static final String LABEL_COMMENT = "Comment";
 
 	private static final int ELEMENT_COLUMN = 0;
-	private static final int CONTENT_COLUMN = 1;
-	private static final int SPECIAL_COLUMN = 2;
-	private static final int COMMENT_COLUMN = 3;
+	private static final int TYPE_COLUMN = 1;
+	private static final int CONTENT_COLUMN = 2;
+	private static final int SPECIAL_COLUMN = 3;
+	private static final int COMMENT_COLUMN = 4;
 
-	private static String[] titles = { LABEL_ELEMENT, LABEL_CONTENT, LABEL_SPECIAL, LABEL_COMMENT };
+	private static String[] titles = { LABEL_ELEMENT, LABEL_TYPE, LABEL_CONTENT, LABEL_SPECIAL, LABEL_COMMENT };
 
 	private static final PreviewTableViewerFactory instance = new PreviewTableViewerFactory();
 
@@ -220,6 +222,18 @@ public class PreviewTableViewerFactory {
 			switch (columnIndex) {
 			case ELEMENT_COLUMN:
 				return eventBElement.getLabel();
+			case TYPE_COLUMN:
+				switch (eventBElement.getType()) {
+				case EventBTypes.AXIOM:
+					return "Axiom";
+				case EventBTypes.CONSTANT:
+					return "Constant";
+				case EventBTypes.CARRIER_SET:
+					return "Carrier Set";
+					// TODO: Implement other types if needed.
+				default:
+					return null;
+				}
 			case CONTENT_COLUMN:
 				if (eventBElement instanceof EventBCondition) {
 					return ((EventBCondition) eventBElement).getPredicate();
