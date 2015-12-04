@@ -75,7 +75,7 @@ public class ContextNamingWizardPage extends WizardPage {
 		previewTableFactory.createTableViewer(composite, newContext);
 
 		setControl(composite);
-		setPageComplete(true);
+		setPageComplete(false);
 	}
 
 	protected int getInputTextStyle() {
@@ -128,6 +128,7 @@ public class ContextNamingWizardPage extends WizardPage {
 			contextInputText.setFocus();
 			contextInputText.setText(contextNameInput);
 			contextInputText.selectAll();
+			setPageComplete(true);
 		}
 	}
 
