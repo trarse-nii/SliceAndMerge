@@ -1,7 +1,6 @@
 package eventBRefinementSlicer.ui.wizards;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -28,14 +27,13 @@ public class ContextNamingWizardPage extends WizardPage {
 	private static String title = "Create Sub-Refinement";
 	private static String description = "Enter a name for newly derived context";
 	private String labelMessage = "Enter name ";
+	private String previewLabelMessage = "Selected elements from original context:";
 	private String contextNameInput = "newContext";
 
 	private EventBContext originalContext;
 	private Object[] selectedElements;
 
 	private Text contextInputText;
-
-	private TableViewer previewTableViewer;
 
 	public ContextNamingWizardPage(EventBContext originalContext, Object[] selectedElements) {
 		super(title);
@@ -65,7 +63,7 @@ public class ContextNamingWizardPage extends WizardPage {
 		contextInputText.setLayoutData(new GridData(GridData.GRAB_HORIZONTAL | GridData.HORIZONTAL_ALIGN_FILL));
 
 		label = new Label(composite, SWT.WRAP);
-		label.setText("Preview:");
+		label.setText(previewLabelMessage);
 		layoutData = new GridData(SWT.FILL, SWT.BEGINNING, true, false);
 		layoutData.widthHint = convertHorizontalDLUsToPixels(IDialogConstants.MINIMUM_MESSAGE_AREA_WIDTH);
 		label.setLayoutData(layoutData);
@@ -74,7 +72,7 @@ public class ContextNamingWizardPage extends WizardPage {
 		EventBContext newContext = generateNewContext();
 
 		PreviewTableViewerFactory previewTableFactory = PreviewTableViewerFactory.getInstance();
-		previewTableViewer = previewTableFactory.createTableViewer(composite, newContext);
+		previewTableFactory.createTableViewer(composite, newContext);
 
 		setControl(composite);
 		setPageComplete(true);
