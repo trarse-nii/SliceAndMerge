@@ -3,11 +3,13 @@ package eventBRefinementSlicer.internal.analyzers;
 import java.util.HashSet;
 import java.util.Set;
 
+import eventBRefinementSlicer.internal.Depender;
+import eventBRefinementSlicer.internal.datastructures.EventBAction;
 import eventBRefinementSlicer.internal.datastructures.EventBAttribute;
 import eventBRefinementSlicer.internal.datastructures.EventBAxiom;
-import eventBRefinementSlicer.internal.datastructures.EventBCondition;
 import eventBRefinementSlicer.internal.datastructures.EventBContext;
 import eventBRefinementSlicer.internal.datastructures.EventBDependencies;
+import eventBRefinementSlicer.internal.datastructures.EventBElement;
 import eventBRefinementSlicer.internal.datastructures.EventBEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBGuard;
 import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
@@ -33,16 +35,19 @@ public class EventBDependencyAnalyzer {
 
 		EventBDependencies dependencies = new EventBDependencies();
 		for (EventBInvariant invariant : analyzedMachine.getInvariants()) {
-			addDependenciesOfConditions(dependencies, invariant);
+			addDependenciesOfElement(dependencies, invariant);
 		}
 		for (EventBContext context : analyzedMachine.getSeenContexts()) {
 			for (EventBAxiom axiom : context.getAxioms()) {
-				addDependenciesOfConditions(dependencies, axiom);
+				addDependenciesOfElement(dependencies, axiom);
 			}
 		}
 		for (EventBEvent event : analyzedMachine.getEvents()) {
 			for (EventBGuard guard : event.getGuards()) {
-				addDependenciesOfConditions(dependencies, guard);
+				addDependenciesOfElement(dependencies, guard);
+			}
+			for (EventBAction action : event.getActions()) {
+				addDependenciesOfElement(dependencies, action);
 			}
 		}
 
@@ -50,9 +55,9 @@ public class EventBDependencyAnalyzer {
 		return true;
 	}
 
-	private void addDependenciesOfConditions(EventBDependencies dependencies, EventBCondition condition) {
+	private void addDependenciesOfElement(EventBDependencies dependencies, Depender depender) {
 		Set<EventBAttribute> shallowerDependees = new HashSet<>();
-		Set<EventBAttribute> deeperDependees = condition.getDependees();
+		Set<EventBAttribute> deeperDependees = depender.getDependees();
 		while (!shallowerDependees.equals(deeperDependees)) {
 			Set<EventBAttribute> newDependees = new HashSet<>();
 			shallowerDependees.addAll(deeperDependees);
@@ -62,7 +67,8 @@ public class EventBDependencyAnalyzer {
 			deeperDependees.addAll(newDependees);
 		}
 		for (EventBAttribute dependee : deeperDependees) {
-			dependencies.addDependency(condition, dependee);
+			assert depender instanceof EventBElement;
+			dependencies.addDependency((EventBElement) depender, dependee);
 		}
 	}
 }
