@@ -1,17 +1,27 @@
 package eventBRefinementSlicer.internal.datastructures;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
 import org.eventb.core.IAction;
 import org.eventb.core.ISCAction;
+import org.eventb.core.ast.Assignment;
+import org.eventb.core.ast.FreeIdentifier;
+import org.eventb.core.ast.ITypeEnvironment;
 import org.rodinp.core.RodinDBException;
+
+import eventBRefinementSlicer.internal.Depender;
 
 /**
  * @author Aivar Kripsaar
  *
  */
-public class EventBAction extends EventBElement {
+public class EventBAction extends EventBElement implements Depender {
 
 	protected String assignment = "";
 	protected final EventBEvent parentEvent;
+	protected Set<EventBAttribute> dependees = new HashSet<>();
 
 	public EventBAction(EventBEvent parentEvent, EventBUnit parentUnit) {
 		super(parentUnit);
@@ -60,5 +70,33 @@ public class EventBAction extends EventBElement {
 	@Override
 	public String toString() {
 		return getType() + ": " + label + ": " + assignment + " (" + comment + ")";
+	}
+
+	@Override
+	public Set<EventBAttribute> getDependees() {
+		return dependees;
+	}
+
+	@Override
+	public void setDependees(Set<EventBAttribute> dependees) {
+		this.dependees = dependees;
+	}
+
+	public Set<EventBAttribute> calculateDependees() {
+		Set<EventBAttribute> occurredAttributes = new HashSet<>();
+		Assignment assignment;
+		try {
+			ITypeEnvironment typeEnvironment = parent.getTypeEnvironment();
+			assignment = getScElement().getAssignment(typeEnvironment);
+			for (FreeIdentifier freeIdentifier : assignment.getFreeIdentifiers()) {
+				EventBAttribute attribute = parent.findAttributeByLabel(freeIdentifier.getName());
+				if (attribute != null) {
+					occurredAttributes.add(attribute);
+				}
+			}
+		} catch (CoreException e) {
+			e.printStackTrace();
+		}
+		return occurredAttributes;
 	}
 }
