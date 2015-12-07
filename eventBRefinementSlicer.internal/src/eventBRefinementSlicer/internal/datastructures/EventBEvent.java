@@ -62,6 +62,9 @@ public class EventBEvent extends EventBElement {
 		for (EventBGuard guard : guards) {
 			guard.setDependees(guard.calculateDependees());
 		}
+		for (EventBAction action : actions) {
+			action.setDependees(action.calculateDependees());
+		}
 	}
 
 	public List<EventBGuard> getGuards() {
