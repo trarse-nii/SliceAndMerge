@@ -446,6 +446,9 @@ public class SelectionEditor extends EditorPart {
 	 * We update both the element and all of its parents, just in case.
 	 */
 	private void updateElement(Object element) {
+		if (element == null) {
+			return;
+		}
 		treeViewer.update(element, null);
 		if (element instanceof EventBTreeElement) {
 			EventBTreeElement treeElement = (EventBTreeElement) element;
