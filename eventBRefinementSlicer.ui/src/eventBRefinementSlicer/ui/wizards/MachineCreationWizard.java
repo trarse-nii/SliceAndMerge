@@ -2,8 +2,10 @@ package eventBRefinementSlicer.ui.wizards;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -222,15 +224,18 @@ public class MachineCreationWizard extends Wizard {
 					}
 				}
 
+				Set<String> contextsToRemove = new HashSet<>();
+
 				// Adds seen contexts to new machine.
 				// If whole context selected, we just add it directly,
 				// unless it is already included (because of refinement)
 				for (EventBContext context : contexts) {
+					contextsToRemove.addAll(context.getExtendedContextLabels());
 					boolean alreadyIncluded = false;
 					for (ISeesContext seenContext : root.getSeesClauses()) {
 						if (seenContext.getSeenContextName().equals(context.getLabel())) {
 							alreadyIncluded = true;
-							break;
+							continue;
 						}
 					}
 					if (alreadyIncluded) {
@@ -242,6 +247,9 @@ public class MachineCreationWizard extends Wizard {
 				// If only parts of the context are selected, we create a new
 				// context
 				for (EventBContext context : partialContexts) {
+
+					contextsToRemove.addAll(context.getExtendedContextLabels());
+
 					// If the abstract machine contains the whole context, we don't do anything, because the
 					// whole context has already been included through refinement
 					boolean alreadyIncluded = false;
@@ -257,6 +265,13 @@ public class MachineCreationWizard extends Wizard {
 					String newContextName = contextNamingPageMap.get(context).getContextNameInput();
 					createSeenContext(newContextName, context, root);
 
+				}
+
+				// We remove any contexts where their extending context is already included
+				for (ISeesContext seenContext : root.getSeesClauses()) {
+					if (contextsToRemove.contains(seenContext.getSeenContextName())) {
+						seenContext.delete(false, null);
+					}
 				}
 
 				// Save the final result
