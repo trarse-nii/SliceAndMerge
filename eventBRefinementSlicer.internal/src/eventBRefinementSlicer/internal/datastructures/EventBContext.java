@@ -8,6 +8,7 @@ import org.eventb.core.IAxiom;
 import org.eventb.core.ICarrierSet;
 import org.eventb.core.IConstant;
 import org.eventb.core.IContextRoot;
+import org.eventb.core.IExtendsContext;
 import org.eventb.core.ISCAction;
 import org.eventb.core.ISCAxiom;
 import org.eventb.core.ISCCarrierSet;
@@ -31,6 +32,7 @@ public class EventBContext extends EventBUnit {
 	private List<EventBConstant> constants = new ArrayList<>();
 	private List<EventBAxiom> axioms = new ArrayList<>();
 	private ISCContextRoot scContextRoot = null;
+	private List<String> extendedContextLabels = new ArrayList<>();
 
 	/**
 	 * Creates an empty context. Not recommended.
@@ -58,6 +60,9 @@ public class EventBContext extends EventBUnit {
 			assert (originalSCElement instanceof ISCAction);
 			EventBAxiom axiom = new EventBAxiom(originalAxiom, (ISCAxiom) originalSCElement, this);
 			axioms.add(axiom);
+		}
+		for (IExtendsContext extendedContext : contextRoot.getExtendsClauses()) {
+			extendedContextLabels.add(extendedContext.getAbstractContextName());
 		}
 		for (EventBCarrierSet carrierSet : carrierSets) {
 			carrierSet.setDependees(carrierSet.calculateDependees());
@@ -101,6 +106,10 @@ public class EventBContext extends EventBUnit {
 
 	public List<EventBAxiom> getAxioms() {
 		return axioms;
+	}
+
+	public List<String> getExtendedContextLabels() {
+		return extendedContextLabels;
 	}
 
 	public boolean containsElement(EventBElement element) {
