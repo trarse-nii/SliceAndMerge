@@ -178,12 +178,18 @@ public class MachineCreationWizard extends Wizard {
 				}
 				// Add selected variables to new machine
 				for (EventBVariable variable : variables) {
+					for (IVariable inheritedVariable : root.getVariables()) {
+						// If the variable has been inherited, we have to get rid of it to avoid duplicates.
+						if (inheritedVariable.getIdentifierString().equals(variable.getLabel())) {
+							inheritedVariable.delete(false, null);
+						}
+					}
 					addRodinElement(IVariable.ELEMENT_TYPE, root, variable);
 				}
 				// Add selected events to new machine
 				for (EventBEvent event : events) {
 					for (IEvent inheritedEvent : root.getEvents()) {
-						// If the event had been inherited before, we have to get rid of it.
+						// If the event has been inherited, we have to get rid of it to avoid duplicates.
 						if (inheritedEvent.getLabel().equals(event.getLabel())) {
 							inheritedEvent.delete(false, null);
 						}
