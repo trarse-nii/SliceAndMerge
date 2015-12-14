@@ -8,6 +8,7 @@ import org.eventb.core.IAction;
 import org.eventb.core.IConvergenceElement.Convergence;
 import org.eventb.core.IEvent;
 import org.eventb.core.IGuard;
+import org.eventb.core.IRefinesEvent;
 import org.eventb.core.ISCAction;
 import org.eventb.core.ISCEvent;
 import org.eventb.core.ISCGuard;
@@ -27,6 +28,7 @@ public class EventBEvent extends EventBElement {
 
 	private List<EventBGuard> guards = new ArrayList<>();
 	private List<EventBAction> actions = new ArrayList<>();
+	private List<EventBRefinedEvent> refinedEvents = new ArrayList<>();
 
 	public EventBEvent(EventBUnit parent) {
 		super(parent);
@@ -46,6 +48,10 @@ public class EventBEvent extends EventBElement {
 		}
 		if (event.hasConvergence()) {
 			this.convergence = event.getConvergence();
+		}
+		for (IRefinesEvent originalRefinedEvent : event.getRefinesClauses()) {
+			EventBRefinedEvent refinedEvent = new EventBRefinedEvent(originalRefinedEvent, this, parent);
+			refinedEvents.add(refinedEvent);
 		}
 		for (IGuard originalGuard : event.getGuards()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalGuard, scEvent.getSCGuards());
@@ -73,6 +79,10 @@ public class EventBEvent extends EventBElement {
 
 	public List<EventBAction> getActions() {
 		return actions;
+	}
+
+	public List<EventBRefinedEvent> getRefinedEvents() {
+		return refinedEvents;
 	}
 
 	public boolean containsElement(EventBElement element) {
