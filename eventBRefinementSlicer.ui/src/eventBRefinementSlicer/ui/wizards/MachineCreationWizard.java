@@ -30,6 +30,7 @@ import org.eventb.core.IIdentifierElement;
 import org.eventb.core.IInvariant;
 import org.eventb.core.ILabeledElement;
 import org.eventb.core.IMachineRoot;
+import org.eventb.core.IRefinesEvent;
 import org.eventb.core.IRefinesMachine;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
@@ -53,6 +54,7 @@ import eventBRefinementSlicer.internal.datastructures.EventBElement;
 import eventBRefinementSlicer.internal.datastructures.EventBEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBGuard;
 import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
+import eventBRefinementSlicer.internal.datastructures.EventBRefinedEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBTypes;
 import eventBRefinementSlicer.internal.datastructures.EventBVariable;
 import eventBRefinementSlicer.ui.editors.SelectionEditor.EventBTreeElement;
@@ -163,6 +165,13 @@ public class MachineCreationWizard extends Wizard {
 				MachineRoot root = (MachineRoot) file.getRoot();
 				root.setConfiguration(IConfigurationElement.DEFAULT_CONFIGURATION, monitor);
 
+				// Add refinement information from existing machine to new
+				// machine
+				for (IRefinesMachine refines : originalMachineRoot.getRefinesClauses()) {
+					IRefinementManager refinementManager = RodinCore.getRefinementManager();
+					refinementManager.refine(refines.getAbstractMachineRoot(), root, null);
+				}
+
 				// Add selected invariants to new machine
 				for (EventBInvariant invariant : invariants) {
 					addRodinElement(IInvariant.ELEMENT_TYPE, root, invariant);
@@ -173,6 +182,12 @@ public class MachineCreationWizard extends Wizard {
 				}
 				// Add selected events to new machine
 				for (EventBEvent event : events) {
+					for (IEvent inheritedEvent : root.getEvents()) {
+						// If the event had been inherited before, we have to get rid of it.
+						if (inheritedEvent.getLabel().equals(event.getLabel())) {
+							inheritedEvent.delete(false, null);
+						}
+					}
 					IEvent rodinEvent = (IEvent) addRodinElement(IEvent.ELEMENT_TYPE, root, event);
 					rodinEvent.setExtended(event.isExtended(), null);
 					rodinEvent.setConvergence(event.getConvergence(), null);
@@ -190,13 +205,10 @@ public class MachineCreationWizard extends Wizard {
 						addRodinElement(IAction.ELEMENT_TYPE, rodinEvent, action);
 					}
 					actions.removeAll(relevantActions);
-				}
-
-				// Add refinement information from existing machine to new
-				// machine
-				for (IRefinesMachine refines : originalMachineRoot.getRefinesClauses()) {
-					IRefinementManager refinementManager = RodinCore.getRefinementManager();
-					refinementManager.refine(refines.getAbstractMachineRoot(), root, null);
+					// Add refinement information
+					for (EventBRefinedEvent refinedEvent : event.getRefinedEvents()) {
+						addRodinElement(IRefinesEvent.ELEMENT_TYPE, rodinEvent, refinedEvent);
+					}
 				}
 
 				// Adds seen contexts to new machine.
@@ -282,6 +294,9 @@ public class MachineCreationWizard extends Wizard {
 				}
 				if (rodinElement instanceof ISeesContext && element instanceof EventBContext) {
 					((ISeesContext) rodinElement).setSeenContextName(((EventBContext) element).getLabel(), null);
+				}
+				if (rodinElement instanceof IRefinesEvent && element instanceof EventBRefinedEvent) {
+					((IRefinesEvent) rodinElement).setAbstractEventLabel(element.getLabel(), null);
 				}
 				return rodinElement;
 			}
