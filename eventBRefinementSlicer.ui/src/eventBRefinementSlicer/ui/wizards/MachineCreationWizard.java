@@ -189,7 +189,12 @@ public class MachineCreationWizard extends Wizard {
 						}
 					}
 					IEvent rodinEvent = (IEvent) addRodinElement(IEvent.ELEMENT_TYPE, root, event);
-					rodinEvent.setExtended(event.isExtended(), null);
+					if (rodinEvent.isInitialisation()) {
+						// We have the initialization include all the init actions from the abstract machine
+						rodinEvent.setExtended(true, null);
+					} else {
+						rodinEvent.setExtended(event.isExtended(), null);
+					}
 					rodinEvent.setConvergence(event.getConvergence(), null);
 					// Add guards to the event
 					List<EventBGuard> relevantGuards = new ArrayList<>(event.getGuards());
