@@ -1,5 +1,6 @@
 package eventBRefinementSlicer.ui.wizards;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +25,7 @@ import org.eventb.core.ICarrierSet;
 import org.eventb.core.ICommentedElement;
 import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IConstant;
+import org.eventb.core.IConvergenceElement.Convergence;
 import org.eventb.core.IDerivedPredicateElement;
 import org.eventb.core.IEvent;
 import org.eventb.core.IExtendsContext;
@@ -68,6 +70,7 @@ import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
 import eventBRefinementSlicer.internal.datastructures.EventBRefinedEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBTypes;
 import eventBRefinementSlicer.internal.datastructures.EventBVariable;
+import eventBRefinementSlicer.internal.util.SCUtil;
 import eventBRefinementSlicer.ui.editors.SelectionEditor.EventBTreeElement;
 import eventBRefinementSlicer.ui.editors.SelectionEditor.EventBTreeSubcategory;
 
@@ -309,6 +312,50 @@ public class MachineCreationWizard extends Wizard {
 					}
 				}
 
+				// We perform a check to see if the old variant is still relevant to the new generated machine
+				// Get ISCVariant from concrete machine
+				// Extract expression (using type environment)
+				Set<String> varsInVariant = new HashSet<>();
+				ITypeEnvironment typeEnvironment = originalMachineRoot.getSCMachineRoot().getTypeEnvironment();
+				for (ISCVariant scVariant : originalMachineRoot.getSCMachineRoot().getSCVariants()) {
+					Expression expression = scVariant.getExpression(typeEnvironment);
+					FreeIdentifier[] identifiers = expression.getFreeIdentifiers();
+					for (FreeIdentifier identifier : identifiers) {
+						String variableName = identifier.getName();
+						varsInVariant.add(variableName);
+					}
+				}
+				// Create SC of new machine.
+				// Get SC Event information for convergent events.
+				// Check if at least one variant variable is included in each of these events
+				// If true, add variant to new machine
+				ISCMachineRoot scMachine = SCUtil.makeStaticCheckedMachine(root);
+				boolean allConvergentEventsCovered = true;
+				boolean hasConvergentEvent = false;
+				for (ISCEvent scEvent : scMachine.getSCEvents()) {
+					if (!(scEvent.getConvergence() == Convergence.CONVERGENT)) {
+						continue;
+					}
+					hasConvergentEvent = true;
+					boolean eventCovered = false;
+					for (ISCAction scAction : scEvent.getSCActions()) {
+						Assignment assignment = scAction.getAssignment(typeEnvironment);
+						for (FreeIdentifier assignedVariable : assignment.getAssignedIdentifiers()) {
+							if (varsInVariant.contains(assignedVariable.getName())) {
+								eventCovered = true;
+							}
+						}
+					}
+					if (!eventCovered) {
+						allConvergentEventsCovered = false;
+					}
+				}
+
+				// If all convergent events are covered by the variant, then we include it in the new machine
+				if (hasConvergentEvent && allConvergentEventsCovered) {
+					addVariant(originalMachineRoot, root);
+				}
+
 				// Save the final result
 				file.save(null, false);
 
@@ -329,6 +376,12 @@ public class MachineCreationWizard extends Wizard {
 						}
 					}
 				});
+			}
+
+			private void addVariant(IMachineRoot source, IInternalElement target) throws RodinDBException {
+				for (IVariant variant : source.getVariants()) {
+					variant.copy(target, null, null, true, null);
+				}
 			}
 
 			private IInternalElement addRodinElement(IInternalElementType<?> type, IInternalElement parent, EventBElement element)
@@ -431,5 +484,4 @@ public class MachineCreationWizard extends Wizard {
 
 		}, null);
 	}
-
 }
