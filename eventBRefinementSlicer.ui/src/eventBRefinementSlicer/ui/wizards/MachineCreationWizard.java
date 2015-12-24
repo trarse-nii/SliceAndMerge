@@ -34,8 +34,17 @@ import org.eventb.core.ILabeledElement;
 import org.eventb.core.IMachineRoot;
 import org.eventb.core.IRefinesEvent;
 import org.eventb.core.IRefinesMachine;
+import org.eventb.core.ISCAction;
+import org.eventb.core.ISCEvent;
+import org.eventb.core.ISCMachineRoot;
+import org.eventb.core.ISCVariant;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
+import org.eventb.core.IVariant;
+import org.eventb.core.ast.Assignment;
+import org.eventb.core.ast.Expression;
+import org.eventb.core.ast.FreeIdentifier;
+import org.eventb.core.ast.ITypeEnvironment;
 import org.eventb.core.basis.ContextRoot;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
@@ -188,6 +197,25 @@ public class MachineCreationWizard extends Wizard {
 					}
 					addRodinElement(IVariable.ELEMENT_TYPE, root, variable);
 				}
+
+				// Find init actions from abstract machine so that we can remove them from the new init
+				List<Map.Entry<String, String>> abstractInitActions = new ArrayList<>();
+				for (IRefinesMachine refines : root.getRefinesClauses()) {
+					IMachineRoot abstractRoot = refines.getAbstractMachineRoot();
+					for (IEvent abstractEvent : abstractRoot.getEvents()) {
+						if (!abstractEvent.isInitialisation()) {
+							continue;
+						}
+						for (IAction action : abstractEvent.getActions()) {
+							// We use Map.Entry instead of Pair because Java doesn't have Pair :(
+							Map.Entry<String, String> labelAssignmentPair = new AbstractMap.SimpleEntry<String, String>(action.getLabel(), action
+									.getAssignmentString());
+							abstractInitActions.add(labelAssignmentPair);
+						}
+						break;
+					}
+				}
+
 				// Add selected events to new machine
 				for (EventBEvent event : events) {
 					for (IEvent inheritedEvent : root.getEvents()) {
@@ -215,6 +243,12 @@ public class MachineCreationWizard extends Wizard {
 					List<EventBAction> relevantActions = new ArrayList<>(event.getActions());
 					relevantActions.retainAll(actions);
 					for (EventBAction action : relevantActions) {
+						Map.Entry<String, String> labelAssignmentPair = new AbstractMap.SimpleEntry<String, String>(action.getLabel(), action
+								.getAssignment());
+						if (abstractInitActions.contains(labelAssignmentPair)) {
+							// If init event, then we do not add the superfluous actions
+							continue;
+						}
 						addRodinElement(IAction.ELEMENT_TYPE, rodinEvent, action);
 					}
 					actions.removeAll(relevantActions);
@@ -222,6 +256,7 @@ public class MachineCreationWizard extends Wizard {
 					for (EventBRefinedEvent refinedEvent : event.getRefinedEvents()) {
 						addRodinElement(IRefinesEvent.ELEMENT_TYPE, rodinEvent, refinedEvent);
 					}
+
 				}
 
 				Set<String> contextsToRemove = new HashSet<>();
