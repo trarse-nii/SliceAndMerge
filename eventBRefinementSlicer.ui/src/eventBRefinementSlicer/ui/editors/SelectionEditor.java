@@ -361,9 +361,10 @@ public class SelectionEditor extends EditorPart {
 						EventBTreeElement parent = (EventBTreeElement) parentElement;
 						if (!eventSubcategories.containsKey(originalElement)) {
 							EventBTreeSubcategory parameters = new EventBTreeSubcategory("Parameters", parent, originalElement.getParameters());
+							EventBTreeSubcategory witnesses = new EventBTreeSubcategory("Witnesses", parent, originalElement.getWitnesses());
 							EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent, originalElement.getGuards());
 							EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent, originalElement.getActions());
-							EventBTreeSubcategory[] children = { parameters, guards, actions };
+							EventBTreeSubcategory[] children = { parameters, witnesses, guards, actions };
 							addCategories(children);
 							eventSubcategories.put(originalElement, children);
 						}
