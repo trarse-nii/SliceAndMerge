@@ -6,6 +6,7 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eventb.core.IDerivedPredicateElement;
 import org.eventb.core.ILabeledElement;
+import org.eventb.core.IPredicateElement;
 import org.eventb.core.ISCPredicateElement;
 import org.eventb.core.ast.FreeIdentifier;
 import org.eventb.core.ast.ITypeEnvironment;
@@ -15,7 +16,7 @@ import org.rodinp.core.RodinDBException;
 import eventBRefinementSlicer.internal.Depender;
 
 /**
- * Common parent class for EventBInvariant, EventBAxiom, and EventBGuard
+ * Common parent class for EventBInvariant, EventBAxiom, EventBGuard, and EventBWitness
  * 
  * @author Aivar Kripsaar
  *
@@ -35,8 +36,7 @@ public class EventBCondition extends EventBElement implements Depender {
 		this.predicate = predicate;
 	}
 
-	public EventBCondition(IDerivedPredicateElement predicateElement, ISCPredicateElement scPredicateElement, EventBUnit parent)
-			throws RodinDBException {
+	public EventBCondition(IPredicateElement predicateElement, ISCPredicateElement scPredicateElement, EventBUnit parent) throws RodinDBException {
 		super(predicateElement, scPredicateElement, parent);
 		if (predicateElement instanceof ILabeledElement && ((ILabeledElement) predicateElement).hasLabel()) {
 			this.label = ((ILabeledElement) predicateElement).getLabel();
@@ -44,7 +44,9 @@ public class EventBCondition extends EventBElement implements Depender {
 		if (predicateElement.hasPredicateString()) {
 			this.predicate = predicateElement.getPredicateString();
 		}
-		this.isTheorem = predicateElement.isTheorem();
+		if (predicateElement instanceof IDerivedPredicateElement) {
+			this.isTheorem = ((IDerivedPredicateElement) predicateElement).isTheorem();
+		}
 	}
 
 	public String getPredicate() {

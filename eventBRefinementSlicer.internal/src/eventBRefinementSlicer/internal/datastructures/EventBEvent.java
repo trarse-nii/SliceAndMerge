@@ -14,7 +14,9 @@ import org.eventb.core.ISCAction;
 import org.eventb.core.ISCEvent;
 import org.eventb.core.ISCGuard;
 import org.eventb.core.ISCParameter;
+import org.eventb.core.ISCWitness;
 import org.eventb.core.ITraceableElement;
+import org.eventb.core.IWitness;
 
 import eventBRefinementSlicer.internal.util.SCUtil;
 
@@ -32,6 +34,7 @@ public class EventBEvent extends EventBElement {
 	private List<EventBAction> actions = new ArrayList<>();
 	private List<EventBRefinedEvent> refinedEvents = new ArrayList<>();
 	private List<EventBParameter> parameters = new ArrayList<>();
+	private List<EventBWitness> witnesses = new ArrayList<>();
 
 	public EventBEvent(EventBUnit parent) {
 		super(parent);
@@ -61,6 +64,12 @@ public class EventBEvent extends EventBElement {
 			assert (originalSCElement instanceof ISCParameter);
 			EventBParameter parameter = new EventBParameter(originalParameter, (ISCParameter) originalSCElement, parent, this);
 			parameters.add(parameter);
+		}
+		for (IWitness originalWitness : event.getWitnesses()) {
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalWitness, scEvent.getSCWitnesses());
+			assert (originalSCElement instanceof ISCWitness);
+			EventBWitness witness = new EventBWitness(originalWitness, (ISCWitness) originalSCElement, parent, this);
+			witnesses.add(witness);
 		}
 		for (IGuard originalGuard : event.getGuards()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalGuard, scEvent.getSCGuards());
@@ -92,6 +101,10 @@ public class EventBEvent extends EventBElement {
 
 	public List<EventBParameter> getParameters() {
 		return parameters;
+	}
+
+	public List<EventBWitness> getWitnesses() {
+		return witnesses;
 	}
 
 	public List<EventBRefinedEvent> getRefinedEvents() {
