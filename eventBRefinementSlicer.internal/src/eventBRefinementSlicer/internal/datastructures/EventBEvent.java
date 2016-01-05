@@ -8,10 +8,12 @@ import org.eventb.core.IAction;
 import org.eventb.core.IConvergenceElement.Convergence;
 import org.eventb.core.IEvent;
 import org.eventb.core.IGuard;
+import org.eventb.core.IParameter;
 import org.eventb.core.IRefinesEvent;
 import org.eventb.core.ISCAction;
 import org.eventb.core.ISCEvent;
 import org.eventb.core.ISCGuard;
+import org.eventb.core.ISCParameter;
 import org.eventb.core.ITraceableElement;
 
 import eventBRefinementSlicer.internal.util.SCUtil;
@@ -29,6 +31,7 @@ public class EventBEvent extends EventBElement {
 	private List<EventBGuard> guards = new ArrayList<>();
 	private List<EventBAction> actions = new ArrayList<>();
 	private List<EventBRefinedEvent> refinedEvents = new ArrayList<>();
+	private List<EventBParameter> parameters = new ArrayList<>();
 
 	public EventBEvent(EventBUnit parent) {
 		super(parent);
@@ -52,6 +55,12 @@ public class EventBEvent extends EventBElement {
 		for (IRefinesEvent originalRefinedEvent : event.getRefinesClauses()) {
 			EventBRefinedEvent refinedEvent = new EventBRefinedEvent(originalRefinedEvent, this, parent);
 			refinedEvents.add(refinedEvent);
+		}
+		for (IParameter originalParameter : event.getParameters()) {
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalParameter, scEvent.getSCParameters());
+			assert (originalSCElement instanceof ISCParameter);
+			EventBParameter parameter = new EventBParameter(originalParameter, (ISCParameter) originalSCElement, parent, this);
+			parameters.add(parameter);
 		}
 		for (IGuard originalGuard : event.getGuards()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalGuard, scEvent.getSCGuards());
@@ -79,6 +88,10 @@ public class EventBEvent extends EventBElement {
 
 	public List<EventBAction> getActions() {
 		return actions;
+	}
+
+	public List<EventBParameter> getParameters() {
+		return parameters;
 	}
 
 	public List<EventBRefinedEvent> getRefinedEvents() {

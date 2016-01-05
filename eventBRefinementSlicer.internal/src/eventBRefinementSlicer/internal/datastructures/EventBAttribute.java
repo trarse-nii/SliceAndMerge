@@ -12,7 +12,7 @@ import org.rodinp.core.RodinDBException;
 import eventBRefinementSlicer.internal.Depender;
 
 /**
- * Common parent class for EventBVariable and EventBConstant
+ * Common parent class for EventBVariable, EventBConstant, and EventBParameter
  * 
  * @author Aivar Kripsaar
  * 
