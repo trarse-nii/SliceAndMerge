@@ -17,5 +17,6 @@ public class EventBTypes {
 	public static final String UNIT = "UNIT";
 	public static final String VARIABLE = "VARIABLE";
 	public static final String REFINED_EVENT = "REFINED_EVENT";
+	public static final String PARAMETER = "PARAMETER";
 
 }
