@@ -45,6 +45,7 @@ import org.eventb.core.ISCVariant;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
 import org.eventb.core.IVariant;
+import org.eventb.core.IWitness;
 import org.eventb.core.ast.Assignment;
 import org.eventb.core.ast.Expression;
 import org.eventb.core.ast.FreeIdentifier;
@@ -73,6 +74,7 @@ import eventBRefinementSlicer.internal.datastructures.EventBParameter;
 import eventBRefinementSlicer.internal.datastructures.EventBRefinedEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBTypes;
 import eventBRefinementSlicer.internal.datastructures.EventBVariable;
+import eventBRefinementSlicer.internal.datastructures.EventBWitness;
 import eventBRefinementSlicer.internal.util.SCUtil;
 import eventBRefinementSlicer.ui.editors.SelectionEditor.EventBTreeElement;
 import eventBRefinementSlicer.ui.editors.SelectionEditor.EventBTreeSubcategory;
@@ -143,6 +145,7 @@ public class MachineCreationWizard extends Wizard {
 		List<EventBVariable> variables = new ArrayList<>();
 		List<EventBEvent> events = new ArrayList<>();
 		List<EventBParameter> parameters = new ArrayList<>();
+		List<EventBWitness> witnesses = new ArrayList<>();
 		List<EventBGuard> guards = new ArrayList<>();
 		List<EventBAction> actions = new ArrayList<>();
 		List<EventBContext> contexts = new ArrayList<>();
@@ -159,6 +162,8 @@ public class MachineCreationWizard extends Wizard {
 				variables.add((EventBVariable) element);
 			} else if (element instanceof EventBParameter) {
 				parameters.add((EventBParameter) element);
+			} else if (element instanceof EventBWitness) {
+				witnesses.add((EventBWitness) element);
 			} else if (element instanceof EventBGuard) {
 				guards.add((EventBGuard) element);
 			} else if (element instanceof EventBAction) {
@@ -248,6 +253,13 @@ public class MachineCreationWizard extends Wizard {
 						addRodinElement(IParameter.ELEMENT_TYPE, rodinEvent, parameter);
 					}
 					parameters.removeAll(relevantParameters);
+					// Add witnesses to the event
+					List<EventBWitness> relevantWitnesses = new ArrayList<>(event.getWitnesses());
+					relevantWitnesses.retainAll(witnesses);
+					for (EventBWitness witness : relevantWitnesses) {
+						addRodinElement(IWitness.ELEMENT_TYPE, rodinEvent, witness);
+					}
+					witnesses.removeAll(relevantWitnesses);
 					// Add guards to the event
 					List<EventBGuard> relevantGuards = new ArrayList<>(event.getGuards());
 					relevantGuards.retainAll(guards);
