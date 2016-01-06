@@ -34,6 +34,8 @@ import org.eventb.core.IIdentifierElement;
 import org.eventb.core.IInvariant;
 import org.eventb.core.ILabeledElement;
 import org.eventb.core.IMachineRoot;
+import org.eventb.core.IParameter;
+import org.eventb.core.IPredicateElement;
 import org.eventb.core.IRefinesEvent;
 import org.eventb.core.IRefinesMachine;
 import org.eventb.core.ISCAction;
@@ -67,6 +69,7 @@ import eventBRefinementSlicer.internal.datastructures.EventBElement;
 import eventBRefinementSlicer.internal.datastructures.EventBEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBGuard;
 import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
+import eventBRefinementSlicer.internal.datastructures.EventBParameter;
 import eventBRefinementSlicer.internal.datastructures.EventBRefinedEvent;
 import eventBRefinementSlicer.internal.datastructures.EventBTypes;
 import eventBRefinementSlicer.internal.datastructures.EventBVariable;
@@ -139,6 +142,7 @@ public class MachineCreationWizard extends Wizard {
 		List<EventBInvariant> invariants = new ArrayList<>();
 		List<EventBVariable> variables = new ArrayList<>();
 		List<EventBEvent> events = new ArrayList<>();
+		List<EventBParameter> parameters = new ArrayList<>();
 		List<EventBGuard> guards = new ArrayList<>();
 		List<EventBAction> actions = new ArrayList<>();
 		List<EventBContext> contexts = new ArrayList<>();
@@ -153,6 +157,8 @@ public class MachineCreationWizard extends Wizard {
 				invariants.add((EventBInvariant) element);
 			} else if (element instanceof EventBVariable) {
 				variables.add((EventBVariable) element);
+			} else if (element instanceof EventBParameter) {
+				parameters.add((EventBParameter) element);
 			} else if (element instanceof EventBGuard) {
 				guards.add((EventBGuard) element);
 			} else if (element instanceof EventBAction) {
@@ -235,6 +241,13 @@ public class MachineCreationWizard extends Wizard {
 						rodinEvent.setExtended(event.isExtended(), null);
 					}
 					rodinEvent.setConvergence(event.getConvergence(), null);
+					// Add parameters to the event
+					List<EventBParameter> relevantParameters = new ArrayList<>(event.getParameters());
+					relevantParameters.retainAll(parameters);
+					for (EventBParameter parameter : relevantParameters) {
+						addRodinElement(IParameter.ELEMENT_TYPE, rodinEvent, parameter);
+					}
+					parameters.removeAll(relevantParameters);
 					// Add guards to the event
 					List<EventBGuard> relevantGuards = new ArrayList<>(event.getGuards());
 					relevantGuards.retainAll(guards);
@@ -399,9 +412,13 @@ public class MachineCreationWizard extends Wizard {
 						((ICommentedElement) rodinElement).setComment(element.getComment(), null);
 					}
 				}
-				if (rodinElement instanceof IDerivedPredicateElement && element instanceof EventBCondition) {
-					((IDerivedPredicateElement) rodinElement).setPredicateString(((EventBCondition) element).getPredicate(), null);
-					((IDerivedPredicateElement) rodinElement).setTheorem(((EventBCondition) element).isTheorem(), null);
+				if (element instanceof EventBCondition) {
+					if (rodinElement instanceof IPredicateElement) {
+						((IPredicateElement) rodinElement).setPredicateString(((EventBCondition) element).getPredicate(), null);
+					}
+					if (rodinElement instanceof IDerivedPredicateElement) {
+						((IDerivedPredicateElement) rodinElement).setTheorem(((EventBCondition) element).isTheorem(), null);
+					}
 				}
 				if (rodinElement instanceof IAssignmentElement && element instanceof EventBAction) {
 					((IAssignmentElement) rodinElement).setAssignmentString(((EventBAction) element).getAssignment(), null);
