@@ -90,6 +90,15 @@ public class EventBAction extends EventBElement implements Depender {
 			assignment = getScElement().getAssignment(typeEnvironment);
 			for (FreeIdentifier freeIdentifier : assignment.getFreeIdentifiers()) {
 				EventBAttribute attribute = parent.findAttributeByLabel(freeIdentifier.getName());
+				if (attribute == null) {
+					// Also check parameters
+					for (EventBParameter parameter : parentEvent.getParameters()) {
+						if (parameter.getLabel().equals(freeIdentifier.getName())) {
+							attribute = parameter;
+							break;
+						}
+					}
+				}
 				if (attribute != null) {
 					occurredAttributes.add(attribute);
 				}
