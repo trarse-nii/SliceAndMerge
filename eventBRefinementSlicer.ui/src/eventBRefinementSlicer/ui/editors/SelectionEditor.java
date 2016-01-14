@@ -813,7 +813,7 @@ public class SelectionEditor extends EditorPart {
 					// TODO: Implement new input dialog
 				} else {
 					WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MachineCreationWizard(rodinFile.getRodinProject(),
-							machineRoot, treeViewer.getCheckedElements(), treeViewer.getGrayedElements()));
+							machineRoot, treeViewer.getCheckedElements()));
 
 					wizardDialog.setBlockOnOpen(true);
 					wizardDialog.open();
