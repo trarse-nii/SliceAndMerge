@@ -397,8 +397,6 @@ public class SelectionEditor extends EditorPart {
 		treeViewer.setSubtreeChecked(element, checked);
 		updateElement(element);
 
-		//
-
 		// Get dependency information and add it to the local maps
 		if (element instanceof EventBTreeElement) {
 			EventBDependencies dependencies = machine.getDependencies();
@@ -857,7 +855,7 @@ public class SelectionEditor extends EditorPart {
 			public void widgetSelected(SelectionEvent e) {
 				for (EventBElement dependee : selectionDependees.keySet()) {
 					EventBTreeElement element = findTreeElement(dependee, true);
-					if (element != null) {
+					if (element != null && !treeViewer.getChecked(element)) {
 						setCheckedElement(element, true);
 					}
 				}
