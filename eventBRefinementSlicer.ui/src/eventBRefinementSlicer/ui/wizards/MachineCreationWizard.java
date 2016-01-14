@@ -2,7 +2,6 @@ package eventBRefinementSlicer.ui.wizards;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,15 +19,11 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eventb.core.IAction;
 import org.eventb.core.IAssignmentElement;
-import org.eventb.core.IAxiom;
-import org.eventb.core.ICarrierSet;
 import org.eventb.core.ICommentedElement;
 import org.eventb.core.IConfigurationElement;
-import org.eventb.core.IConstant;
 import org.eventb.core.IConvergenceElement.Convergence;
 import org.eventb.core.IDerivedPredicateElement;
 import org.eventb.core.IEvent;
-import org.eventb.core.IExtendsContext;
 import org.eventb.core.IGuard;
 import org.eventb.core.IIdentifierElement;
 import org.eventb.core.IInvariant;
@@ -50,7 +45,6 @@ import org.eventb.core.ast.Assignment;
 import org.eventb.core.ast.Expression;
 import org.eventb.core.ast.FreeIdentifier;
 import org.eventb.core.ast.ITypeEnvironment;
-import org.eventb.core.basis.ContextRoot;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IInternalElementType;
@@ -61,10 +55,7 @@ import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
 import eventBRefinementSlicer.internal.datastructures.EventBAction;
-import eventBRefinementSlicer.internal.datastructures.EventBAxiom;
-import eventBRefinementSlicer.internal.datastructures.EventBCarrierSet;
 import eventBRefinementSlicer.internal.datastructures.EventBCondition;
-import eventBRefinementSlicer.internal.datastructures.EventBConstant;
 import eventBRefinementSlicer.internal.datastructures.EventBContext;
 import eventBRefinementSlicer.internal.datastructures.EventBElement;
 import eventBRefinementSlicer.internal.datastructures.EventBEvent;
@@ -72,7 +63,6 @@ import eventBRefinementSlicer.internal.datastructures.EventBGuard;
 import eventBRefinementSlicer.internal.datastructures.EventBInvariant;
 import eventBRefinementSlicer.internal.datastructures.EventBParameter;
 import eventBRefinementSlicer.internal.datastructures.EventBRefinedEvent;
-import eventBRefinementSlicer.internal.datastructures.EventBTypes;
 import eventBRefinementSlicer.internal.datastructures.EventBVariable;
 import eventBRefinementSlicer.internal.datastructures.EventBWitness;
 import eventBRefinementSlicer.internal.util.SCUtil;
@@ -85,41 +75,22 @@ public class MachineCreationWizard extends Wizard {
 	private IMachineRoot originalMachineRoot;
 	private Object[] selectedElements;
 
-	private List<EventBContext> partiallySelectedContexts = new ArrayList<>();
-
-	private Map<EventBContext, ContextNamingWizardPage> contextNamingPageMap = new HashMap<>();
-
 	private MachineNamingWizardPage machineNamingPage;
 
 	private String machineName;
 
-	public MachineCreationWizard(IRodinProject rodinProject, IMachineRoot originalMachineRoot, Object[] selectedElements,
-			Object[] partiallySelectedElements) {
+	public MachineCreationWizard(IRodinProject rodinProject, IMachineRoot originalMachineRoot, Object[] selectedElements) {
 		super();
 		this.rodinProject = rodinProject;
 		this.originalMachineRoot = originalMachineRoot;
 		this.selectedElements = selectedElements;
 
-		for (Object element : partiallySelectedElements) {
-			if (element instanceof EventBTreeSubcategory) {
-				continue;
-			}
-			EventBElement eventBElement = ((EventBTreeElement) element).getOriginalElement();
-			if (eventBElement.getType().equals(EventBTypes.CONTEXT)) {
-				partiallySelectedContexts.add((EventBContext) eventBElement);
-			}
-		}
 	}
 
 	@Override
 	public void addPages() {
 		machineNamingPage = new MachineNamingWizardPage();
 		addPage(machineNamingPage);
-		for (EventBContext context : partiallySelectedContexts) {
-			ContextNamingWizardPage contextNamingPage = new ContextNamingWizardPage(context, selectedElements);
-			contextNamingPageMap.put(context, contextNamingPage);
-			addPage(contextNamingPage);
-		}
 	}
 
 	@Override
@@ -127,10 +98,6 @@ public class MachineCreationWizard extends Wizard {
 
 		machineNamingPage.finish();
 		machineName = machineNamingPage.getMachineNameInput();
-
-		for (ContextNamingWizardPage contextNamingPage : contextNamingPageMap.values()) {
-			contextNamingPage.finish();
-		}
 
 		try {
 			createMachineFromSelection(machineName);
@@ -149,7 +116,6 @@ public class MachineCreationWizard extends Wizard {
 		List<EventBGuard> guards = new ArrayList<>();
 		List<EventBAction> actions = new ArrayList<>();
 		List<EventBContext> contexts = new ArrayList<>();
-		List<EventBContext> partialContexts = partiallySelectedContexts;
 
 		for (Object checkedElement : selectedElements) {
 			if (checkedElement instanceof EventBTreeSubcategory) {
@@ -171,11 +137,7 @@ public class MachineCreationWizard extends Wizard {
 			} else if (element instanceof EventBEvent) {
 				events.add((EventBEvent) element);
 			} else if (element instanceof EventBContext) {
-				// We only add completely checked Contexts (no partial
-				// selections)
-				if (!partiallySelectedContexts.contains(element)) {
-					contexts.add((EventBContext) element);
-				}
+				contexts.add((EventBContext) element);
 			}
 		}
 
@@ -307,29 +269,6 @@ public class MachineCreationWizard extends Wizard {
 					addRodinElement(ISeesContext.ELEMENT_TYPE, root, context);
 				}
 
-				// If only parts of the context are selected, we create a new
-				// context
-				for (EventBContext context : partialContexts) {
-
-					contextsToRemove.addAll(context.getExtendedContextLabels());
-
-					// If the abstract machine contains the whole context, we don't do anything, because the
-					// whole context has already been included through refinement
-					boolean alreadyIncluded = false;
-					for (ISeesContext seenContext : root.getSeesClauses()) {
-						if (seenContext.getSeenContextName().equals(context.getLabel())) {
-							alreadyIncluded = true;
-							break;
-						}
-					}
-					if (alreadyIncluded) {
-						continue;
-					}
-					String newContextName = contextNamingPageMap.get(context).getContextNameInput();
-					createSeenContext(newContextName, context, root);
-
-				}
-
 				// We remove any contexts where their extending context is already included
 				for (ISeesContext seenContext : root.getSeesClauses()) {
 					if (contextsToRemove.contains(seenContext.getSeenContextName())) {
@@ -442,73 +381,6 @@ public class MachineCreationWizard extends Wizard {
 					((IRefinesEvent) rodinElement).setAbstractEventLabel(element.getLabel(), null);
 				}
 				return rodinElement;
-			}
-
-			private void createSeenContext(String contextName, EventBContext originalContext, MachineRoot machineRoot) throws CoreException {
-				List<EventBAxiom> axioms = new ArrayList<>();
-				List<EventBConstant> constants = new ArrayList<>();
-				List<EventBCarrierSet> carrierSets = new ArrayList<>();
-
-				for (Object checkedElement : selectedElements) {
-					if (checkedElement instanceof EventBTreeSubcategory) {
-						continue;
-					}
-					EventBElement originalElement = ((EventBTreeElement) checkedElement).getOriginalElement();
-					if (originalElement instanceof EventBAxiom) {
-						axioms.add((EventBAxiom) originalElement);
-					} else if (originalElement instanceof EventBConstant) {
-						constants.add((EventBConstant) originalElement);
-					} else if (originalElement instanceof EventBCarrierSet) {
-						carrierSets.add((EventBCarrierSet) originalElement);
-					}
-				}
-
-				// Create new file for new context
-				IRodinFile file = rodinProject.getRodinFile(contextName + ".buc");
-				file.create(true, null);
-				file.getResource().setDerived(true, null);
-				ContextRoot root = (ContextRoot) file.getRoot();
-				root.setConfiguration(IConfigurationElement.DEFAULT_CONFIGURATION, null);
-
-				// Add selected axioms to context
-				for (EventBAxiom axeTheAxiom : axioms) {
-					addRodinElement(IAxiom.ELEMENT_TYPE, root, axeTheAxiom);
-				}
-				// Add selected constants to context
-				for (EventBConstant constant : constants) {
-					addRodinElement(IConstant.ELEMENT_TYPE, root, constant);
-				}
-
-				// Add selected carrier sets to context
-				for (EventBCarrierSet carrierSet : carrierSets) {
-					addRodinElement(ICarrierSet.ELEMENT_TYPE, root, carrierSet);
-				}
-
-				IExtendsContext[] extendedContextsFromOriginal = originalContext.getScContextRoot().getContextRoot().getExtendsClauses();
-
-				IExtendsContext originalExtendedContext = null;
-				// Add extension information to the new context
-				for (IExtendsContext extendedContext : extendedContextsFromOriginal) {
-					originalExtendedContext = extendedContext;
-					IRefinementManager refinementManager = RodinCore.getRefinementManager();
-					refinementManager.refine(extendedContext.getAbstractContextRoot(), root, null);
-				}
-
-				file.save(null, false);
-
-				// We need to remove the context we extend from the derived machine's seen contexts attribute
-				if (originalExtendedContext != null) {
-					String extendedContextName = originalExtendedContext.getAbstractContextName();
-					for (ISeesContext seenContext : machineRoot.getSeesClauses()) {
-						if (seenContext.getSeenContextName().equals(extendedContextName)) {
-							seenContext.delete(false, null);
-						}
-					}
-				}
-				// Add new context to derived machine
-				IInternalElement rodinElement = machineRoot.getInternalElement(ISeesContext.ELEMENT_TYPE, contextName);
-				rodinElement.create(null, null);
-				((ISeesContext) rodinElement).setSeenContextName(contextName, null);
 			}
 
 		}, null);
