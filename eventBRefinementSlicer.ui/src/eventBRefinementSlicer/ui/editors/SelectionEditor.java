@@ -30,7 +30,6 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.graphics.Region;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
@@ -48,7 +47,6 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
-import org.eventb.core.IContextRoot;
 import org.eventb.core.IEventBRoot;
 import org.eventb.core.IMachineRoot;
 import org.eventb.core.ast.FormulaFactory;
@@ -69,7 +67,7 @@ import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
 import eventBRefinementSlicer.ui.wizards.MachineCreationWizard;
 
 /**
- * The editor in charge of selecting which parts of an EventB machine to use in the slicing of refinements
+ * The editor in charge of selecting which parts of an Event-B machine to use in the slicing of refinements
  * 
  * @author Aivar Kripsaar
  *
@@ -101,19 +99,13 @@ public class SelectionEditor extends EditorPart {
 
 	private ContainerCheckedTreeViewer treeViewer = null;
 
-	public SelectionEditor() {
-		// TODO Auto-generated constructor stub
-	}
-
 	@Override
 	public void doSave(IProgressMonitor monitor) {
-		// TODO Auto-generated method stub
 
 	}
 
 	@Override
 	public void doSaveAs() {
-		// TODO Auto-generated method stub
 
 	}
 
@@ -123,7 +115,7 @@ public class SelectionEditor extends EditorPart {
 		setInput(input);
 		rodinFile = getRodinFileFromInput(input);
 		IInternalElement internalElementRoot = rodinFile.getRoot();
-		assert (internalElementRoot instanceof IContextRoot) || (internalElementRoot instanceof IMachineRoot);
+		assert (internalElementRoot instanceof IMachineRoot);
 		machineRoot = (IMachineRoot) internalElementRoot;
 		try {
 			machine = new EventBMachine(machineRoot);
@@ -133,6 +125,13 @@ public class SelectionEditor extends EditorPart {
 		EventBDependencyAnalysisJob.doEventBDependencyAnalysis(machine);
 	}
 
+	/**
+	 * Gets the internal representation of the Rodin File from the editor input
+	 * 
+	 * @param input
+	 *            The editor's input
+	 * @return Internal representation of the Rodin File
+	 */
 	protected IRodinFile getRodinFileFromInput(IEditorInput input) {
 		FileEditorInput editorInput = (FileEditorInput) input;
 		IFile inputFile = editorInput.getFile();
@@ -140,6 +139,11 @@ public class SelectionEditor extends EditorPart {
 		return rodinFile;
 	}
 
+	/**
+	 * Gets the internal Rodin File
+	 * 
+	 * @return Internal representation of the Rodin File
+	 */
 	public IRodinFile getRodinFile() {
 		if (rodinFile == null) {
 			throw new IllegalStateException("Editor has not been initialized yet");
@@ -153,17 +157,22 @@ public class SelectionEditor extends EditorPart {
 
 	@Override
 	public boolean isDirty() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean isSaveAsAllowed() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
+	/**
+	 * Creates a tree UI element, which is the main body of the selection editor
+	 * 
+	 * @param parent
+	 *            The parent of the tree
+	 */
 	private void createTree(Composite parent) {
+		// We create a tree that allows for multiple selections and including checkbox behavior
 		Tree tree = new Tree(parent, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER | SWT.CHECK | SWT.V_SCROLL | SWT.H_SCROLL);
 		tree.setLinesVisible(true);
 		tree.setHeaderVisible(true);
@@ -182,6 +191,7 @@ public class SelectionEditor extends EditorPart {
 
 		createContainerCheckedTreeViewer(tree, titles);
 
+		// We resize the columns every time the tree component changes size
 		tree.addControlListener(new ControlAdapter() {
 			@Override
 			public void controlResized(ControlEvent e) {
@@ -189,6 +199,9 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
+		// A workaround to allow better highlighting of elements when hovering or selecting them
+		// Without this, the highlight colors set by the Tree Viewer are removed, simply replaced by the
+		// standard selection & highlight colors of the OS
 		tree.addListener(SWT.EraseItem, new Listener() {
 
 			@Override
@@ -196,15 +209,7 @@ public class SelectionEditor extends EditorPart {
 				GC gc = event.gc;
 				TreeItem item = (TreeItem) event.item;
 				int width = tree.getClientArea().x + tree.getClientArea().width - event.x;
-				if (event.index == tree.getColumnCount() - 1 || tree.getColumnCount() == 0) {
-					if (width > 0) {
-						Region region = new Region();
-						gc.getClipping(region);
-						region.add(event.x, event.y, width, event.height);
-						gc.setClipping(region);
-						region.dispose();
-					}
-				}
+				// Sets background and foreground color to the ones set by the Tree Viewer
 				gc.setBackground(item.getBackground(event.index));
 				gc.setForeground(item.getForeground(event.index));
 				gc.fillRectangle(event.x, event.y, width, event.height);
@@ -214,12 +219,16 @@ public class SelectionEditor extends EditorPart {
 		packColumns();
 	}
 
+	/**
+	 * Adjusts size of columns to fit visible content. Also resizes last column to fill remainder of space.
+	 */
 	private void packColumns() {
 		Tree tree = treeViewer.getTree();
 		int columnsWidth = 0;
 		for (TreeColumn column : tree.getColumns()) {
 			column.pack();
 		}
+		// After packing all columns, we manually change the size of the last column
 		for (TreeColumn column : tree.getColumns()) {
 			columnsWidth += column.getWidth();
 		}
@@ -229,11 +238,21 @@ public class SelectionEditor extends EditorPart {
 		Rectangle area = tree.getClientArea();
 		int width = area.width;
 
+		// We set the width of the last column to be the width of the tree area minus the width of every other
+		// column added up, filling up the rest of the area
 		if (lastColumn.getWidth() < width - columnsWidth) {
 			lastColumn.setWidth(width - columnsWidth);
 		}
 	}
 
+	/**
+	 * Creates a tree viewer element with elements that can be checked off
+	 * 
+	 * @param tree
+	 *            Parent tree element
+	 * @param titles
+	 *            Titles for the columns
+	 */
 	private void createContainerCheckedTreeViewer(Tree tree, String[] titles) {
 		ContainerCheckedTreeViewer treeViewer = new ContainerCheckedTreeViewer(tree);
 		treeViewer.setColumnProperties(titles);
@@ -241,6 +260,7 @@ public class SelectionEditor extends EditorPart {
 
 		treeViewer.setLabelProvider(new LabelProvider());
 
+		// Any time the tree is either expanded or collapsed, the columns must once again be packed
 		treeViewer.addTreeListener(new ITreeViewerListener() {
 
 			@Override
@@ -267,6 +287,8 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
+		// Any time an element is checked or unchecked, we use a method to take care of additional
+		// highlighting and dependency related changes
 		treeViewer.addCheckStateListener(new ICheckStateListener() {
 
 			@Override
@@ -284,13 +306,11 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-				// TODO Auto-generated method stub
 
 			}
 
 			@Override
 			public void dispose() {
-				// TODO Auto-generated method stub
 
 			}
 
@@ -393,6 +413,15 @@ public class SelectionEditor extends EditorPart {
 		this.treeViewer = treeViewer;
 	}
 
+	/**
+	 * Sets the checked status for the given element and its children. Also updates the dependency-related
+	 * highlighting as necessary.
+	 * 
+	 * @param element
+	 *            The element being checked or unchecked
+	 * @param checked
+	 *            Desired checked state
+	 */
 	private void setCheckedElement(Object element, boolean checked) {
 		treeViewer.setSubtreeChecked(element, checked);
 		updateElement(element);
@@ -410,11 +439,19 @@ public class SelectionEditor extends EditorPart {
 			}
 		}
 
-		// Update selected children and update their dependencies
+		// Update children of selected element and update their dependencies
 		handleChildren(element, checked);
 
 	}
 
+	/**
+	 * Gets all children of given parent element and sets their checked status as desired.
+	 * 
+	 * @param parent
+	 *            Parent element of children we need to change
+	 * @param checked
+	 *            Desired checked state for children of parent
+	 */
 	private void handleChildren(Object parent, boolean checked) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 		if (!contentProvider.hasChildren(parent)) {
@@ -425,6 +462,19 @@ public class SelectionEditor extends EditorPart {
 		}
 	}
 
+	/**
+	 * Updates maps counting number of dependers and dependees that are currently selected (checked) and
+	 * causes update so that dependencies are properly highlighted.
+	 * 
+	 * @param dependecy
+	 *            Element for which we update dependency counts.
+	 * @param dependee
+	 *            Boolean to signify whether the element is being depended on, or if it is depending on
+	 *            another element itself.
+	 * @param increase
+	 *            True if dependency count needs to be increased (when another dependency partner of the given
+	 *            element has been selected).
+	 */
 	private void updateSelectionDependency(EventBElement dependecy, boolean dependee, boolean increase) {
 		Map<EventBElement, Integer> dependencyMap;
 		if (dependee) {
@@ -439,11 +489,15 @@ public class SelectionEditor extends EditorPart {
 		} else {
 			dependencyMap.remove(dependecy);
 		}
+		// Element needs to be updated so that its highlighting is correct.
 		updateElement(findTreeElement(dependecy, false));
 	}
 
-	/*
-	 * We update both the element and all of its parents, just in case.
+	/**
+	 * Updates an element as well as all of its parents in the editor's tree viewer.
+	 * 
+	 * @param element
+	 *            Element to update
 	 */
 	private void updateElement(Object element) {
 		if (element == null) {
@@ -464,6 +518,12 @@ public class SelectionEditor extends EditorPart {
 		}
 	}
 
+	/**
+	 * Container class for tree subcategories (e.g. Variables, Invariants, Events).
+	 * 
+	 * @author Aivar Kripsaar
+	 *
+	 */
 	public class EventBTreeSubcategory {
 		final String label;
 		final EventBUnit parentUnit;
@@ -514,6 +574,13 @@ public class SelectionEditor extends EditorPart {
 			return children;
 		}
 
+		/**
+		 * Finds the tree container version of the given element.
+		 * 
+		 * @param originalElement
+		 *            Editor internal representation of element
+		 * @return Tree container element of the desired element
+		 */
 		public EventBTreeElement findTreeElement(EventBElement originalElement) {
 			for (EventBTreeElement child : children) {
 				if (child.getOriginalElement().equals(originalElement)) {
@@ -574,6 +641,12 @@ public class SelectionEditor extends EditorPart {
 
 	}
 
+	/**
+	 * Container class for Event-B elements in tree
+	 * 
+	 * @author Aivar Kripsaar
+	 *
+	 */
 	public class EventBTreeElement {
 		final EventBTreeSubcategory parent;
 		final EventBElement originalElement;
@@ -631,6 +704,12 @@ public class SelectionEditor extends EditorPart {
 
 	}
 
+	/**
+	 * Label provider for table viewer, implementing the necessary interfaces.
+	 * 
+	 * @author Aivar Kripsaar
+	 *
+	 */
 	class LabelProvider implements ITableLabelProvider, ITableColorProvider, ITableFontProvider {
 
 		@Override
@@ -666,6 +745,8 @@ public class SelectionEditor extends EditorPart {
 			}
 			if (element instanceof EventBTreeElement) {
 				if (treeViewer.getChecked(element) || selectionDependees.containsKey(((EventBTreeElement) element).getOriginalElement())) {
+					// If the element is being highlighted, we give the text a different color for easier
+					// readability.
 					switch (columnIndex) {
 					case ELEMENT_COLUMN:
 						return Display.getDefault().getSystemColor(SWT.COLOR_CYAN);
@@ -704,12 +785,15 @@ public class SelectionEditor extends EditorPart {
 				return null;
 			}
 			if (treeViewer.getChecked(element)) {
+				// If the element is selected (checked)
 				return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
 			}
 			if (selectionDependees.containsKey(((EventBTreeElement) element).getOriginalElement())) {
+				// If the element is depended upon by a currently selected element
 				return Display.getDefault().getSystemColor(SWT.COLOR_RED);
 			}
 			if (selectionDependers.containsKey(((EventBTreeElement) element).getOriginalElement())) {
+				// If the element depends on a currently selected element
 				return Display.getDefault().getSystemColor(SWT.COLOR_CYAN);
 			}
 			return null;
@@ -724,6 +808,7 @@ public class SelectionEditor extends EditorPart {
 		@Override
 		public String getColumnText(Object element, int columnIndex) {
 			if (element instanceof EventBTreeSubcategory) {
+				// Categories only need their labels displayed
 				if (columnIndex == ELEMENT_COLUMN) {
 					return ((EventBTreeSubcategory) element).getLabel();
 				}
@@ -798,6 +883,12 @@ public class SelectionEditor extends EditorPart {
 
 	}
 
+	/**
+	 * Creates buttons for editor
+	 * 
+	 * @param parent
+	 *            The parent editor
+	 */
 	private void createButtons(Composite parent) {
 		Composite buttonBar = new Composite(parent, SWT.NONE);
 		buttonBar.setLayout(new RowLayout());
