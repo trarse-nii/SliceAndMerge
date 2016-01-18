@@ -898,18 +898,12 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// TODO: Add functionality
-				boolean needNewContext = false; // TODO: get info from context selection
-				if (needNewContext) {
-					// TODO: Implement new input dialog
-				} else {
-					WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MachineCreationWizard(rodinFile.getRodinProject(),
-							machineRoot, treeViewer.getCheckedElements()));
+				WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MachineCreationWizard(rodinFile.getRodinProject(), machineRoot,
+						treeViewer.getCheckedElements()));
 
-					wizardDialog.setBlockOnOpen(true);
-					wizardDialog.open();
-					System.out.println();
-				}
+				wizardDialog.setBlockOnOpen(true);
+				wizardDialog.open();
+				System.out.println();
 			}
 
 			@Override
