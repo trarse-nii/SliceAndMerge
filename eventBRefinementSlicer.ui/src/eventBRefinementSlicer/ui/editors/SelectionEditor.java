@@ -892,6 +892,7 @@ public class SelectionEditor extends EditorPart {
 	private void createButtons(Composite parent) {
 		Composite buttonBar = new Composite(parent, SWT.NONE);
 		buttonBar.setLayout(new RowLayout());
+		// Button for creating a new sub-refinement from the selected elements
 		Button newMachineButton = new Button(buttonBar, SWT.PUSH);
 		newMachineButton.setText("Create Sub-Refinement");
 		newMachineButton.addSelectionListener(new SelectionListener() {
@@ -912,6 +913,7 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
+		// A button to select all elements of the machine opened in the editor
 		Button selectAllButton = new Button(buttonBar, SWT.PUSH);
 		selectAllButton.setText("Select All");
 		selectAllButton.addSelectionListener(new SelectionListener() {
@@ -932,6 +934,7 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
+		// A button to select all elements that currently selected elements depend on
 		Button selectAllDependenciesButton = new Button(buttonBar, SWT.PUSH);
 		selectAllDependenciesButton.setText("Select All Dependencies");
 		selectAllDependenciesButton.addSelectionListener(new SelectionListener() {
@@ -960,6 +963,15 @@ public class SelectionEditor extends EditorPart {
 
 	}
 
+	/**
+	 * Finds the tree-internal container for a given editor-internal Event-B element
+	 * 
+	 * @param element
+	 *            The Event-B element for which the tree-internal container is desired
+	 * @param expand
+	 *            True if tree in editor should be expanded to have the element be visible
+	 * @return Tree-internal container element for given Event-B element
+	 */
 	private EventBTreeElement findTreeElement(EventBElement element, boolean expand) {
 		EventBTreeElement treeElement = null;
 		if (!expand && elementToTreeElementMap.containsKey(element)) {
@@ -1060,7 +1072,14 @@ public class SelectionEditor extends EditorPart {
 		return treeElement;
 	}
 
+	/**
+	 * Add categories to internal label to category map
+	 * 
+	 * @param categories
+	 *            Array of categories to add
+	 */
 	private void addCategories(EventBTreeSubcategory[] categories) {
+		// TODO: Need to rework this stuff
 		for (EventBTreeSubcategory category : categories) {
 			treeCategories.put(category.getLabel(), category);
 		}
