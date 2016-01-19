@@ -1008,6 +1008,7 @@ public class SelectionEditor extends EditorPart {
 				}
 				Object[] childrenOfContext = contentProvider.getChildren(treeContext);
 				for (Object child : childrenOfContext) {
+					// We pick out the correct subcategory for the element we are searching for
 					assert child instanceof EventBTreeSubcategory;
 					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
 					String label = "";
@@ -1045,8 +1046,9 @@ public class SelectionEditor extends EditorPart {
 				if (expand) {
 					treeViewer.expandToLevel(treeEvent, 1);
 				}
-				Object[] childrenofContext = contentProvider.getChildren(treeEvent);
-				for (Object child : childrenofContext) {
+				Object[] childrenofEvent = contentProvider.getChildren(treeEvent);
+				for (Object child : childrenofEvent) {
+					// We pick out the correct subcategory for the searched element
 					assert child instanceof EventBTreeSubcategory;
 					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
 					String label = "";
