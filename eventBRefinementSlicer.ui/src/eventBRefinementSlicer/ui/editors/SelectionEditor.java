@@ -442,6 +442,9 @@ public class SelectionEditor extends EditorPart {
 		// Update children of selected element and update their dependencies
 		handleChildren(element, checked);
 
+		// Correct checked state of parents
+		correctParentsChecked(element);
+
 	}
 
 	/**
@@ -459,6 +462,64 @@ public class SelectionEditor extends EditorPart {
 		}
 		for (Object child : contentProvider.getChildren(parent)) {
 			setCheckedElement(child, checked);
+		}
+	}
+
+	/**
+	 * Corrects the parents's checked (selection) state based on child's changed checked status
+	 * 
+	 * @param element
+	 *            The element which has had its checked status changed.
+	 */
+	private void correctParentsChecked(Object element) {
+		if (element instanceof EventBTreeElement) {
+			EventBTreeElement treeElement = (EventBTreeElement) element;
+			EventBTreeSubcategory parent = treeElement.getParent();
+			if (parent == null) {
+				return;
+			}
+			correctElementChecked(parent);
+		} else if (element instanceof EventBTreeSubcategory) {
+			EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) element;
+			EventBTreeElement parent = treeCategory.getParentElement();
+			if (parent == null) {
+				return;
+			}
+			correctElementChecked(parent);
+		}
+	}
+
+	/**
+	 * Checks element's current checked state based on checked states of children and corrects if necessary.
+	 * 
+	 * @param element
+	 *            Tree element which needs to be checked and corrected
+	 */
+	private void correctElementChecked(Object element) {
+		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
+		if (!contentProvider.hasChildren(element)) {
+			return;
+		}
+		Boolean isChecked = true;
+		Boolean isPartiallyChecked = false;
+		for (Object child : contentProvider.getChildren(element)) {
+			if (treeViewer.getChecked(child) || treeViewer.getGrayed(child)) {
+				isPartiallyChecked = true;
+			} else if (!treeViewer.getChecked(child) || treeViewer.getGrayed(child)) {
+				isChecked = false;
+			}
+		}
+		if (isChecked) {
+			treeViewer.setChecked(element, true);
+			treeViewer.setGrayed(element, false);
+			correctParentsChecked(element);
+		} else if (isPartiallyChecked) {
+			treeViewer.setGrayChecked(element, true);
+			correctParentsChecked(element);
+		} else {
+			treeViewer.setChecked(element, false);
+			treeViewer.setGrayed(element, false);
+			correctParentsChecked(element);
 		}
 	}
 
