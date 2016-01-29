@@ -55,7 +55,10 @@ import org.rodinp.core.IRodinFile;
 import org.rodinp.core.RodinCore;
 
 import eventBRefinementSlicer.internal.datastructures.EventBAction;
+import eventBRefinementSlicer.internal.datastructures.EventBAxiom;
+import eventBRefinementSlicer.internal.datastructures.EventBCarrierSet;
 import eventBRefinementSlicer.internal.datastructures.EventBCondition;
+import eventBRefinementSlicer.internal.datastructures.EventBConstant;
 import eventBRefinementSlicer.internal.datastructures.EventBContext;
 import eventBRefinementSlicer.internal.datastructures.EventBDependencies;
 import eventBRefinementSlicer.internal.datastructures.EventBElement;
@@ -293,6 +296,21 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
+				if (event.getElement() instanceof EventBTreeElement) {
+					EventBElement element = ((EventBTreeElement) event.getElement()).getOriginalElement();
+					if ((element instanceof EventBAxiom || element instanceof EventBConstant || element instanceof EventBCarrierSet)) {
+						setCheckedElement(event.getElement(), !event.getChecked());
+						treeViewer.refresh();
+						return;
+					}
+				} else if (event.getElement() instanceof EventBTreeSubcategory) {
+					EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) event.getElement();
+					if (treeCategory.getParentElement() != null && treeCategory.getParentElement().getOriginalElement() instanceof EventBContext) {
+						setCheckedElement(event.getElement(), !event.getChecked());
+						treeViewer.refresh();
+						return;
+					}
+				}
 				setCheckedElement(event.getElement(), event.getChecked());
 			}
 
