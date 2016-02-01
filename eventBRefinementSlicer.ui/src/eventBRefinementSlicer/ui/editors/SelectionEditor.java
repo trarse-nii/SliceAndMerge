@@ -300,14 +300,12 @@ public class SelectionEditor extends EditorPart {
 					EventBElement element = ((EventBTreeElement) event.getElement()).getOriginalElement();
 					if ((element instanceof EventBAxiom || element instanceof EventBConstant || element instanceof EventBCarrierSet)) {
 						setCheckedElement(event.getElement(), !event.getChecked());
-						treeViewer.refresh();
 						return;
 					}
 				} else if (event.getElement() instanceof EventBTreeSubcategory) {
 					EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) event.getElement();
 					if (treeCategory.getParentElement() != null && treeCategory.getParentElement().getOriginalElement() instanceof EventBContext) {
 						setCheckedElement(event.getElement(), !event.getChecked());
-						treeViewer.refresh();
 						return;
 					}
 				}
@@ -530,13 +528,16 @@ public class SelectionEditor extends EditorPart {
 		if (isChecked) {
 			treeViewer.setChecked(element, true);
 			treeViewer.setGrayed(element, false);
+			treeViewer.update(element, null);
 			correctParentsChecked(element);
 		} else if (isPartiallyChecked) {
 			treeViewer.setGrayChecked(element, true);
+			treeViewer.update(element, null);
 			correctParentsChecked(element);
 		} else {
 			treeViewer.setChecked(element, false);
 			treeViewer.setGrayed(element, false);
+			treeViewer.update(element, null);
 			correctParentsChecked(element);
 		}
 	}
