@@ -296,16 +296,23 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
+				// If the element is part of a context, we wish to disable selection, because only whole
+				// contexts should be selectable
+				// We have to hack this in by undoing the checking of the checkbox manually
 				if (event.getElement() instanceof EventBTreeElement) {
 					EventBElement element = ((EventBTreeElement) event.getElement()).getOriginalElement();
 					if ((element instanceof EventBAxiom || element instanceof EventBConstant || element instanceof EventBCarrierSet)) {
-						setCheckedElement(event.getElement(), !event.getChecked());
+						treeViewer.setSubtreeChecked(event.getElement(), !event.getChecked());
+						// Correct checked state of parents
+						correctParentsChecked(event.getElement());
 						return;
 					}
 				} else if (event.getElement() instanceof EventBTreeSubcategory) {
 					EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) event.getElement();
 					if (treeCategory.getParentElement() != null && treeCategory.getParentElement().getOriginalElement() instanceof EventBContext) {
-						setCheckedElement(event.getElement(), !event.getChecked());
+						treeViewer.setSubtreeChecked(event.getElement(), !event.getChecked());
+						// Correct checked state of parents
+						correctParentsChecked(event.getElement());
 						return;
 					}
 				}
