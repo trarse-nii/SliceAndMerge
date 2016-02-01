@@ -528,7 +528,8 @@ public class SelectionEditor extends EditorPart {
 		for (Object child : contentProvider.getChildren(element)) {
 			if (treeViewer.getChecked(child) || treeViewer.getGrayed(child)) {
 				isPartiallyChecked = true;
-			} else if (!treeViewer.getChecked(child) || treeViewer.getGrayed(child)) {
+			}
+			if (!treeViewer.getChecked(child) || treeViewer.getGrayed(child)) {
 				isChecked = false;
 			}
 		}
