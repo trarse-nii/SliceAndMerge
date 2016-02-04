@@ -92,6 +92,9 @@ public class SelectionEditor extends EditorPart {
 	private IMachineRoot machineRoot;
 	private EventBMachine machine;
 
+	// We require a duplicate of the checked state because of the limitations of the TreeViewer API
+	private Map<Object, Boolean> selectionMap = new HashMap<>();
+
 	// TODO: Replace with something more reasonable. Or get rid of it altogether.
 	private Map<String, EventBTreeSubcategory> treeCategories = new HashMap<>();
 
@@ -316,7 +319,8 @@ public class SelectionEditor extends EditorPart {
 						return;
 					}
 				}
-				setCheckedElement(event.getElement(), event.getChecked());
+				updateSelectionDependenciesForSubtree(event.getElement(), event.getChecked());
+				correctParentsChecked(event.getElement());
 			}
 
 		});
@@ -450,6 +454,28 @@ public class SelectionEditor extends EditorPart {
 		updateElement(element);
 
 		// Get dependency information and add it to the local maps
+		updateSelectionDependenciesForElement(element, checked);
+
+		// Update the selection map
+		selectionMap.put(element, checked);
+
+		// Update children of selected element and update their dependencies
+		setChildrenChecked(element, checked);
+
+		// Correct checked state of parents
+		correctParentsChecked(element);
+
+	}
+
+	/**
+	 * Updates the local dependency maps to account for the change of the checked state of an element
+	 * 
+	 * @param element
+	 *            Element that has had its checked state changed
+	 * @param checked
+	 *            New checked status of element
+	 */
+	private void updateSelectionDependenciesForElement(Object element, boolean checked) {
 		if (element instanceof EventBTreeElement) {
 			EventBDependencies dependencies = machine.getDependencies();
 			Set<EventBElement> dependees = dependencies.getDependeesForElement(((EventBTreeElement) element).getOriginalElement());
@@ -461,13 +487,33 @@ public class SelectionEditor extends EditorPart {
 				updateSelectionDependency(depender, false, checked);
 			}
 		}
+		treeViewer.update(element, null);
+	}
 
-		// Update children of selected element and update their dependencies
-		handleChildren(element, checked);
-
-		// Correct checked state of parents
-		correctParentsChecked(element);
-
+	/**
+	 * Updates the local dependency maps to account for the change of the checked state of an element and its
+	 * subtree
+	 * 
+	 * @param element
+	 *            Element that has had its checked state changed
+	 * @param checked
+	 *            New checked status of element
+	 */
+	private void updateSelectionDependenciesForSubtree(Object element, boolean checked) {
+		if (!(checked ^ selectionMap.getOrDefault(element, false))) {
+			// If checked state of this element doesn't change, nothing else needs to be done.
+			treeViewer.update(element, null);
+			return;
+		}
+		selectionMap.put(element, checked);
+		updateSelectionDependenciesForElement(element, checked);
+		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
+		if (!contentProvider.hasChildren(element)) {
+			return;
+		}
+		for (Object child : contentProvider.getChildren(element)) {
+			updateSelectionDependenciesForSubtree(child, checked);
+		}
 	}
 
 	/**
@@ -478,13 +524,16 @@ public class SelectionEditor extends EditorPart {
 	 * @param checked
 	 *            Desired checked state for children of parent
 	 */
-	private void handleChildren(Object parent, boolean checked) {
+	private void setChildrenChecked(Object parent, boolean checked) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 		if (!contentProvider.hasChildren(parent)) {
 			return;
 		}
 		for (Object child : contentProvider.getChildren(parent)) {
-			setCheckedElement(child, checked);
+			if (checked ^ selectionMap.getOrDefault(child, false)) {
+				// We only update a child if its checked status changes
+				setCheckedElement(child, checked);
+			}
 		}
 	}
 
@@ -537,15 +586,18 @@ public class SelectionEditor extends EditorPart {
 			treeViewer.setChecked(element, true);
 			treeViewer.setGrayed(element, false);
 			treeViewer.update(element, null);
+			selectionMap.put(element, true);
 			correctParentsChecked(element);
 		} else if (isPartiallyChecked) {
 			treeViewer.setGrayChecked(element, true);
 			treeViewer.update(element, null);
+			selectionMap.put(element, true);
 			correctParentsChecked(element);
 		} else {
 			treeViewer.setChecked(element, false);
 			treeViewer.setGrayed(element, false);
 			treeViewer.update(element, null);
+			selectionMap.put(element, false);
 			correctParentsChecked(element);
 		}
 	}
