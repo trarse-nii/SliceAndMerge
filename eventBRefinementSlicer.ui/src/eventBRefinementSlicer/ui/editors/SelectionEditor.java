@@ -920,8 +920,26 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public Color getBackground(Object element, int columnIndex) {
-			if (!(element instanceof EventBTreeElement)) {
+			if (!(element instanceof EventBTreeElement || element instanceof EventBTreeSubcategory)) {
+				return null;
+			}
+			if (treeViewer == null) {
+				return null;
+			}
+			if (element instanceof EventBTreeSubcategory) {
 				// TODO: Add color coding for categories
+				if (treeViewer.getChecked(element) && !treeViewer.getGrayed(element)) {
+					// If all elements are selected, we color the category with the color for selected
+					// elements
+					return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
+				}
+				for (EventBTreeElement child : ((EventBTreeSubcategory) element).getChildren()) {
+					if (selectionDependees.containsKey(child.getOriginalElement()) && !treeViewer.getChecked(child)) {
+						// If even a single unselected child of the category is a dependency, we mark the
+						// category red
+						return Display.getDefault().getSystemColor(SWT.COLOR_RED);
+					}
+				}
 				return null;
 			}
 			if (treeViewer.getChecked(element)) {
