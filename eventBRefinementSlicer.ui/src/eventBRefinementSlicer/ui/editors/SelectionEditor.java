@@ -1084,7 +1084,12 @@ public class SelectionEditor extends EditorPart {
 				for (EventBElement dependee : selectionDependees.keySet()) {
 					EventBTreeElement element = findTreeElement(dependee, true);
 					if (element != null && !treeViewer.getChecked(element)) {
-						setCheckedElement(element, true);
+						if (!(element.getOriginalElement() instanceof EventBContext)
+								&& element.getOriginalElement().getParent() instanceof EventBContext) {
+							setCheckedElement(findTreeElement(element.getOriginalElement().getParent(), false), true);
+						} else {
+							setCheckedElement(element, true);
+						}
 					}
 				}
 				treeViewer.refresh();
