@@ -14,6 +14,7 @@ import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IInvariant;
 import org.eventb.core.IMachineRoot;
 import org.eventb.core.IRefinesMachine;
+import org.eventb.core.IVariable;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IRefinementManager;
 import org.rodinp.core.IRodinFile;
@@ -113,11 +114,34 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				}
 				// And then we add the concrete invariants
 				for (IInvariant invariant : concreteMachineRoot.getInvariants()) {
+					// The internal names might contain duplicates. We resolve this by appending something at
+					// the end.
 					String invariantName = invariant.getElementName();
 					while (root.getInvariant(invariantName).exists()) {
 						invariantName = invariantName + "_";
 					}
 					invariant.copy(root, null, invariantName, false, null);
+				}
+
+				// Copy all variables from both machines into new one
+				// First the abstract machine
+				for (IVariable variable : abstractMachineRoot.getVariables()) {
+					variable.copy(root, null, null, false, null);
+				}
+				// And the concrete variables
+				for (IVariable variable : concreteMachineRoot.getVariables()) {
+					String variableName = variable.getElementName();
+					if (root.getVariable(variableName).exists()
+							&& root.getVariable(variableName).getIdentifierString().equals(variable.getIdentifierString())) {
+						// If the variable already exists, we don't need to add it again.
+						continue;
+					}
+					// The internal names might contain duplicates. We resolve this by appending something at
+					// the end.
+					while (root.getVariable(variableName).exists()) {
+						variableName = variableName + "_";
+					}
+					variable.copy(root, null, variableName, false, null);
 				}
 
 				// Save the final result
