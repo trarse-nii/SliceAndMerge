@@ -68,6 +68,7 @@ import eventBRefinementSlicer.internal.datastructures.EventBTypes;
 import eventBRefinementSlicer.internal.datastructures.EventBUnit;
 import eventBRefinementSlicer.ui.jobs.EventBDependencyAnalysisJob;
 import eventBRefinementSlicer.ui.wizards.MachineCreationWizard;
+import eventBRefinementSlicer.ui.wizards.MergeMachineWithPredecessorWizard;
 
 /**
  * The editor in charge of selecting which parts of an Event-B machine to use in the slicing of refinements
@@ -1059,6 +1060,26 @@ public class SelectionEditor extends EditorPart {
 			public void widgetSelected(SelectionEvent e) {
 				WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MachineCreationWizard(rodinFile.getRodinProject(), machineRoot,
 						treeViewer.getCheckedElements()));
+
+				wizardDialog.setBlockOnOpen(true);
+				wizardDialog.open();
+				System.out.println();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+			}
+		});
+
+		Button mergeMachinesButton = new Button(buttonBar, SWT.PUSH);
+		mergeMachinesButton.setText("lolBytton");
+		mergeMachinesButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MergeMachineWithPredecessorWizard(rodinFile.getRodinProject(),
+						machineRoot));
 
 				wizardDialog.setBlockOnOpen(true);
 				wizardDialog.open();
