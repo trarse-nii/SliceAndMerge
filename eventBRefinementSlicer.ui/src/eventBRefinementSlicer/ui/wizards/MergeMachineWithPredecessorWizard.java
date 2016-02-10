@@ -1,5 +1,8 @@
 package eventBRefinementSlicer.ui.wizards;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
@@ -14,6 +17,7 @@ import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IInvariant;
 import org.eventb.core.IMachineRoot;
 import org.eventb.core.IRefinesMachine;
+import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IRefinementManager;
@@ -21,8 +25,6 @@ import org.rodinp.core.IRodinFile;
 import org.rodinp.core.IRodinProject;
 import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
-
-import eventBRefinementSlicer.internal.datastructures.EventBMachine;
 
 /**
  * Wizard to create a new machine, which merges the machine in the editor with the machine it directly
@@ -37,8 +39,6 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	private IRodinProject rodinProject;
 	private IMachineRoot concreteMachineRoot;
 	private IMachineRoot abstractMachineRoot;
-	private EventBMachine concreteMachine;
-	private EventBMachine abstractMachine;
 
 	private MachineNamingWizardPage machineNamingPage;
 
@@ -123,25 +123,74 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 					invariant.copy(root, null, invariantName, false, null);
 				}
 
+				// We keep track of the variables already included to avoid duplicates
+				List<String> alreadyIncludedVariables = new ArrayList<>();
+				for (IVariable variable : root.getVariables()) {
+					alreadyIncludedVariables.add(variable.getIdentifierString());
+				}
+
 				// Copy all variables from both machines into new one
 				// First the abstract machine
 				for (IVariable variable : abstractMachineRoot.getVariables()) {
-					variable.copy(root, null, null, false, null);
-				}
-				// And the concrete variables
-				for (IVariable variable : concreteMachineRoot.getVariables()) {
-					String variableName = variable.getElementName();
-					if (root.getVariable(variableName).exists()
-							&& root.getVariable(variableName).getIdentifierString().equals(variable.getIdentifierString())) {
-						// If the variable already exists, we don't need to add it again.
+					if (alreadyIncludedVariables.contains(variable.getIdentifierString())) {
+						// We avoid adding duplicates.
 						continue;
 					}
 					// The internal names might contain duplicates. We resolve this by appending something at
 					// the end.
+					String variableName = variable.getElementName();
 					while (root.getVariable(variableName).exists()) {
 						variableName = variableName + "_";
 					}
 					variable.copy(root, null, variableName, false, null);
+					alreadyIncludedVariables.add(variable.getIdentifierString());
+				}
+				// And the concrete variables
+				for (IVariable variable : concreteMachineRoot.getVariables()) {
+					if (alreadyIncludedVariables.contains(variable.getIdentifierString())) {
+						// We avoid adding duplicates.
+						continue;
+					}
+					// The internal names might contain duplicates. We resolve this by appending something at
+					// the end.
+					String variableName = variable.getElementName();
+					while (root.getVariable(variableName).exists()) {
+						variableName = variableName + "_";
+					}
+					variable.copy(root, null, variableName, false, null);
+					alreadyIncludedVariables.add(variable.getIdentifierString());
+				}
+
+				// We take over all the seen contexts from both machines
+				// We keep a list of names of already included contexts to avoid duplicates
+				List<String> alreadyIncludedContexts = new ArrayList<>();
+				for (ISeesContext seenContext : root.getSeesClauses()) {
+					alreadyIncludedContexts.add(seenContext.getSeenContextName());
+				}
+				// We first copy the seen contexts from the abstract machine
+				// We need to look out for collisions between internal names
+				for (ISeesContext seenContext : abstractMachineRoot.getSeesClauses()) {
+					if (alreadyIncludedContexts.contains(seenContext.getSeenContextName())) {
+						continue;
+					}
+					String elementName = seenContext.getElementName();
+					while (root.getSeesClause(elementName).exists()) {
+						elementName += "_";
+					}
+					seenContext.copy(root, null, null, false, null);
+					alreadyIncludedContexts.add(seenContext.getSeenContextName());
+				}
+				// Then we copy the seen contexts from the concrete machine
+				for (ISeesContext seenContext : concreteMachineRoot.getSeesClauses()) {
+					if (alreadyIncludedContexts.contains(seenContext.getSeenContextName())) {
+						continue;
+					}
+					String elementName = seenContext.getElementName();
+					while (root.getSeesClause(elementName).exists()) {
+						elementName += "_";
+					}
+					seenContext.copy(root, null, elementName, false, null);
+					alreadyIncludedContexts.contains(seenContext.getSeenContextName());
 				}
 
 				// Save the final result
