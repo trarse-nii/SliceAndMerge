@@ -1,7 +1,11 @@
 package eventBRefinementSlicer.ui.wizards;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRunnable;
@@ -13,7 +17,9 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.FileEditorInput;
+import org.eventb.core.IAction;
 import org.eventb.core.IConfigurationElement;
+import org.eventb.core.IEvent;
 import org.eventb.core.IInvariant;
 import org.eventb.core.IMachineRoot;
 import org.eventb.core.IRefinesMachine;
@@ -191,6 +197,40 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 					}
 					seenContext.copy(root, null, elementName, false, null);
 					alreadyIncludedContexts.contains(seenContext.getSeenContextName());
+				}
+
+				Set<String> initAssignments = new HashSet<>();
+				Map<String, String> eventActualNameToInternalNameMap = new HashMap<>();
+
+				// Time to merge the events
+				// First, we remove any events that were brought over from refining
+				for (IEvent event : root.getEvents()) {
+					event.delete(true, null);
+				}
+				// Next, we base the new machine's events on the concrete event
+				for (IEvent event : concreteMachineRoot.getEvents()) {
+					event.copy(root, null, null, false, null);
+					eventActualNameToInternalNameMap.put(event.getLabel(), event.getElementName());
+					if (event.isInitialisation()) {
+						// We keep track of init assignments to avoid duplicates
+						for (IAction action : event.getActions()) {
+							initAssignments.add(action.getAssignmentString());
+						}
+					}
+				}
+				// Now we need to merge the abstract events into the copied concrete events
+				for (IEvent event : abstractMachineRoot.getEvents()) {
+					if (event.isInitialisation()) {
+						String eventName = eventActualNameToInternalNameMap.get(event.getLabel());
+						IEvent initEvent = root.getEvent(eventName);
+						// We add all missing INIT actions from the abstract machine
+						for (IAction action : event.getActions()) {
+							if (initAssignments.contains(action.getAssignmentString())) {
+								continue;
+							}
+							action.copy(initEvent, null, null, false, null);
+						}
+					}
 				}
 
 				// Save the final result
