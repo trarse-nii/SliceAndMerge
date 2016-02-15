@@ -26,6 +26,8 @@ import org.eventb.core.IRefinesMachine;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
 import org.eventb.core.basis.MachineRoot;
+import org.rodinp.core.IInternalElement;
+import org.rodinp.core.IInternalElementType;
 import org.rodinp.core.IRefinementManager;
 import org.rodinp.core.IRodinFile;
 import org.rodinp.core.IRodinProject;
@@ -95,6 +97,28 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		return true;
 	}
 
+	/**
+	 * A method to safely copy an element to its new destination while avoiding name conflicts
+	 * 
+	 * @param element
+	 *            Element which needs to be copied
+	 * @param destination
+	 *            Destination of element
+	 * @throws RodinDBException
+	 */
+	private void copyElement(IInternalElement element, IInternalElement destination) throws RodinDBException {
+		String elementName = element.getElementName();
+		IInternalElementType<?> type = element.getElementType();
+
+		// We check for name conflicts.
+		// If one is found, we make a small change to the name
+		while (destination.getInternalElement(type, elementName).exists()) {
+			elementName += "_";
+		}
+
+		element.copy(destination, null, elementName, false, null);
+	}
+
 	private void createMachine(String machineName) throws RodinDBException {
 		RodinCore.run(new IWorkspaceRunnable() {
 
@@ -116,17 +140,11 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				// Copy all invariants from both machines into new one
 				// We start with the abstract machine
 				for (IInvariant invariant : abstractMachineRoot.getInvariants()) {
-					invariant.copy(root, null, null, false, null);
+					copyElement(invariant, root);
 				}
 				// And then we add the concrete invariants
 				for (IInvariant invariant : concreteMachineRoot.getInvariants()) {
-					// The internal names might contain duplicates. We resolve this by appending something at
-					// the end.
-					String invariantName = invariant.getElementName();
-					while (root.getInvariant(invariantName).exists()) {
-						invariantName = invariantName + "_";
-					}
-					invariant.copy(root, null, invariantName, false, null);
+					copyElement(invariant, root);
 				}
 
 				// We keep track of the variables already included to avoid duplicates
@@ -142,13 +160,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 						// We avoid adding duplicates.
 						continue;
 					}
-					// The internal names might contain duplicates. We resolve this by appending something at
-					// the end.
-					String variableName = variable.getElementName();
-					while (root.getVariable(variableName).exists()) {
-						variableName = variableName + "_";
-					}
-					variable.copy(root, null, variableName, false, null);
+					copyElement(variable, root);
 					alreadyIncludedVariables.add(variable.getIdentifierString());
 				}
 				// And the concrete variables
@@ -157,13 +169,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 						// We avoid adding duplicates.
 						continue;
 					}
-					// The internal names might contain duplicates. We resolve this by appending something at
-					// the end.
-					String variableName = variable.getElementName();
-					while (root.getVariable(variableName).exists()) {
-						variableName = variableName + "_";
-					}
-					variable.copy(root, null, variableName, false, null);
+					copyElement(variable, root);
 					alreadyIncludedVariables.add(variable.getIdentifierString());
 				}
 
@@ -179,11 +185,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 					if (alreadyIncludedContexts.contains(seenContext.getSeenContextName())) {
 						continue;
 					}
-					String elementName = seenContext.getElementName();
-					while (root.getSeesClause(elementName).exists()) {
-						elementName += "_";
-					}
-					seenContext.copy(root, null, null, false, null);
+					copyElement(seenContext, root);
 					alreadyIncludedContexts.add(seenContext.getSeenContextName());
 				}
 				// Then we copy the seen contexts from the concrete machine
@@ -191,11 +193,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 					if (alreadyIncludedContexts.contains(seenContext.getSeenContextName())) {
 						continue;
 					}
-					String elementName = seenContext.getElementName();
-					while (root.getSeesClause(elementName).exists()) {
-						elementName += "_";
-					}
-					seenContext.copy(root, null, elementName, false, null);
+					copyElement(seenContext, root);
 					alreadyIncludedContexts.contains(seenContext.getSeenContextName());
 				}
 
@@ -209,7 +207,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				}
 				// Next, we base the new machine's events on the concrete event
 				for (IEvent event : concreteMachineRoot.getEvents()) {
-					event.copy(root, null, null, false, null);
+					copyElement(event, root);
 					eventActualNameToInternalNameMap.put(event.getLabel(), event.getElementName());
 					if (event.isInitialisation()) {
 						// We keep track of init assignments to avoid duplicates
@@ -218,6 +216,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 						}
 					}
 				}
+
 				// Now we need to merge the abstract events into the copied concrete events
 				for (IEvent event : abstractMachineRoot.getEvents()) {
 					if (event.isInitialisation()) {
