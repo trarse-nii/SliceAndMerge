@@ -20,11 +20,16 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eventb.core.IAction;
 import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IEvent;
+import org.eventb.core.IGuard;
 import org.eventb.core.IInvariant;
+import org.eventb.core.ILabeledElement;
 import org.eventb.core.IMachineRoot;
+import org.eventb.core.IParameter;
+import org.eventb.core.IRefinesEvent;
 import org.eventb.core.IRefinesMachine;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
+import org.eventb.core.IWitness;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IInternalElementType;
@@ -98,6 +103,68 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	}
 
 	/**
+	 * A method to copy all elements of a given event to another event.
+	 * 
+	 * @param source
+	 *            Source Event
+	 * @param destination
+	 *            Destination Event
+	 * @throws RodinDBException
+	 */
+	private void copyAbstractEventElements(IEvent source, IEvent destination) throws RodinDBException {
+		// We gather all the existing guard predicate strings
+		Set<String> existingGuardPredicates = new HashSet<>();
+		for (IGuard guard : destination.getGuards()) {
+			existingGuardPredicates.add(guard.getPredicateString());
+		}
+		// We copy the guards that aren't already in the destination
+		for (IGuard guard : source.getGuards()) {
+			if (existingGuardPredicates.contains(guard.getPredicateString())) {
+				continue;
+			}
+			copyElementAndRenameLabel(guard, destination, "abs_" + guard.getLabel());
+		}
+
+		// We gather all the existing action assignments
+		Set<String> existingActionAssignments = new HashSet<>();
+		for (IAction action : destination.getActions()) {
+			existingActionAssignments.add(action.getAssignmentString());
+		}
+		// Copy all the actions not already in the dest event
+		for (IAction action : source.getActions()) {
+			if (existingActionAssignments.contains(action.getAssignmentString())) {
+				continue;
+			}
+			copyElementAndRenameLabel(action, destination, "abs_" + action.getLabel());
+		}
+
+		// We gather all the existing parameter identifiers
+		Set<String> existingParameterIdentifiers = new HashSet<>();
+		for (IParameter parameter : destination.getParameters()) {
+			existingParameterIdentifiers.add(parameter.getIdentifierString());
+		}
+		// Copy all parameters not already in dest event
+		for (IParameter parameter : source.getParameters()) {
+			if (existingParameterIdentifiers.contains(parameter.getIdentifierString())) {
+				continue;
+			}
+			copyElement(parameter, destination);
+		}
+
+		// We do the same with witnesses
+		Set<String> existingWitnessPredicates = new HashSet<>();
+		for (IWitness witness : destination.getWitnesses()) {
+			existingWitnessPredicates.add(witness.getPredicateString());
+		}
+		for (IWitness witness : source.getWitnesses()) {
+			if (existingWitnessPredicates.contains(witness.getPredicateString())) {
+				continue;
+			}
+			copyElementAndRenameLabel(witness, destination, "abs_" + witness.getLabel());
+		}
+	}
+
+	/**
 	 * A method to safely copy an element to its new destination while avoiding name conflicts
 	 * 
 	 * @param element
@@ -105,8 +172,9 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	 * @param destination
 	 *            Destination of element
 	 * @throws RodinDBException
+	 * @return Name of copied element in destination
 	 */
-	private void copyElement(IInternalElement element, IInternalElement destination) throws RodinDBException {
+	private String copyElement(IInternalElement element, IInternalElement destination) throws RodinDBException {
 		String elementName = element.getElementName();
 		IInternalElementType<?> type = element.getElementType();
 
@@ -117,6 +185,45 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		}
 
 		element.copy(destination, null, elementName, false, null);
+		return elementName;
+	}
+
+	/**
+	 * A method to safely copy an element to its new destination while avoiding name conflicts, also giving
+	 * the new element a new label
+	 * 
+	 * @param element
+	 *            Element which needs to be copied
+	 * @param destination
+	 *            Destination of element
+	 * @param newLabel
+	 *            New label for the copied element
+	 * @throws RodinDBException
+	 */
+	private void copyElementAndRenameLabel(ILabeledElement element, IInternalElement destination, String newLabel) throws RodinDBException {
+		String elementName = copyElement(element, destination);
+		ILabeledElement destElement = (ILabeledElement) destination.getInternalElement(element.getElementType(), elementName);
+		destElement.setLabel(newLabel, null);
+	}
+
+	/**
+	 * A method to prepend "con_" to the labels of elements of a given event. Makes it easier to see where the
+	 * elements come from. Should be used before adding elements from abstract events
+	 * 
+	 * @param event
+	 *            The event to be modified
+	 * @throws RodinDBException
+	 */
+	private void prependConcreteLabelToEventElements(IEvent event) throws RodinDBException {
+		for (IGuard guard : event.getGuards()) {
+			guard.setLabel("con_" + guard.getLabel(), null);
+		}
+		for (IAction action : event.getActions()) {
+			action.setLabel("con_" + action.getLabel(), null);
+		}
+		for (IWitness witness : event.getWitnesses()) {
+			witness.setLabel("con_" + witness.getLabel(), null);
+		}
 	}
 
 	private void createMachine(String machineName) throws RodinDBException {
@@ -140,11 +247,11 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				// Copy all invariants from both machines into new one
 				// We start with the abstract machine
 				for (IInvariant invariant : abstractMachineRoot.getInvariants()) {
-					copyElement(invariant, root);
+					copyElementAndRenameLabel(invariant, root, "abs_" + invariant.getLabel());
 				}
 				// And then we add the concrete invariants
 				for (IInvariant invariant : concreteMachineRoot.getInvariants()) {
-					copyElement(invariant, root);
+					copyElementAndRenameLabel(invariant, root, "con_" + invariant.getLabel());
 				}
 
 				// We keep track of the variables already included to avoid duplicates
@@ -197,8 +304,13 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 					alreadyIncludedContexts.contains(seenContext.getSeenContextName());
 				}
 
-				Set<String> initAssignments = new HashSet<>();
 				Map<String, String> eventActualNameToInternalNameMap = new HashMap<>();
+				// We use a map for easy access of events in the abstract machine
+				Map<String, String> abstractLabelToInternalNameMap = new HashMap<>();
+
+				for (IEvent event : abstractMachineRoot.getEvents()) {
+					abstractLabelToInternalNameMap.put(event.getLabel(), event.getElementName());
+				}
 
 				// Time to merge the events
 				// First, we remove any events that were brought over from refining
@@ -209,26 +321,18 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				for (IEvent event : concreteMachineRoot.getEvents()) {
 					copyElement(event, root);
 					eventActualNameToInternalNameMap.put(event.getLabel(), event.getElementName());
-					if (event.isInitialisation()) {
-						// We keep track of init assignments to avoid duplicates
-						for (IAction action : event.getActions()) {
-							initAssignments.add(action.getAssignmentString());
-						}
-					}
+					// We also rename the labels to mark where the elements originate from
+					prependConcreteLabelToEventElements(event);
 				}
 
-				// Now we need to merge the abstract events into the copied concrete events
-				for (IEvent event : abstractMachineRoot.getEvents()) {
-					if (event.isInitialisation()) {
-						String eventName = eventActualNameToInternalNameMap.get(event.getLabel());
-						IEvent initEvent = root.getEvent(eventName);
-						// We add all missing INIT actions from the abstract machine
-						for (IAction action : event.getActions()) {
-							if (initAssignments.contains(action.getAssignmentString())) {
-								continue;
-							}
-							action.copy(initEvent, null, null, false, null);
-						}
+				// We iterate over all the copied events, adding elements from their abstract versions where
+				// necessary
+				for (IEvent event : root.getEvents()) {
+					for (IRefinesEvent refinesClause : event.getRefinesClauses()) {
+						String abstractLabel = refinesClause.getAbstractEventLabel();
+						IEvent abstractEvent = abstractMachineRoot.getEvent(abstractLabelToInternalNameMap.get(abstractLabel));
+						// We copy all the missing elements from the abstract event to the new machine
+						copyAbstractEventElements(abstractEvent, event);
 					}
 				}
 
