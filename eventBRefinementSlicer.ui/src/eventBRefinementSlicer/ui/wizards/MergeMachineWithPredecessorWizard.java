@@ -29,6 +29,7 @@ import org.eventb.core.IRefinesEvent;
 import org.eventb.core.IRefinesMachine;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
+import org.eventb.core.IVariant;
 import org.eventb.core.IWitness;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
@@ -346,6 +347,25 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 						copyAbstractEventElements(abstractEvent, event);
 						// We also take over the convergence status from the abstract element
 						event.setConvergence(abstractEvent.getConvergence(), null);
+					}
+				}
+
+				/*
+				 * We only take over a variant from one of the parent machines if the other one has no variant
+				 * Otherwise, either neither has a variant, or both machines include convergent events and we
+				 * need a whole new variant for the merged machine
+				 */
+				if (concreteMachineRoot.getVariants() == null || concreteMachineRoot.getVariants().length == 0) {
+					if (abstractMachineRoot.getVariants() != null) {
+						for (IVariant variant : abstractMachineRoot.getVariants()) {
+							copyElement(variant, root);
+						}
+					}
+				} else {
+					if (abstractMachineRoot.getVariants() == null || abstractMachineRoot.getVariants().length == 0) {
+						for (IVariant variant : concreteMachineRoot.getVariants()) {
+							copyElement(variant, root);
+						}
 					}
 				}
 
