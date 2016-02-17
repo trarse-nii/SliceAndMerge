@@ -34,6 +34,7 @@ import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IInternalElementType;
 import org.rodinp.core.IRefinementManager;
+import org.rodinp.core.IRodinElement;
 import org.rodinp.core.IRodinFile;
 import org.rodinp.core.IRodinProject;
 import org.rodinp.core.RodinCore;
@@ -209,6 +210,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		String elementName = copyElement(element, destination);
 		ILabeledElement destElement = (ILabeledElement) destination.getInternalElement(element.getElementType(), elementName);
 		destElement.setLabel(newLabel, null);
+		IRodinElement parent = destElement.getParent();
+		System.out.println();
 	}
 
 	/**
@@ -326,15 +329,15 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				for (IEvent event : concreteMachineRoot.getEvents()) {
 					copyElement(event, root);
 					eventActualNameToInternalNameMap.put(event.getLabel(), event.getElementName());
-					// We also rename the labels to mark where the elements originate from
-					prependConcreteLabelToEventElements(event);
 				}
 
 				/*
 				 * We iterate over all the copied events, removing refinement information, then adding
-				 * elements from their abstract versions where necessary
+				 * elements from their abstract versions where necessary. We also rename existing elements to
+				 * mark where they originate from.
 				 */
 				for (IEvent event : root.getEvents()) {
+					prependConcreteLabelToEventElements(event);
 					for (IRefinesEvent refinesClause : event.getRefinesClauses()) {
 						String abstractLabel = refinesClause.getAbstractEventLabel();
 						IEvent abstractEvent = abstractMachineRoot.getEvent(abstractLabelToInternalNameMap.get(abstractLabel));
