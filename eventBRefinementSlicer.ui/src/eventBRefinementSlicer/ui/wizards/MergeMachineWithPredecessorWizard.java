@@ -103,7 +103,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	}
 
 	/**
-	 * A method to copy all elements of a given event to another event.
+	 * A method to copy all elements of a given event to another event, including the refinement clause
 	 * 
 	 * @param source
 	 *            Source Event
@@ -161,6 +161,11 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				continue;
 			}
 			copyElementAndRenameLabel(witness, destination, "abs_" + witness.getLabel());
+		}
+
+		// Finally, we copy the refinement clause
+		for (IRefinesEvent refinementClause : source.getRefinesClauses()) {
+			copyElement(refinementClause, destination);
 		}
 	}
 
@@ -325,12 +330,15 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 					prependConcreteLabelToEventElements(event);
 				}
 
-				// We iterate over all the copied events, adding elements from their abstract versions where
-				// necessary
+				/*
+				 * We iterate over all the copied events, removing refinement information, then adding
+				 * elements from their abstract versions where necessary
+				 */
 				for (IEvent event : root.getEvents()) {
 					for (IRefinesEvent refinesClause : event.getRefinesClauses()) {
 						String abstractLabel = refinesClause.getAbstractEventLabel();
 						IEvent abstractEvent = abstractMachineRoot.getEvent(abstractLabelToInternalNameMap.get(abstractLabel));
+						refinesClause.delete(false, null);
 						// We copy all the missing elements from the abstract event to the new machine
 						copyAbstractEventElements(abstractEvent, event);
 					}
