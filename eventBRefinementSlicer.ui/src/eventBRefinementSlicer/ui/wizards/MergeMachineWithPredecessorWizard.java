@@ -334,7 +334,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				/*
 				 * We iterate over all the copied events, removing refinement information, then adding
 				 * elements from their abstract versions where necessary. We also rename existing elements to
-				 * mark where they originate from.
+				 * mark where they originate from. Additionally, we need to change convergence status.
 				 */
 				for (IEvent event : root.getEvents()) {
 					prependConcreteLabelToEventElements(event);
@@ -344,6 +344,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 						refinesClause.delete(false, null);
 						// We copy all the missing elements from the abstract event to the new machine
 						copyAbstractEventElements(abstractEvent, event);
+						// We also take over the convergence status from the abstract element
+						event.setConvergence(abstractEvent.getConvergence(), null);
 					}
 				}
 
