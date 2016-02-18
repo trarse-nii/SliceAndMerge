@@ -35,7 +35,6 @@ import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IInternalElementType;
 import org.rodinp.core.IRefinementManager;
-import org.rodinp.core.IRodinElement;
 import org.rodinp.core.IRodinFile;
 import org.rodinp.core.IRodinProject;
 import org.rodinp.core.RodinCore;
@@ -211,8 +210,6 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		String elementName = copyElement(element, destination);
 		ILabeledElement destElement = (ILabeledElement) destination.getInternalElement(element.getElementType(), elementName);
 		destElement.setLabel(newLabel, null);
-		IRodinElement parent = destElement.getParent();
-		System.out.println();
 	}
 
 	/**
