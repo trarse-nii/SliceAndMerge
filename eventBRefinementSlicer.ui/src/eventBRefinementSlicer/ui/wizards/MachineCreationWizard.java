@@ -89,7 +89,11 @@ public class MachineCreationWizard extends Wizard {
 
 	@Override
 	public void addPages() {
-		machineNamingPage = new MachineNamingWizardPage();
+
+		String title = "Create Sub-Refinement";
+		String description = "Enter a name for the new derived sub-refinement machine";
+
+		machineNamingPage = new MachineNamingWizardPage(title, description);
 		addPage(machineNamingPage);
 	}
 

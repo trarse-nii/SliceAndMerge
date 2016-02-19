@@ -17,14 +17,12 @@ import org.eclipse.swt.widgets.Text;
 
 public class MachineNamingWizardPage extends WizardPage {
 
-	private static String title = "Create Sub-Refinement";
-	private static String description = "Enter a name for the new derived sub-refinement machine";
 	private String labelMessage = "Enter name:";
 	private String machineNameInput = "newMachine";
 
 	private Text machineInputText;
 
-	public MachineNamingWizardPage() {
+	public MachineNamingWizardPage(String title, String description) {
 		super(title);
 		setTitle(title);
 		setDescription(description);

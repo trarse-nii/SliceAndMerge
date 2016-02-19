@@ -83,7 +83,11 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 
 	@Override
 	public void addPages() {
-		machineNamingPage = new MachineNamingWizardPage();
+
+		String title = "Merge Machine With Predecessor";
+		String description = "Enter a name for the machine newly derived from merging a machine with its direct abstract predecessor.";
+
+		machineNamingPage = new MachineNamingWizardPage(title, description);
 		addPage(machineNamingPage);
 	}
 

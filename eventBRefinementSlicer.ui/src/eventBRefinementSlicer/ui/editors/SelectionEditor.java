@@ -1075,7 +1075,7 @@ public class SelectionEditor extends EditorPart {
 		// A button to merge the currently opened machine with its direct ancestor (i.e. the machine this one
 		// refines)
 		Button mergeMachinesButton = new Button(buttonBar, SWT.PUSH);
-		mergeMachinesButton.setText("Merge With Direct Ancestor");
+		mergeMachinesButton.setText("Merge With Direct Predecessor");
 		mergeMachinesButton.addSelectionListener(new SelectionListener() {
 
 			@Override
