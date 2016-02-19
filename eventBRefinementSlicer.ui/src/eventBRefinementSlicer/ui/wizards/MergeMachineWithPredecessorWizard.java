@@ -58,10 +58,6 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 
 	private String machineName;
 
-	public MergeMachineWithPredecessorWizard() {
-		// TODO Auto-generated constructor stub
-	}
-
 	public MergeMachineWithPredecessorWizard(IRodinProject rodinProject, IMachineRoot concreteMachineRoot) {
 		super();
 		this.rodinProject = rodinProject;
@@ -76,13 +72,15 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		} catch (RodinDBException e) {
 			// TODO: handle exception
 		}
-
-		// TODO Exit with error on invalid input (machine with no predecessor)
-		// Or maybe just display error in wizard and block wizard from finishing?
 	}
 
 	@Override
 	public void addPages() {
+
+		if (abstractMachineRoot == null) {
+			// TODO: Add page that contains error
+			return;
+		}
 
 		String title = "Merge Machine With Predecessor";
 		String description = "Enter a name for the machine newly derived from merging a machine with its direct abstract predecessor.";
@@ -236,6 +234,13 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		}
 	}
 
+	/**
+	 * Creates a merge machine from the given information with the provided name.
+	 * 
+	 * @param machineName
+	 *            The name we give to the new machine
+	 * @throws RodinDBException
+	 */
 	private void createMachine(String machineName) throws RodinDBException {
 		RodinCore.run(new IWorkspaceRunnable() {
 
