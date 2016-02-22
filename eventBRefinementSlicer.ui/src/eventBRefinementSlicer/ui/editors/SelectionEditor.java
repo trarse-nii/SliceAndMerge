@@ -1092,7 +1092,7 @@ public class SelectionEditor extends EditorPart {
 				mergeButtonContainer.setToolTipText("");
 			} else {
 				mergeMachinesButton.setEnabled(false);
-				mergeButtonContainer.setToolTipText("Nothing to merge with. Current machine is the most abstract machine.");
+				mergeButtonContainer.setToolTipText("Nothing to merge with. Current machine does not refine any other machine.");
 			}
 		} catch (RodinDBException e) {
 			// TODO: handle exception
