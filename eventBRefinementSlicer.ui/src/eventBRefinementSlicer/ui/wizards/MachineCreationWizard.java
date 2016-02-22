@@ -69,6 +69,14 @@ import eventBRefinementSlicer.internal.util.SCUtil;
 import eventBRefinementSlicer.ui.editors.SelectionEditor.EventBTreeElement;
 import eventBRefinementSlicer.ui.editors.SelectionEditor.EventBTreeSubcategory;
 
+/**
+ * Wizard for creating a new Event-B machine in a Rodin project given a selection of elements from an existing
+ * machine.
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
+
 public class MachineCreationWizard extends Wizard {
 
 	private IRodinProject rodinProject;
@@ -111,6 +119,14 @@ public class MachineCreationWizard extends Wizard {
 		return true;
 	}
 
+	/**
+	 * Creates Event-B machine with the given name based on a selection of elements the wizard has already
+	 * received.
+	 * 
+	 * @param machineName
+	 *            Name for the new machine
+	 * @throws RodinDBException
+	 */
 	private void createMachineFromSelection(String machineName) throws RodinDBException {
 		List<EventBInvariant> invariants = new ArrayList<>();
 		List<EventBVariable> variables = new ArrayList<>();
@@ -121,6 +137,7 @@ public class MachineCreationWizard extends Wizard {
 		List<EventBAction> actions = new ArrayList<>();
 		List<EventBContext> contexts = new ArrayList<>();
 
+		// We split the selection into individual categories
 		for (Object checkedElement : selectedElements) {
 			if (checkedElement instanceof EventBTreeSubcategory) {
 				continue;
@@ -346,12 +363,33 @@ public class MachineCreationWizard extends Wizard {
 				});
 			}
 
+			/**
+			 * Takes variants from a given source Event-B machine and copies them to a provided target.
+			 * 
+			 * @param source
+			 *            Source machine of variant to be copied
+			 * @param target
+			 *            Target machine
+			 * @throws RodinDBException
+			 */
 			private void addVariant(IMachineRoot source, IInternalElement target) throws RodinDBException {
 				for (IVariant variant : source.getVariants()) {
 					variant.copy(target, null, null, true, null);
 				}
 			}
 
+			/**
+			 * Adds a Rodin element to the given parent element
+			 * 
+			 * @param type
+			 *            Type of the element (i.e. invariant or variable)
+			 * @param parent
+			 *            Target parent of element
+			 * @param element
+			 *            The element to add
+			 * @return The element that was created
+			 * @throws RodinDBException
+			 */
 			private IInternalElement addRodinElement(IInternalElementType<?> type, IInternalElement parent, EventBElement element)
 					throws RodinDBException {
 				IInternalElement rodinElement = parent.getInternalElement(type, element.getLabel());
