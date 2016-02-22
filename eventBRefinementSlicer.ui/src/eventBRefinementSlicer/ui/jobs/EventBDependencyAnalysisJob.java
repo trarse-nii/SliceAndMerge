@@ -8,6 +8,12 @@ import org.eclipse.core.runtime.jobs.Job;
 import eventBRefinementSlicer.internal.analyzers.EventBDependencyAnalyzer;
 import eventBRefinementSlicer.internal.datastructures.EventBMachine;
 
+/**
+ * Job to analyze dependencies in an Event-B Machine
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBDependencyAnalysisJob extends Job {
 
 	private static final String NAME = "EventB Dependency Analysis Job";
