@@ -78,7 +78,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	public void addPages() {
 
 		if (abstractMachineRoot == null) {
-			// TODO: Add page that contains error
+			// Case where there is no abstract machine should be handled earlier.
 			return;
 		}
 
@@ -99,7 +99,6 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 			createMachine(machineName);
 		} catch (RodinDBException e) {
 			// TODO: handle exception
-			System.out.println();
 		}
 
 		return true;
