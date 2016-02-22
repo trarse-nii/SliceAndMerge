@@ -30,6 +30,7 @@ import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
@@ -49,10 +50,12 @@ import org.eclipse.ui.part.EditorPart;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eventb.core.IEventBRoot;
 import org.eventb.core.IMachineRoot;
+import org.eventb.core.IRefinesMachine;
 import org.eventb.core.ast.FormulaFactory;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IRodinFile;
 import org.rodinp.core.RodinCore;
+import org.rodinp.core.RodinDBException;
 
 import eventBRefinementSlicer.internal.datastructures.EventBAction;
 import eventBRefinementSlicer.internal.datastructures.EventBAxiom;
@@ -1072,10 +1075,29 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
+		// We add an extra container for the next button to allow a tooltip when the button is disabled
+		final Composite mergeButtonContainer = new Composite(buttonBar, SWT.NONE);
+		mergeButtonContainer.setLayout(new FillLayout());
+
 		// A button to merge the currently opened machine with its direct ancestor (i.e. the machine this one
 		// refines)
-		Button mergeMachinesButton = new Button(buttonBar, SWT.PUSH);
+		Button mergeMachinesButton = new Button(mergeButtonContainer, SWT.PUSH);
 		mergeMachinesButton.setText("Merge With Direct Predecessor");
+		try {
+			// If current machine has no machine that it refines, we disable the button and display a tooltip
+			// explaining why the button is disabled
+			IRefinesMachine refinesMachines[] = machineRoot.getRefinesClauses();
+			if (refinesMachines.length > 0) {
+				mergeMachinesButton.setEnabled(true);
+				mergeButtonContainer.setToolTipText("");
+			} else {
+				mergeMachinesButton.setEnabled(false);
+				mergeButtonContainer.setToolTipText("Nothing to merge with. Current machine is the most abstract machine.");
+			}
+		} catch (RodinDBException e) {
+			// TODO: handle exception
+		}
+
 		mergeMachinesButton.addSelectionListener(new SelectionListener() {
 
 			@Override
