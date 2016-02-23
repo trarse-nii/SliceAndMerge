@@ -9,6 +9,13 @@ import org.eventb.core.ISCCarrierSet;
 import org.eventb.core.ast.FormulaFactory;
 import org.rodinp.core.RodinDBException;
 
+/**
+ * Internal representation of Event-B carrier sets, which are elements of Event-B contexts
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
+
 public class EventBCarrierSet extends EventBAttribute {
 
 	public EventBCarrierSet(String label, String comment, ISCCarrierSet scCarrierSet, EventBUnit parent) {
@@ -19,6 +26,11 @@ public class EventBCarrierSet extends EventBAttribute {
 		super(carrierSet, scCarrierSet, parent);
 	}
 
+	/**
+	 * Calculates the elements populating this carrier set
+	 * 
+	 * @return The set of elements populating this carrier set
+	 */
 	private Set<EventBAttribute> calculateContents() {
 		Set<EventBAttribute> contents = new HashSet<EventBAttribute>();
 		assert (parent instanceof EventBContext);

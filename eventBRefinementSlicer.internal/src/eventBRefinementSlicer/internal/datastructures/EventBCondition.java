@@ -49,14 +49,30 @@ public class EventBCondition extends EventBElement implements Depender {
 		}
 	}
 
+	/**
+	 * Getter for string representation of this element's predicate.
+	 * 
+	 * @return String representation of this element's predicate
+	 */
 	public String getPredicate() {
 		return predicate;
 	}
 
+	/**
+	 * Setter for the string representation of this element's predicate.
+	 * 
+	 * @param predicate
+	 *            String representation of this element's predicate
+	 */
 	public void setPredicate(String predicate) {
 		this.predicate = predicate;
 	}
 
+	/**
+	 * Checks whether or not this element is a theorem
+	 * 
+	 * @return Boolean communicating if this element is a theorem or not
+	 */
 	public boolean isTheorem() {
 		return isTheorem;
 	}
@@ -93,6 +109,7 @@ public class EventBCondition extends EventBElement implements Depender {
 		this.dependees = dependees;
 	}
 
+	@Override
 	public Set<EventBAttribute> calculateDependees() {
 		Set<EventBAttribute> occurredAttributes = new HashSet<>();
 		Predicate pred;

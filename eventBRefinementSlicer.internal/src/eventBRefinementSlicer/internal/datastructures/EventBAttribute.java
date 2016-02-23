@@ -63,6 +63,7 @@ public class EventBAttribute extends EventBElement implements Depender {
 		this.dependees = dependees;
 	}
 
+	@Override
 	public Set<EventBAttribute> calculateDependees() {
 		Set<EventBAttribute> dependees = new HashSet<EventBAttribute>();
 		try {
