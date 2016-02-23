@@ -935,7 +935,6 @@ public class SelectionEditor extends EditorPart {
 				return null;
 			}
 			if (element instanceof EventBTreeSubcategory) {
-				// TODO: Add color coding for categories
 				if (treeViewer.getChecked(element) && !treeViewer.getGrayed(element)) {
 					// If all elements are selected, we color the category with the color for selected
 					// elements
@@ -967,7 +966,7 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public Image getColumnImage(Object element, int columnIndex) {
-			// TODO Auto-generated method stub
+			// Intentionally returns null
 			return null;
 		}
 
@@ -1099,7 +1098,7 @@ public class SelectionEditor extends EditorPart {
 				mergeButtonContainer.setToolTipText("Nothing to merge with. Current machine does not refine any other machine.");
 			}
 		} catch (RodinDBException e) {
-			// TODO: handle exception
+			e.printStackTrace();
 		}
 
 		mergeMachinesButton.addSelectionListener(new SelectionListener() {
@@ -1171,7 +1170,7 @@ public class SelectionEditor extends EditorPart {
 
 	@Override
 	public void setFocus() {
-		// TODO Auto-generated method stub
+		// Intentionally left empty
 
 	}
 

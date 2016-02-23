@@ -70,7 +70,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				this.abstractMachineRoot = refinesMachine.getAbstractMachineRoot();
 			}
 		} catch (RodinDBException e) {
-			// TODO: handle exception
+			e.printStackTrace();
 		}
 	}
 
@@ -98,7 +98,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		try {
 			createMachine(machineName);
 		} catch (RodinDBException e) {
-			// TODO: handle exception
+			e.printStackTrace();
 		}
 
 		return true;
