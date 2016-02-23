@@ -22,6 +22,7 @@ import org.rodinp.core.RodinDBException;
 import eventBRefinementSlicer.internal.util.SCUtil;
 
 /**
+ * Internal representation of Event-B contexts.
  * 
  * @author Aivar Kripsaar
  *

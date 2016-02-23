@@ -14,6 +14,8 @@ import org.rodinp.core.RodinDBException;
 import eventBRefinementSlicer.internal.Depender;
 
 /**
+ * Internal representation of Event-B Actions.
+ * 
  * @author Aivar Kripsaar
  *
  */
@@ -82,16 +84,20 @@ public class EventBAction extends EventBElement implements Depender {
 		this.dependees = dependees;
 	}
 
+	@Override
 	public Set<EventBAttribute> calculateDependees() {
 		Set<EventBAttribute> occurredAttributes = new HashSet<>();
 		Assignment assignment;
 		try {
+			// We fetch the assignment this action performs and extract the attributes that occur.
+			// These are the elements this action depends on.
 			ITypeEnvironment typeEnvironment = parent.getTypeEnvironment();
 			assignment = getScElement().getAssignment(typeEnvironment);
 			for (FreeIdentifier freeIdentifier : assignment.getFreeIdentifiers()) {
 				EventBAttribute attribute = parent.findAttributeByLabel(freeIdentifier.getName());
 				if (attribute == null) {
-					// Also check parameters
+					// If the free identifier is not found among the event's attributes, it might be one of
+					// the parent event's parameters
 					for (EventBParameter parameter : parentEvent.getParameters()) {
 						if (parameter.getLabel().equals(freeIdentifier.getName())) {
 							attribute = parameter;

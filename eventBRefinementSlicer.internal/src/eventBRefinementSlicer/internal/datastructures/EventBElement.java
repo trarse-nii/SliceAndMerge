@@ -5,6 +5,8 @@ import org.rodinp.core.IInternalElement;
 import org.rodinp.core.RodinDBException;
 
 /**
+ * Base class for custom internal representation of Event-B elements, more specific classes inherit from this
+ * one. Meant to simplify access to various information contained within elements.
  * 
  * @author Aivar Kripsaar
  *
@@ -40,18 +42,38 @@ public class EventBElement {
 		this.scElement = scElement;
 	}
 
+	/**
+	 * Returns label describing this element (usually its name)
+	 * 
+	 * @return The string label of this element
+	 */
 	public String getLabel() {
 		return label;
 	}
 
+	/**
+	 * Getter for optional comment describing this element
+	 * 
+	 * @return String comment descibing this element
+	 */
 	public String getComment() {
 		return comment;
 	}
 
+	/**
+	 * Getter for statically checked Rodin internal representation of this element
+	 * 
+	 * @return The statically checked Rodin-internal representation of this element
+	 */
 	public IInternalElement getScElement() {
 		return scElement;
 	}
 
+	/**
+	 * Getter for string representation of this element's type
+	 * 
+	 * @return String representation of this element's type
+	 */
 	public String getType() {
 		final String type = EventBTypes.ELEMENT;
 		return type;
@@ -62,15 +84,28 @@ public class EventBElement {
 		return getType() + ": " + label + " (" + comment + ")";
 	}
 
+	/**
+	 * Returns array of this element's two string descriptors - the label and the comment
+	 * 
+	 * @return Array containing this elements string descriptors (e.g. label and comment)
+	 */
 	public Object[] toArray() {
 		Object[] array = { label, comment };
 		return array;
 	}
 
+	/**
+	 * Signals that this element has changed to this element's parent
+	 */
 	public void hasChanged() {
 		parent.changedElement(this);
 	}
 
+	/**
+	 * Getter for this element's parent unit (machine or context)
+	 * 
+	 * @return The parent of this element
+	 */
 	public EventBUnit getParent() {
 		return parent;
 	}
