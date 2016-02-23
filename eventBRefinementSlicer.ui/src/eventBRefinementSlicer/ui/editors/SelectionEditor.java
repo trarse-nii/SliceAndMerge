@@ -99,12 +99,16 @@ public class SelectionEditor extends EditorPart {
 	// We require a duplicate of the checked state because of the limitations of the TreeViewer API
 	private Map<Object, Boolean> selectionMap = new HashMap<>();
 
-	// TODO: Replace with something more reasonable. Or get rid of it altogether.
+	// Map from category label to internal representation of category.
+	// Only intended for use with categories that cannot occur more then once in the machine.
+	// Good: Invariant, Variable, Event, Seen Context
+	// Bad: Action, Guard, Witness, Parameter, Axiom, Constant, Carrier Set
 	private Map<String, EventBTreeSubcategory> treeCategories = new HashMap<>();
 
 	private Map<EventBElement, Integer> selectionDependees = new HashMap<>();
 	private Map<EventBElement, Integer> selectionDependers = new HashMap<>();
 
+	// Map of internal representation of element to tree-internal wrapper
 	private Map<EventBElement, EventBTreeElement> elementToTreeElementMap = new HashMap<>();
 
 	private ContainerCheckedTreeViewer treeViewer = null;
@@ -1283,13 +1287,13 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Add categories to internal label to category map
+	 * Add categories to internal label to category map. Only for unique categories like Invariants or Events.
+	 * Not ones which occur multiple times per machine, such as Actions or Guards of Events.
 	 * 
 	 * @param categories
 	 *            Array of categories to add
 	 */
 	private void addCategories(EventBTreeSubcategory[] categories) {
-		// TODO: Need to rework this stuff
 		for (EventBTreeSubcategory category : categories) {
 			treeCategories.put(category.getLabel(), category);
 		}
