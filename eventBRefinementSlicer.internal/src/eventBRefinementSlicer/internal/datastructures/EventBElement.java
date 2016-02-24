@@ -61,7 +61,7 @@ public class EventBElement {
 	}
 
 	/**
-	 * Getter for statically checked Rodin internal representation of this element
+	 * Getter for statically checked Rodin-internal representation of this element
 	 * 
 	 * @return The statically checked Rodin-internal representation of this element
 	 */
@@ -92,13 +92,6 @@ public class EventBElement {
 	public Object[] toArray() {
 		Object[] array = { label, comment };
 		return array;
-	}
-
-	/**
-	 * Signals that this element has changed to this element's parent
-	 */
-	public void hasChanged() {
-		parent.changedElement(this);
 	}
 
 	/**
