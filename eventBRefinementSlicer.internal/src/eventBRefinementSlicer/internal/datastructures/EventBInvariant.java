@@ -5,6 +5,7 @@ import org.eventb.core.ISCInvariant;
 import org.rodinp.core.RodinDBException;
 
 /**
+ * Internal representation of Event-B Invariants.
  * 
  * @author Aivar Kripsaar
  *

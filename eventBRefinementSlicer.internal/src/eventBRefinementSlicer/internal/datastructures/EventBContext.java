@@ -113,6 +113,13 @@ public class EventBContext extends EventBUnit {
 		return extendedContextLabels;
 	}
 
+	/**
+	 * Checks if this context contains the specified Event-B element
+	 * 
+	 * @param element
+	 *            The element to check for
+	 * @return True if element is contained in the context
+	 */
 	public boolean containsElement(EventBElement element) {
 		if (constants.contains(element) || axioms.contains(element) || carrierSets.contains(element)) {
 			return true;
@@ -120,6 +127,11 @@ public class EventBContext extends EventBUnit {
 		return false;
 	}
 
+	/**
+	 * Getter for statically checked Rodin-internal representation of context
+	 * 
+	 * @return The statically checked Rodin-internal representation of context
+	 */
 	public ISCContextRoot getScContextRoot() {
 		return scContextRoot;
 	}
@@ -155,7 +167,12 @@ public class EventBContext extends EventBUnit {
 		return type;
 	}
 
+	/**
+	 * Checks if this Event-B context contains any elements (i.e. axioms, constants and carrier sets).
+	 * 
+	 * @return True if context contains no elements
+	 */
 	public boolean isEmpty() {
-		return (axioms.isEmpty() && constants.isEmpty());
+		return (axioms.isEmpty() && constants.isEmpty() && carrierSets.isEmpty());
 	}
 }

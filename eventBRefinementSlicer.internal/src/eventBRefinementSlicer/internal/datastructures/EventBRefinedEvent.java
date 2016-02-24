@@ -3,6 +3,12 @@ package eventBRefinementSlicer.internal.datastructures;
 import org.eventb.core.IRefinesEvent;
 import org.rodinp.core.RodinDBException;
 
+/**
+ * Internal representation of an Event-B Event's Refinement Clause.
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBRefinedEvent extends EventBElement {
 
 	private EventBEvent parentEvent = null;

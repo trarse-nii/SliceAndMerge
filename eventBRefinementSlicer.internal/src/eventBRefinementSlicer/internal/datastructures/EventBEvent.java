@@ -21,11 +21,11 @@ import org.eventb.core.IWitness;
 import eventBRefinementSlicer.internal.util.SCUtil;
 
 /**
+ * Internal representation of Event-B Events.
  * 
  * @author Aivar Kripsaar
  *
  */
-
 public class EventBEvent extends EventBElement {
 	private boolean isExtended = false;
 	private Convergence convergence = Convergence.ORDINARY;
@@ -111,6 +111,13 @@ public class EventBEvent extends EventBElement {
 		return refinedEvents;
 	}
 
+	/**
+	 * Checks if this event contains the given element.
+	 * 
+	 * @param element
+	 *            The element to check for
+	 * @return True if this event contains this element
+	 */
 	public boolean containsElement(EventBElement element) {
 		if (guards.contains(element) || actions.contains(element)) {
 			return true;
@@ -123,8 +130,13 @@ public class EventBEvent extends EventBElement {
 		return (ISCEvent) scElement;
 	}
 
+	/**
+	 * Checks if this event contains any elements (i.e. guards, actions, parameters and witnesses)
+	 * 
+	 * @return True if this event contains no elements
+	 */
 	public boolean isEmpty() {
-		return guards.isEmpty() && actions.isEmpty();
+		return guards.isEmpty() && actions.isEmpty() && parameters.isEmpty() && witnesses.isEmpty();
 	}
 
 	public boolean isExtended() {
