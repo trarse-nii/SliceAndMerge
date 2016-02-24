@@ -4,6 +4,12 @@ import org.eventb.core.IParameter;
 import org.eventb.core.ISCParameter;
 import org.rodinp.core.RodinDBException;
 
+/**
+ * Internal representation of Event-B Attributes.
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBParameter extends EventBAttribute {
 
 	EventBEvent parentEvent = null;

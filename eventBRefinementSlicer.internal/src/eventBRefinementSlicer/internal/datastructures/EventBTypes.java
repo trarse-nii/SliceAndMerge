@@ -1,5 +1,11 @@
 package eventBRefinementSlicer.internal.datastructures;
 
+/**
+ * Enum of Strings for the various Event-B element types.
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBTypes {
 
 	public static final String ACTION = "ACTION";

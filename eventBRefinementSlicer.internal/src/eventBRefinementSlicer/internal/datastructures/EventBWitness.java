@@ -4,6 +4,12 @@ import org.eventb.core.ISCWitness;
 import org.eventb.core.IWitness;
 import org.rodinp.core.RodinDBException;
 
+/**
+ * Internal representation of Event-B Witnesses.
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBWitness extends EventBCondition {
 
 	EventBEvent parentEvent = null;

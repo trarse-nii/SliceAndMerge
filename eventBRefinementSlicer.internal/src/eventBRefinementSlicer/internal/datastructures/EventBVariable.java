@@ -4,6 +4,12 @@ import org.eventb.core.ISCVariable;
 import org.eventb.core.IVariable;
 import org.rodinp.core.RodinDBException;
 
+/**
+ * Internal representation of Event-B Variables
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBVariable extends EventBAttribute {
 
 	private boolean mAbstract = false;

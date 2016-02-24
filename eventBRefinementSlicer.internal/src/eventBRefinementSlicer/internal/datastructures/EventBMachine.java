@@ -20,6 +20,12 @@ import org.eventb.core.ast.ITypeEnvironmentBuilder;
 
 import eventBRefinementSlicer.internal.util.SCUtil;
 
+/**
+ * Internal representation of Event-B Machines.
+ * 
+ * @author Aivar Kripsaar
+ *
+ */
 public class EventBMachine extends EventBUnit {
 
 	private List<EventBInvariant> invariants = new ArrayList<>();

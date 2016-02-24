@@ -11,6 +11,7 @@ import org.eventb.core.ast.Predicate;
 import org.rodinp.core.RodinDBException;
 
 /**
+ * Internal representation for Event-B Guards.
  * 
  * @author Aivar Kripsaar
  *
