@@ -4,15 +4,12 @@
    <extension
          point="org.eclipse.ui.editors">
       <editor
-            class="eventBRefinementSlicer.ui.editors.SelectionEditor"
+            class="eventBSliceAndMerge.ui.editors.SelectionEditor"
             default="true"
-            id="eventBRefinementSlicer.editors.RefinementSlicer"
-            name="Refinement Slicer">
+            id="eventBSliceAndMerge.editors.SelectionEditor"
+            name="Slice and Merge">
          <contentTypeBinding
                contentTypeId="org.eventb.core.machineFile">
-         </contentTypeBinding>
-         <contentTypeBinding
-               contentTypeId="org.eventb.core.contextFile">
          </contentTypeBinding>
       </editor>
    </extension>
