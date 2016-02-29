@@ -1060,6 +1060,7 @@ public class SelectionEditor extends EditorPart {
 		// Button for creating a new sub-refinement from the selected elements
 		Button newMachineButton = new Button(buttonBar, SWT.PUSH);
 		newMachineButton.setText("Create Sub-Refinement");
+		newMachineButton.setToolTipText("Create a new Event-B Machine based on the current selection of elements in this editor");
 		newMachineButton.addSelectionListener(new SelectionListener() {
 
 			@Override
@@ -1086,6 +1087,7 @@ public class SelectionEditor extends EditorPart {
 		// refines)
 		Button mergeMachinesButton = new Button(mergeButtonContainer, SWT.PUSH);
 		mergeMachinesButton.setText("Merge With Direct Predecessor");
+		mergeMachinesButton.setToolTipText("Merge this machine with the one it refines, producing a new machine");
 		try {
 			// If current machine has no machine that it refines, we disable the button and display a tooltip
 			// explaining why the button is disabled
@@ -1122,6 +1124,7 @@ public class SelectionEditor extends EditorPart {
 		// A button to select all elements of the machine opened in the editor
 		Button selectAllButton = new Button(buttonBar, SWT.PUSH);
 		selectAllButton.setText("Select All");
+		selectAllButton.setToolTipText("Select all elements");
 		selectAllButton.addSelectionListener(new SelectionListener() {
 
 			@Override
@@ -1143,6 +1146,7 @@ public class SelectionEditor extends EditorPart {
 		// A button to select all elements that currently selected elements depend on
 		Button selectAllDependenciesButton = new Button(buttonBar, SWT.PUSH);
 		selectAllDependenciesButton.setText("Select All Dependencies");
+		selectAllDependenciesButton.setToolTipText("Select all elements that the currently selected elements depend on");
 		selectAllDependenciesButton.addSelectionListener(new SelectionListener() {
 
 			@Override
