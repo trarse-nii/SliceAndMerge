@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Refinement Slicer Editor
-Bundle-SymbolicName: eventBRefinementSlicer.ui;singleton:=true
+Bundle-Name: Slice and Merge Editor
+Bundle-SymbolicName: eventBSliceAndMerge.ui;singleton:=true
 Bundle-Version: 1.0.0.qualifier
-Bundle-Activator: eventBRefinementSlicer.ui.Activator
+Bundle-Activator: eventBSliceAndMerge.ui.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.rodinp.core;bundle-version="1.7.0",
@@ -11,7 +11,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.core.resources;bundle-version="3.9.1",
  org.eventb.core;bundle-version="3.2.0",
  org.eventb.core.ast,
- eventBRefinementSlicer.internal;bundle-version="1.0.0",
+ eventBSliceAndMerge.internal;bundle-version="1.0.0",
  org.eclipse.swt
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy

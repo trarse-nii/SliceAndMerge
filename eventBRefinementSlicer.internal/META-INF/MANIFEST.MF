@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Event B Refinement Slicer (Internal)
-Bundle-SymbolicName: eventBRefinementSlicer.internal
+Bundle-SymbolicName: eventBSliceAndMerge.internal
 Bundle-Version: 1.0.0.qualifier
-Bundle-Activator: eventBRefinementSlicer.internal.Activator
+Bundle-Activator: eventBSliceAndMerge.internal.Activator
 Require-Bundle: org.eclipse.core.runtime,
  org.eventb.core;bundle-version="3.2.0",
  org.rodinp.core;bundle-version="1.7.0",
@@ -12,6 +12,6 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources;bundle-version="3.9.1"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
-Export-Package: eventBRefinementSlicer.internal.analyzers,
- eventBRefinementSlicer.internal.datastructures,
- eventBRefinementSlicer.internal.util
+Export-Package: eventBSliceAndMerge.internal.analyzers,
+ eventBSliceAndMerge.internal.datastructures,
+ eventBSliceAndMerge.internal.util
