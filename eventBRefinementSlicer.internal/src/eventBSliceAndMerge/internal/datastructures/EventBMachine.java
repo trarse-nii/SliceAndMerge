@@ -36,7 +36,7 @@ public class EventBMachine extends EventBUnit {
 	private ISCMachineRoot scMachineRoot = null;
 
 	public EventBMachine(IMachineRoot machineRoot) throws CoreException {
-		this.scMachineRoot = SCUtil.makeStaticCheckedMachine(machineRoot);
+		this.scMachineRoot = machineRoot.getSCMachineRoot();
 		for (IInvariant originalInvariant : machineRoot.getInvariants()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalInvariant, scMachineRoot.getSCInvariants());
 			assert (originalSCElement instanceof ISCInvariant);
