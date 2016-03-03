@@ -65,7 +65,6 @@ import eventBSliceAndMerge.internal.datastructures.EventBParameter;
 import eventBSliceAndMerge.internal.datastructures.EventBRefinedEvent;
 import eventBSliceAndMerge.internal.datastructures.EventBVariable;
 import eventBSliceAndMerge.internal.datastructures.EventBWitness;
-import eventBSliceAndMerge.internal.util.SCUtil;
 import eventBSliceAndMerge.ui.editors.SelectionEditor.EventBTreeElement;
 import eventBSliceAndMerge.ui.editors.SelectionEditor.EventBTreeSubcategory;
 
@@ -310,11 +309,13 @@ public class MachineCreationWizard extends Wizard {
 						varsInVariant.add(variableName);
 					}
 				}
-				// Create SC of new machine.
+
 				// Get SC Event information for convergent events.
 				// Check if at least one variant variable is included in each of these events
 				// If true, add variant to new machine
-				ISCMachineRoot scMachine = SCUtil.makeStaticCheckedMachine(root);
+
+				// ISCMachineRoot scMachine = SCUtil.makeStaticCheckedMachine(root);
+				ISCMachineRoot scMachine = root.getSCMachineRoot();
 				boolean allConvergentEventsCovered = true;
 				boolean hasConvergentEvent = false;
 				for (ISCEvent scEvent : scMachine.getSCEvents()) {

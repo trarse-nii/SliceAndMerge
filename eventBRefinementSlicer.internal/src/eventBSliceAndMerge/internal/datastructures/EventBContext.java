@@ -43,7 +43,7 @@ public class EventBContext extends EventBUnit {
 	}
 
 	public EventBContext(IContextRoot contextRoot) throws RodinDBException {
-		this.scContextRoot = SCUtil.makeStaticCheckedContext(contextRoot);
+		this.scContextRoot = contextRoot.getSCContextRoot();
 		for (ICarrierSet originalCarrierSet : contextRoot.getCarrierSets()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalCarrierSet, scContextRoot.getSCCarrierSets());
 			assert (originalSCElement instanceof ISCCarrierSet);
