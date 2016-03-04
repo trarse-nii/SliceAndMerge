@@ -520,6 +520,7 @@ public class SelectionEditor extends EditorPart {
 			return;
 		}
 		for (Object child : contentProvider.getChildren(element)) {
+			treeViewer.setChecked(child, checked);
 			updateSelectionDependenciesForSubtree(child, checked);
 		}
 	}
