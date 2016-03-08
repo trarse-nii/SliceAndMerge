@@ -965,13 +965,13 @@ public class SelectionEditor extends EditorPart {
 			if (treeViewer == null) {
 				return null;
 			}
-			if (treeViewer.getChecked(element)) {
-				// If the element is selected (checked)
-				return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
-			}
 			if (checkElementForDependencies(element)) {
 				// If the element or one of its children is depended upon by a currently selected element
 				return Display.getDefault().getSystemColor(SWT.COLOR_RED);
+			}
+			if (treeViewer.getChecked(element)) {
+				// If the element is selected (checked)
+				return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
 			}
 
 			if (element instanceof EventBTreeSubcategory) {
