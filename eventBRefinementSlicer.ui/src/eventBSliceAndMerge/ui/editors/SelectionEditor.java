@@ -893,7 +893,7 @@ public class SelectionEditor extends EditorPart {
 				return null;
 			}
 			if (element instanceof EventBTreeElement) {
-				if (treeViewer.getChecked(element) || selectionDependees.containsKey(((EventBTreeElement) element).getOriginalElement())) {
+				if (treeViewer.getChecked(element) || checkElementForDependencies(element)) {
 					// If the element is being highlighted, we give the text a different color for easier
 					// readability.
 					switch (columnIndex) {
@@ -927,6 +927,36 @@ public class SelectionEditor extends EditorPart {
 			return null;
 		}
 
+		/**
+		 * Checks the given element to see if it or its children are depended on by any other element.
+		 * 
+		 * @param element
+		 *            The elements for which dependency needs to be checked.
+		 * @return True if the given element or at least one of its children is being depended on by another
+		 *         element
+		 */
+		private Boolean checkElementForDependencies(Object element) {
+			if (element instanceof EventBTreeElement) {
+				EventBTreeElement treeElement = (EventBTreeElement) element;
+				if (selectionDependees.containsKey(treeElement.getOriginalElement()) && !treeViewer.getChecked(treeElement)) {
+					// Element itself depends on another element
+					return true;
+				}
+			}
+			ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
+			if (!contentProvider.hasChildren(element)) {
+				// Element has no children, thus can't have any children that depend on any other element
+				return false;
+			}
+			for (Object child : contentProvider.getChildren(element)) {
+				// If even one child returns true, then we should return true;
+				if (checkElementForDependencies(child)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
 		@Override
 		public Color getBackground(Object element, int columnIndex) {
 			if (!(element instanceof EventBTreeElement || element instanceof EventBTreeSubcategory)) {
@@ -935,29 +965,20 @@ public class SelectionEditor extends EditorPart {
 			if (treeViewer == null) {
 				return null;
 			}
-			if (element instanceof EventBTreeSubcategory) {
-				if (treeViewer.getChecked(element) && !treeViewer.getGrayed(element)) {
-					// If all elements are selected, we color the category with the color for selected
-					// elements
-					return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
-				}
-				for (EventBTreeElement child : ((EventBTreeSubcategory) element).getChildren()) {
-					if (selectionDependees.containsKey(child.getOriginalElement()) && !treeViewer.getChecked(child)) {
-						// If even a single unselected child of the category is a dependency, we mark the
-						// category red
-						return Display.getDefault().getSystemColor(SWT.COLOR_RED);
-					}
-				}
-				return null;
-			}
 			if (treeViewer.getChecked(element)) {
 				// If the element is selected (checked)
 				return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
 			}
-			if (selectionDependees.containsKey(((EventBTreeElement) element).getOriginalElement())) {
-				// If the element is depended upon by a currently selected element
+			if (checkElementForDependencies(element)) {
+				// If the element or one of its children is depended upon by a currently selected element
 				return Display.getDefault().getSystemColor(SWT.COLOR_RED);
 			}
+
+			if (element instanceof EventBTreeSubcategory) {
+				// We don't deal with further cases for categories
+				return null;
+			}
+
 			if (selectionDependers.containsKey(((EventBTreeElement) element).getOriginalElement())) {
 				// If the element depends on a currently selected element
 				return Display.getDefault().getSystemColor(SWT.COLOR_CYAN);
