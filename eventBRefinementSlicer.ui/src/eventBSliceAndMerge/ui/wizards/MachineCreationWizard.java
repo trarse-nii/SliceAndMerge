@@ -21,7 +21,6 @@ import org.eventb.core.IAction;
 import org.eventb.core.IAssignmentElement;
 import org.eventb.core.ICommentedElement;
 import org.eventb.core.IConfigurationElement;
-import org.eventb.core.IConvergenceElement.Convergence;
 import org.eventb.core.IDerivedPredicateElement;
 import org.eventb.core.IEvent;
 import org.eventb.core.IGuard;
@@ -33,15 +32,11 @@ import org.eventb.core.IParameter;
 import org.eventb.core.IPredicateElement;
 import org.eventb.core.IRefinesEvent;
 import org.eventb.core.IRefinesMachine;
-import org.eventb.core.ISCAction;
-import org.eventb.core.ISCEvent;
-import org.eventb.core.ISCMachineRoot;
 import org.eventb.core.ISCVariant;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
 import org.eventb.core.IVariant;
 import org.eventb.core.IWitness;
-import org.eventb.core.ast.Assignment;
 import org.eventb.core.ast.Expression;
 import org.eventb.core.ast.FreeIdentifier;
 import org.eventb.core.ast.ITypeEnvironment;
@@ -171,6 +166,8 @@ public class MachineCreationWizard extends Wizard {
 				file.getResource().setDerived(true, null);
 				MachineRoot root = (MachineRoot) file.getRoot();
 				root.setConfiguration(IConfigurationElement.DEFAULT_CONFIGURATION, monitor);
+
+				file.save(null, false);
 
 				// Add refinement information from existing machine to new
 				// machine
@@ -315,32 +312,36 @@ public class MachineCreationWizard extends Wizard {
 				// If true, add variant to new machine
 
 				// ISCMachineRoot scMachine = SCUtil.makeStaticCheckedMachine(root);
-				ISCMachineRoot scMachine = root.getSCMachineRoot();
-				boolean allConvergentEventsCovered = true;
-				boolean hasConvergentEvent = false;
-				for (ISCEvent scEvent : scMachine.getSCEvents()) {
-					if (!(scEvent.getConvergence() == Convergence.CONVERGENT)) {
-						continue;
-					}
-					hasConvergentEvent = true;
-					boolean eventCovered = false;
-					for (ISCAction scAction : scEvent.getSCActions()) {
-						Assignment assignment = scAction.getAssignment(typeEnvironment);
-						for (FreeIdentifier assignedVariable : assignment.getAssignedIdentifiers()) {
-							if (varsInVariant.contains(assignedVariable.getName())) {
-								eventCovered = true;
-							}
-						}
-					}
-					if (!eventCovered) {
-						allConvergentEventsCovered = false;
-					}
-				}
 
-				// If all convergent events are covered by the variant, then we include it in the new machine
-				if (hasConvergentEvent && allConvergentEventsCovered) {
-					addVariant(originalMachineRoot, root);
-				}
+				// TODO: Find a way to force creation of SC Machine and/or wait for its completion
+
+				// ISCMachineRoot scMachine = root.getSCMachineRoot();
+				// boolean allConvergentEventsCovered = true;
+				// boolean hasConvergentEvent = false;
+				// for (ISCEvent scEvent : scMachine.getSCEvents()) {
+				// if (!(scEvent.getConvergence() == Convergence.CONVERGENT)) {
+				// continue;
+				// }
+				// hasConvergentEvent = true;
+				// boolean eventCovered = false;
+				// for (ISCAction scAction : scEvent.getSCActions()) {
+				// Assignment assignment = scAction.getAssignment(typeEnvironment);
+				// for (FreeIdentifier assignedVariable : assignment.getAssignedIdentifiers()) {
+				// if (varsInVariant.contains(assignedVariable.getName())) {
+				// eventCovered = true;
+				// }
+				// }
+				// }
+				// if (!eventCovered) {
+				// allConvergentEventsCovered = false;
+				// }
+				// }
+				//
+				// // If all convergent events are covered by the variant, then we include it in the new
+				// machine
+				// if (hasConvergentEvent && allConvergentEventsCovered) {
+				// addVariant(originalMachineRoot, root);
+				// }
 
 				// Save the final result
 				file.save(null, false);
