@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="eventBSliceAndMerge"
+      label="Slice and Merge"
+      version="1.0.0.qualifier">
+
+   <description url="http://www.example.com/description">
+      A plug-in for the Rodin platform which lets the user easily cut
+down Event-B machines into smaller sub-models, and also lets
+the user merge two directly related machines (where one machine refines the other) into a new machine.
+   </description>
+
+   <copyright url="http://www.example.com/copyright">
+      [Enter Copyright Description here.]
+   </copyright>
+
+   <license url="http://www.example.com/license">
+      [Enter License Description here.]
+   </license>
+
+   <plugin
+         id="eventBSliceAndMerge.internal"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="eventBSliceAndMerge.ui"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>
