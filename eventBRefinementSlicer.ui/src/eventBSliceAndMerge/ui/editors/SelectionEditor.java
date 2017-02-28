@@ -1,8 +1,6 @@
 package eventBSliceAndMerge.ui.editors;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -57,6 +55,8 @@ import org.rodinp.core.IRodinFile;
 import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
+import eventBSliceAndMerge.internal.analyzers.EventBTreeElement;
+import eventBSliceAndMerge.internal.analyzers.EventBTreeSubcategory;
 import eventBSliceAndMerge.internal.datastructures.EventBAction;
 import eventBSliceAndMerge.internal.datastructures.EventBAxiom;
 import eventBSliceAndMerge.internal.datastructures.EventBCarrierSet;
@@ -68,13 +68,13 @@ import eventBSliceAndMerge.internal.datastructures.EventBElement;
 import eventBSliceAndMerge.internal.datastructures.EventBEvent;
 import eventBSliceAndMerge.internal.datastructures.EventBMachine;
 import eventBSliceAndMerge.internal.datastructures.EventBTypes;
-import eventBSliceAndMerge.internal.datastructures.EventBUnit;
 import eventBSliceAndMerge.ui.jobs.EventBDependencyAnalysisJob;
 import eventBSliceAndMerge.ui.wizards.MachineCreationWizard;
 import eventBSliceAndMerge.ui.wizards.MergeMachineWithPredecessorWizard;
 
 /**
- * The editor in charge of selecting which parts of an Event-B machine to use in the slicing of refinements
+ * The editor in charge of selecting which parts of an Event-B machine to use in
+ * the slicing of refinements
  * 
  * @author Aivar Kripsaar
  *
@@ -96,11 +96,13 @@ public class SelectionEditor extends EditorPart {
 	private IMachineRoot machineRoot;
 	private EventBMachine machine;
 
-	// We require a duplicate of the checked state because of the limitations of the TreeViewer API
+	// We require a duplicate of the checked state because of the limitations of
+	// the TreeViewer API
 	private Map<Object, Boolean> selectionMap = new HashMap<>();
 
 	// Map from category label to internal representation of category.
-	// Only intended for use with categories that cannot occur more then once in the machine.
+	// Only intended for use with categories that cannot occur more then once in
+	// the machine.
 	// Good: Invariant, Variable, Event, Seen Context
 	// Bad: Action, Guard, Witness, Parameter, Axiom, Constant, Carrier Set
 	private Map<String, EventBTreeSubcategory> treeCategories = new HashMap<>();
@@ -186,8 +188,10 @@ public class SelectionEditor extends EditorPart {
 	 *            The parent of the tree
 	 */
 	private void createTree(Composite parent) {
-		// We create a tree that allows for multiple selections and including checkbox behavior
-		Tree tree = new Tree(parent, SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER | SWT.CHECK | SWT.V_SCROLL | SWT.H_SCROLL);
+		// We create a tree that allows for multiple selections and including
+		// checkbox behavior
+		Tree tree = new Tree(parent,
+				SWT.MULTI | SWT.FULL_SELECTION | SWT.BORDER | SWT.CHECK | SWT.V_SCROLL | SWT.H_SCROLL);
 		tree.setLinesVisible(true);
 		tree.setHeaderVisible(true);
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
@@ -213,8 +217,10 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
-		// A workaround to allow better highlighting of elements when hovering or selecting them
-		// Without this, the highlight colors set by the Tree Viewer are removed, simply replaced by the
+		// A workaround to allow better highlighting of elements when hovering
+		// or selecting them
+		// Without this, the highlight colors set by the Tree Viewer are
+		// removed, simply replaced by the
 		// standard selection & highlight colors of the OS
 		tree.addListener(SWT.EraseItem, new Listener() {
 
@@ -223,7 +229,8 @@ public class SelectionEditor extends EditorPart {
 				GC gc = event.gc;
 				TreeItem item = (TreeItem) event.item;
 				int width = tree.getClientArea().x + tree.getClientArea().width - event.x;
-				// Sets background and foreground color to the ones set by the Tree Viewer
+				// Sets background and foreground color to the ones set by the
+				// Tree Viewer
 				gc.setBackground(item.getBackground(event.index));
 				gc.setForeground(item.getForeground(event.index));
 				gc.fillRectangle(event.x, event.y, width, event.height);
@@ -234,7 +241,8 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Adjusts size of columns to fit visible content. Also resizes last column to fill remainder of space.
+	 * Adjusts size of columns to fit visible content. Also resizes last column
+	 * to fill remainder of space.
 	 */
 	private void packColumns() {
 		Tree tree = treeViewer.getTree();
@@ -242,7 +250,8 @@ public class SelectionEditor extends EditorPart {
 		for (TreeColumn column : tree.getColumns()) {
 			column.pack();
 		}
-		// After packing all columns, we manually change the size of the last column
+		// After packing all columns, we manually change the size of the last
+		// column
 		for (TreeColumn column : tree.getColumns()) {
 			columnsWidth += column.getWidth();
 		}
@@ -252,7 +261,8 @@ public class SelectionEditor extends EditorPart {
 		Rectangle area = tree.getClientArea();
 		int width = area.width;
 
-		// We set the width of the last column to be the width of the tree area minus the width of every other
+		// We set the width of the last column to be the width of the tree area
+		// minus the width of every other
 		// column added up, filling up the rest of the area
 		if (lastColumn.getWidth() < width - columnsWidth) {
 			lastColumn.setWidth(width - columnsWidth);
@@ -274,7 +284,8 @@ public class SelectionEditor extends EditorPart {
 
 		treeViewer.setLabelProvider(new LabelProvider());
 
-		// Any time the tree is either expanded or collapsed, the columns must once again be packed
+		// Any time the tree is either expanded or collapsed, the columns must
+		// once again be packed
 		treeViewer.addTreeListener(new ITreeViewerListener() {
 
 			@Override
@@ -301,18 +312,22 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
-		// Any time an element is checked or unchecked, we use a method to take care of additional
+		// Any time an element is checked or unchecked, we use a method to take
+		// care of additional
 		// highlighting and dependency related changes
 		treeViewer.addCheckStateListener(new ICheckStateListener() {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
-				// If the element is part of a context, we wish to disable selection, because only whole
+				// If the element is part of a context, we wish to disable
+				// selection, because only whole
 				// contexts should be selectable
-				// We have to hack this in by undoing the checking of the checkbox manually
+				// We have to hack this in by undoing the checking of the
+				// checkbox manually
 				if (event.getElement() instanceof EventBTreeElement) {
 					EventBElement element = ((EventBTreeElement) event.getElement()).getOriginalElement();
-					if ((element instanceof EventBAxiom || element instanceof EventBConstant || element instanceof EventBCarrierSet)) {
+					if ((element instanceof EventBAxiom || element instanceof EventBConstant
+							|| element instanceof EventBCarrierSet)) {
 						treeViewer.setSubtreeChecked(event.getElement(), !event.getChecked());
 						// Correct checked state of parents
 						correctParentsChecked(event.getElement());
@@ -320,7 +335,8 @@ public class SelectionEditor extends EditorPart {
 					}
 				} else if (event.getElement() instanceof EventBTreeSubcategory) {
 					EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) event.getElement();
-					if (treeCategory.getParentElement() != null && treeCategory.getParentElement().getOriginalElement() instanceof EventBContext) {
+					if (treeCategory.getParentElement() != null
+							&& treeCategory.getParentElement().getOriginalElement() instanceof EventBContext) {
 						treeViewer.setSubtreeChecked(event.getElement(), !event.getChecked());
 						// Correct checked state of parents
 						correctParentsChecked(event.getElement());
@@ -386,10 +402,14 @@ public class SelectionEditor extends EditorPart {
 			public Object[] getElements(Object inputElement) {
 				EventBMachine machine = (EventBMachine) inputElement;
 				if (treeRootCategories == null) {
-					EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine, machine.getInvariants());
-					EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine, machine.getVariables());
-					EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents());
-					EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine, machine.getSeenContexts());
+					EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine,
+							machine.getInvariants(), elementToTreeElementMap, this);
+					EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine,
+							machine.getVariables(), elementToTreeElementMap, this);
+					EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents(),
+							elementToTreeElementMap, this);
+					EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine,
+							machine.getSeenContexts(), elementToTreeElementMap, this);
 					EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
 					addCategories(treeChildren);
 					treeRootCategories = treeChildren;
@@ -404,21 +424,26 @@ public class SelectionEditor extends EditorPart {
 					return getElements(parentElement);
 				}
 				if (parentElement instanceof EventBTreeSubcategory) {
-					return ((EventBTreeSubcategory) parentElement).children;
+					return ((EventBTreeSubcategory) parentElement).getChildren();
 				}
 				if (parentElement instanceof EventBTreeElement) {
-					if (!(((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent || ((EventBTreeElement) parentElement)
-							.getOriginalElement() instanceof EventBContext)) {
+					if (!(((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent
+							|| ((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBContext)) {
 						return null;
 					}
 					if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent) {
-						EventBEvent originalElement = (EventBEvent) ((EventBTreeElement) parentElement).getOriginalElement();
+						EventBEvent originalElement = (EventBEvent) ((EventBTreeElement) parentElement)
+								.getOriginalElement();
 						EventBTreeElement parent = (EventBTreeElement) parentElement;
 						if (!eventSubcategories.containsKey(originalElement)) {
-							EventBTreeSubcategory parameters = new EventBTreeSubcategory("Parameters", parent, originalElement.getParameters());
-							EventBTreeSubcategory witnesses = new EventBTreeSubcategory("Witnesses", parent, originalElement.getWitnesses());
-							EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent, originalElement.getGuards());
-							EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent, originalElement.getActions());
+							EventBTreeSubcategory parameters = new EventBTreeSubcategory("Parameters", parent,
+									originalElement.getParameters(), elementToTreeElementMap, this);
+							EventBTreeSubcategory witnesses = new EventBTreeSubcategory("Witnesses", parent,
+									originalElement.getWitnesses(), elementToTreeElementMap, this);
+							EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent,
+									originalElement.getGuards(), elementToTreeElementMap, this);
+							EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent,
+									originalElement.getActions(), elementToTreeElementMap, this);
 							EventBTreeSubcategory[] children = { parameters, witnesses, guards, actions };
 							addCategories(children);
 							eventSubcategories.put(originalElement, children);
@@ -426,12 +451,16 @@ public class SelectionEditor extends EditorPart {
 						return eventSubcategories.get(originalElement);
 					}
 					if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBContext) {
-						EventBContext originalElement = (EventBContext) ((EventBTreeElement) parentElement).getOriginalElement();
+						EventBContext originalElement = (EventBContext) ((EventBTreeElement) parentElement)
+								.getOriginalElement();
 						EventBTreeElement parent = (EventBTreeElement) parentElement;
 						if (!contextSubcategories.containsKey(originalElement)) {
-							EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", parent, originalElement.getAxioms());
-							EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", parent, originalElement.getConstants());
-							EventBTreeSubcategory carrierSets = new EventBTreeSubcategory("Carrier Sets", parent, originalElement.getCarrierSets());
+							EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", parent,
+									originalElement.getAxioms(), elementToTreeElementMap, this);
+							EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", parent,
+									originalElement.getConstants(), elementToTreeElementMap, this);
+							EventBTreeSubcategory carrierSets = new EventBTreeSubcategory("Carrier Sets", parent,
+									originalElement.getCarrierSets(), elementToTreeElementMap, this);
 							EventBTreeSubcategory[] children = { axioms, constants, carrierSets };
 							addCategories(children);
 							contextSubcategories.put(originalElement, children);
@@ -449,8 +478,8 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Sets the checked status for the given element and its children. Also updates the dependency-related
-	 * highlighting as necessary.
+	 * Sets the checked status for the given element and its children. Also
+	 * updates the dependency-related highlighting as necessary.
 	 * 
 	 * @param element
 	 *            The element being checked or unchecked
@@ -476,7 +505,8 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Updates the local dependency maps to account for the change of the checked state of an element
+	 * Updates the local dependency maps to account for the change of the
+	 * checked state of an element
 	 * 
 	 * @param element
 	 *            Element that has had its checked state changed
@@ -486,11 +516,13 @@ public class SelectionEditor extends EditorPart {
 	private void updateSelectionDependenciesForElement(Object element, boolean checked) {
 		if (element instanceof EventBTreeElement) {
 			EventBDependencies dependencies = machine.getDependencies();
-			Set<EventBElement> dependees = dependencies.getDependeesForElement(((EventBTreeElement) element).getOriginalElement());
+			Set<EventBElement> dependees = dependencies
+					.getDependeesForElement(((EventBTreeElement) element).getOriginalElement());
 			for (EventBElement dependee : dependees) {
 				updateSelectionDependency(dependee, true, checked);
 			}
-			Set<EventBElement> dependers = dependencies.getDependersForElement(((EventBTreeElement) element).getOriginalElement());
+			Set<EventBElement> dependers = dependencies
+					.getDependersForElement(((EventBTreeElement) element).getOriginalElement());
 			for (EventBElement depender : dependers) {
 				updateSelectionDependency(depender, false, checked);
 			}
@@ -499,8 +531,8 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Updates the local dependency maps to account for the change of the checked state of an element and its
-	 * subtree
+	 * Updates the local dependency maps to account for the change of the
+	 * checked state of an element and its subtree
 	 * 
 	 * @param element
 	 *            Element that has had its checked state changed
@@ -509,7 +541,8 @@ public class SelectionEditor extends EditorPart {
 	 */
 	private void updateSelectionDependenciesForSubtree(Object element, boolean checked) {
 		if (!(checked ^ selectionMap.getOrDefault(element, false))) {
-			// If checked state of this element doesn't change, nothing else needs to be done.
+			// If checked state of this element doesn't change, nothing else
+			// needs to be done.
 			treeViewer.update(element, null);
 			return;
 		}
@@ -526,7 +559,8 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Gets all children of given parent element and sets their checked status as desired.
+	 * Gets all children of given parent element and sets their checked status
+	 * as desired.
 	 * 
 	 * @param parent
 	 *            Parent element of children we need to change
@@ -547,7 +581,8 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Corrects the parents's checked (selection) state based on child's changed checked status
+	 * Corrects the parents's checked (selection) state based on child's changed
+	 * checked status
 	 * 
 	 * @param element
 	 *            The element which has had its checked status changed.
@@ -571,7 +606,8 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Checks element's current checked state based on checked states of children and corrects if necessary.
+	 * Checks element's current checked state based on checked states of
+	 * children and corrects if necessary.
 	 * 
 	 * @param element
 	 *            Tree element which needs to be checked and corrected
@@ -612,17 +648,18 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Updates maps counting number of dependers and dependees that are currently selected (checked) and
-	 * causes update so that dependencies are properly highlighted.
+	 * Updates maps counting number of dependers and dependees that are
+	 * currently selected (checked) and causes update so that dependencies are
+	 * properly highlighted.
 	 * 
 	 * @param dependecy
 	 *            Element for which we update dependency counts.
 	 * @param dependee
-	 *            Boolean to signify whether the element is being depended on, or if it is depending on
-	 *            another element itself.
+	 *            Boolean to signify whether the element is being depended on,
+	 *            or if it is depending on another element itself.
 	 * @param increase
-	 *            True if dependency count needs to be increased (when another dependency partner of the given
-	 *            element has been selected).
+	 *            True if dependency count needs to be increased (when another
+	 *            dependency partner of the given element has been selected).
 	 */
 	private void updateSelectionDependency(EventBElement dependecy, boolean dependee, boolean increase) {
 		Map<EventBElement, Integer> dependencyMap;
@@ -643,7 +680,8 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Updates an element as well as all of its parents in the editor's tree viewer.
+	 * Updates an element as well as all of its parents in the editor's tree
+	 * viewer.
 	 * 
 	 * @param element
 	 *            Element to update
@@ -665,192 +703,6 @@ public class SelectionEditor extends EditorPart {
 				updateElement(treeCategory.getParentElement());
 			}
 		}
-	}
-
-	/**
-	 * Container class for tree subcategories (e.g. Variables, Invariants, Events).
-	 * 
-	 * @author Aivar Kripsaar
-	 *
-	 */
-	public class EventBTreeSubcategory {
-		final String label;
-		final EventBUnit parentUnit;
-		final EventBTreeElement parentElement;
-		final EventBTreeElement[] children;
-
-		public EventBTreeSubcategory(String label, EventBUnit parent, List<? extends EventBElement> children) {
-			this.label = label;
-			this.parentUnit = parent;
-			this.parentElement = null;
-
-			List<EventBTreeElement> treeChildren = new ArrayList<>();
-			for (EventBElement originalChild : children) {
-				EventBTreeElement treeChild = new EventBTreeElement(this, originalChild);
-				treeChildren.add(treeChild);
-			}
-
-			this.children = treeChildren.toArray(new EventBTreeElement[treeChildren.size()]);
-		}
-
-		public EventBTreeSubcategory(String label, EventBTreeElement parent, List<? extends EventBElement> children) {
-			this.label = label;
-			this.parentElement = parent;
-			this.parentUnit = null;
-
-			List<EventBTreeElement> treeChildren = new ArrayList<>();
-			for (EventBElement originalChild : children) {
-				EventBTreeElement treeChild = new EventBTreeElement(this, originalChild);
-				treeChildren.add(treeChild);
-			}
-
-			this.children = treeChildren.toArray(new EventBTreeElement[treeChildren.size()]);
-		}
-
-		public String getLabel() {
-			return label;
-		}
-
-		public EventBUnit getParentUnit() {
-			return parentUnit;
-		}
-
-		public EventBTreeElement getParentElement() {
-			return parentElement;
-		}
-
-		public EventBTreeElement[] getChildren() {
-			return children;
-		}
-
-		/**
-		 * Finds the tree container version of the given element.
-		 * 
-		 * @param originalElement
-		 *            Editor internal representation of element
-		 * @return Tree container element of the desired element
-		 */
-		public EventBTreeElement findTreeElement(EventBElement originalElement) {
-			for (EventBTreeElement child : children) {
-				if (child.getOriginalElement().equals(originalElement)) {
-					return child;
-				}
-			}
-			return null;
-		}
-
-		@Override
-		public String toString() {
-			return label;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + getOuterType().hashCode();
-			result = prime * result + ((label == null) ? 0 : label.hashCode());
-			result = prime * result + ((parentElement == null) ? 0 : parentElement.hashCode());
-			result = prime * result + ((parentUnit == null) ? 0 : parentUnit.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			EventBTreeSubcategory other = (EventBTreeSubcategory) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
-			if (label == null) {
-				if (other.label != null)
-					return false;
-			} else if (!label.equals(other.label))
-				return false;
-			if (parentElement == null) {
-				if (other.parentElement != null)
-					return false;
-			} else if (!parentElement.equals(other.parentElement))
-				return false;
-			if (parentUnit == null) {
-				if (other.parentUnit != null)
-					return false;
-			} else if (!parentUnit.equals(other.parentUnit))
-				return false;
-			return true;
-		}
-
-		private SelectionEditor getOuterType() {
-			return SelectionEditor.this;
-		}
-
-	}
-
-	/**
-	 * Container class for Event-B elements in tree
-	 * 
-	 * @author Aivar Kripsaar
-	 *
-	 */
-	public class EventBTreeElement {
-		final EventBTreeSubcategory parent;
-		final EventBElement originalElement;
-
-		public EventBTreeElement(EventBTreeSubcategory parent, EventBElement originalElement) {
-			this.parent = parent;
-			this.originalElement = originalElement;
-			elementToTreeElementMap.put(originalElement, this);
-		}
-
-		public EventBTreeSubcategory getParent() {
-			return parent;
-		}
-
-		public EventBElement getOriginalElement() {
-			return originalElement;
-		}
-
-		@Override
-		public String toString() {
-			return originalElement.toString();
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + getOuterType().hashCode();
-			result = prime * result + ((originalElement == null) ? 0 : originalElement.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			EventBTreeElement other = (EventBTreeElement) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
-			if (originalElement == null) {
-				if (other.originalElement != null)
-					return false;
-			} else if (!originalElement.equals(other.originalElement))
-				return false;
-			return true;
-		}
-
-		private SelectionEditor getOuterType() {
-			return SelectionEditor.this;
-		}
-
 	}
 
 	/**
@@ -894,7 +746,8 @@ public class SelectionEditor extends EditorPart {
 			}
 			if (element instanceof EventBTreeElement) {
 				if (treeViewer.getChecked(element) || checkElementForDependencies(element)) {
-					// If the element is being highlighted, we give the text a different color for easier
+					// If the element is being highlighted, we give the text a
+					// different color for easier
 					// readability.
 					switch (columnIndex) {
 					case ELEMENT_COLUMN:
@@ -928,24 +781,27 @@ public class SelectionEditor extends EditorPart {
 		}
 
 		/**
-		 * Checks the given element to see if it or its children are depended on by any other element.
+		 * Checks the given element to see if it or its children are depended on
+		 * by any other element.
 		 * 
 		 * @param element
 		 *            The elements for which dependency needs to be checked.
-		 * @return True if the given element or at least one of its children is being depended on by another
-		 *         element
+		 * @return True if the given element or at least one of its children is
+		 *         being depended on by another element
 		 */
 		private Boolean checkElementForDependencies(Object element) {
 			if (element instanceof EventBTreeElement) {
 				EventBTreeElement treeElement = (EventBTreeElement) element;
-				if (selectionDependees.containsKey(treeElement.getOriginalElement()) && !treeViewer.getChecked(treeElement)) {
+				if (selectionDependees.containsKey(treeElement.getOriginalElement())
+						&& !treeViewer.getChecked(treeElement)) {
 					// Element itself depends on another element
 					return true;
 				}
 			}
 			ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 			if (!contentProvider.hasChildren(element)) {
-				// Element has no children, thus can't have any children that depend on any other element
+				// Element has no children, thus can't have any children that
+				// depend on any other element
 				return false;
 			}
 			for (Object child : contentProvider.getChildren(element)) {
@@ -966,7 +822,8 @@ public class SelectionEditor extends EditorPart {
 				return null;
 			}
 			if (checkElementForDependencies(element)) {
-				// If the element or one of its children is depended upon by a currently selected element
+				// If the element or one of its children is depended upon by a
+				// currently selected element
 				return Display.getDefault().getSystemColor(SWT.COLOR_RED);
 			}
 			if (treeViewer.getChecked(element)) {
@@ -1082,13 +939,14 @@ public class SelectionEditor extends EditorPart {
 		// Button for creating a new sub-refinement from the selected elements
 		Button newMachineButton = new Button(buttonBar, SWT.PUSH);
 		newMachineButton.setText("Create Sub-Refinement");
-		newMachineButton.setToolTipText("Create a new Event-B Machine based on the current selection of elements in this editor");
+		newMachineButton.setToolTipText(
+				"Create a new Event-B Machine based on the current selection of elements in this editor");
 		newMachineButton.addSelectionListener(new SelectionListener() {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MachineCreationWizard(rodinFile.getRodinProject(), machineRoot,
-						treeViewer.getCheckedElements()));
+				WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MachineCreationWizard(
+						rodinFile.getRodinProject(), machineRoot, treeViewer.getCheckedElements()));
 
 				wizardDialog.setBlockOnOpen(true);
 				wizardDialog.open();
@@ -1101,17 +959,20 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
-		// We add an extra container for the next button to allow a tooltip when the button is disabled
+		// We add an extra container for the next button to allow a tooltip when
+		// the button is disabled
 		final Composite mergeButtonContainer = new Composite(buttonBar, SWT.NONE);
 		mergeButtonContainer.setLayout(new FillLayout());
 
-		// A button to merge the currently opened machine with its direct ancestor (i.e. the machine this one
+		// A button to merge the currently opened machine with its direct
+		// ancestor (i.e. the machine this one
 		// refines)
 		Button mergeMachinesButton = new Button(mergeButtonContainer, SWT.PUSH);
 		mergeMachinesButton.setText("Merge With Direct Predecessor");
 		mergeMachinesButton.setToolTipText("Merge this machine with the one it refines, producing a new machine");
 		try {
-			// If current machine has no machine that it refines, we disable the button and display a tooltip
+			// If current machine has no machine that it refines, we disable the
+			// button and display a tooltip
 			// explaining why the button is disabled
 			IRefinesMachine refinesMachines[] = machineRoot.getRefinesClauses();
 			if (refinesMachines.length > 0) {
@@ -1119,7 +980,8 @@ public class SelectionEditor extends EditorPart {
 				mergeButtonContainer.setToolTipText("");
 			} else {
 				mergeMachinesButton.setEnabled(false);
-				mergeButtonContainer.setToolTipText("Nothing to merge with. Current machine does not refine any other machine.");
+				mergeButtonContainer
+						.setToolTipText("Nothing to merge with. Current machine does not refine any other machine.");
 			}
 		} catch (RodinDBException e) {
 			e.printStackTrace();
@@ -1129,8 +991,8 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MergeMachineWithPredecessorWizard(rodinFile.getRodinProject(),
-						machineRoot));
+				WizardDialog wizardDialog = new WizardDialog(parent.getShell(),
+						new MergeMachineWithPredecessorWizard(rodinFile.getRodinProject(), machineRoot));
 
 				wizardDialog.setBlockOnOpen(true);
 				wizardDialog.open();
@@ -1165,10 +1027,12 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
-		// A button to select all elements that currently selected elements depend on
+		// A button to select all elements that currently selected elements
+		// depend on
 		Button selectAllDependenciesButton = new Button(buttonBar, SWT.PUSH);
 		selectAllDependenciesButton.setText("Select All Dependencies");
-		selectAllDependenciesButton.setToolTipText("Select all elements that the currently selected elements depend on");
+		selectAllDependenciesButton
+				.setToolTipText("Select all elements that the currently selected elements depend on");
 		selectAllDependenciesButton.addSelectionListener(new SelectionListener() {
 
 			@Override
@@ -1201,12 +1065,15 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Finds the tree-internal container for a given editor-internal Event-B element
+	 * Finds the tree-internal container for a given editor-internal Event-B
+	 * element
 	 * 
 	 * @param element
-	 *            The Event-B element for which the tree-internal container is desired
+	 *            The Event-B element for which the tree-internal container is
+	 *            desired
 	 * @param expand
-	 *            True if tree in editor should be expanded to have the element be visible
+	 *            True if tree in editor should be expanded to have the element
+	 *            be visible
 	 * @return Tree-internal container element for given Event-B element
 	 */
 	private EventBTreeElement findTreeElement(EventBElement element, boolean expand) {
@@ -1245,7 +1112,8 @@ public class SelectionEditor extends EditorPart {
 				}
 				Object[] childrenOfContext = contentProvider.getChildren(treeContext);
 				for (Object child : childrenOfContext) {
-					// We pick out the correct subcategory for the element we are searching for
+					// We pick out the correct subcategory for the element we
+					// are searching for
 					assert child instanceof EventBTreeSubcategory;
 					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
 					String label = "";
@@ -1285,7 +1153,8 @@ public class SelectionEditor extends EditorPart {
 				}
 				Object[] childrenofEvent = contentProvider.getChildren(treeEvent);
 				for (Object child : childrenofEvent) {
-					// We pick out the correct subcategory for the searched element
+					// We pick out the correct subcategory for the searched
+					// element
 					assert child instanceof EventBTreeSubcategory;
 					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
 					String label = "";
@@ -1312,8 +1181,9 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Add categories to internal label to category map. Only for unique categories like Invariants or Events.
-	 * Not ones which occur multiple times per machine, such as Actions or Guards of Events.
+	 * Add categories to internal label to category map. Only for unique
+	 * categories like Invariants or Events. Not ones which occur multiple times
+	 * per machine, such as Actions or Guards of Events.
 	 * 
 	 * @param categories
 	 *            Array of categories to add
@@ -1323,4 +1193,5 @@ public class SelectionEditor extends EditorPart {
 			treeCategories.put(category.getLabel(), category);
 		}
 	}
+
 }
