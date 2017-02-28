@@ -58,10 +58,16 @@ public class EventBSlicer {
 
 	/**
 	 * Creates Event-B machine with the given name based on a selection of
-	 * elements the wizard has already received.
+	 * elements
 	 * 
 	 * @param machineName
 	 *            Name for the new machine
+	 * @param selectedElements
+	 *            selected elements
+	 * @param rodinProject
+	 *            target rodin project
+	 * @param originalMachineRoot
+	 *            original machine
 	 * @throws RodinDBException
 	 */
 	public static void createMachineFromSelection(String machineName, Object[] selectedElements,
