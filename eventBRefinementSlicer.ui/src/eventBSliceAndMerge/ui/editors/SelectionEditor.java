@@ -704,7 +704,7 @@ public class SelectionEditor extends EditorPart {
 			}
 		}
 	}
-	
+
 	/**
 	 * Get internal representations from the selected UI elements
 	 * 
@@ -963,8 +963,8 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MachineCreationWizard(
-						rodinFile.getRodinProject(), machineRoot, getSelection()));
+				WizardDialog wizardDialog = new WizardDialog(parent.getShell(),
+						new MachineCreationWizard(rodinFile.getRodinProject(), machineRoot, getSelection()));
 
 				wizardDialog.setBlockOnOpen(true);
 				wizardDialog.open();
@@ -1073,6 +1073,41 @@ public class SelectionEditor extends EditorPart {
 				widgetSelected(e);
 			}
 		});
+
+		// A button for debug mode
+		if (System.getProperty("debug") != null) {
+			Button debugButton = new Button(buttonBar, SWT.PUSH);
+			debugButton.setText("Run test (debug mode)");
+			debugButton.setToolTipText("Run test in the internal development mode");
+			debugButton.addSelectionListener(new SelectionListener() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					// TODO: implement
+					/**
+					 * Object[] categories = ((ITreeContentProvider)
+					 * treeViewer.getContentProvider()).getChildren(machine);
+					 * EventBTreeSubcategory category; EventBTreeElement[]
+					 * allVariables = null; for (Object c : categories) {
+					 * category = (EventBTreeSubcategory) c; if
+					 * (category.getLabel().equals("Variables")) { allVariables
+					 * = category.getChildren(); } } // TODO select from
+					 * allVariables and consider dependencies
+					 * EventBTreeElement[] selected = new EventBTreeElement[0];
+					 * try {
+					 * EventBSlicer.createMachineFromSelection("newMachine",
+					 * selected, rodinFile.getRodinProject(), machineRoot); }
+					 * catch (RodinDBException e1) { e1.printStackTrace(); }
+					 **/
+				}
+
+				@Override
+				public void widgetDefaultSelected(SelectionEvent e) {
+					widgetSelected(e);
+				}
+			});
+
+		}
 
 	}
 
