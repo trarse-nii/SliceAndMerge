@@ -54,6 +54,12 @@ import eventBSliceAndMerge.internal.datastructures.EventBRefinedEvent;
 import eventBSliceAndMerge.internal.datastructures.EventBVariable;
 import eventBSliceAndMerge.internal.datastructures.EventBWitness;
 
+/**
+ * Class for the processing function of the slicer
+ * 
+ * @author Fuyuki Ishikawa
+ *
+ */
 public class EventBSlicer {
 
 	/**
@@ -70,42 +76,8 @@ public class EventBSlicer {
 	 *            original machine
 	 * @throws RodinDBException
 	 */
-	public static void createMachineFromSelection(String machineName, Object[] selectedElements,
+	public static void createMachineFromSelection(String machineName, EventBSliceSelection selection,
 			IRodinProject rodinProject, IMachineRoot originalMachineRoot) throws RodinDBException {
-		List<EventBInvariant> invariants = new ArrayList<>();
-		List<EventBVariable> variables = new ArrayList<>();
-		List<EventBEvent> events = new ArrayList<>();
-		List<EventBParameter> parameters = new ArrayList<>();
-		List<EventBWitness> witnesses = new ArrayList<>();
-		List<EventBGuard> guards = new ArrayList<>();
-		List<EventBAction> actions = new ArrayList<>();
-		List<EventBContext> contexts = new ArrayList<>();
-
-		// We split the selection into individual categories
-		for (Object checkedElement : selectedElements) {
-			if (checkedElement instanceof EventBTreeSubcategory) {
-				continue;
-			}
-			EventBElement element = ((EventBTreeElement) checkedElement).getOriginalElement();
-			if (element instanceof EventBInvariant) {
-				invariants.add((EventBInvariant) element);
-			} else if (element instanceof EventBVariable) {
-				variables.add((EventBVariable) element);
-			} else if (element instanceof EventBParameter) {
-				parameters.add((EventBParameter) element);
-			} else if (element instanceof EventBWitness) {
-				witnesses.add((EventBWitness) element);
-			} else if (element instanceof EventBGuard) {
-				guards.add((EventBGuard) element);
-			} else if (element instanceof EventBAction) {
-				actions.add((EventBAction) element);
-			} else if (element instanceof EventBEvent) {
-				events.add((EventBEvent) element);
-			} else if (element instanceof EventBContext) {
-				contexts.add((EventBContext) element);
-			}
-		}
-
 		RodinCore.run(new IWorkspaceRunnable() {
 
 			@Override
@@ -127,11 +99,11 @@ public class EventBSlicer {
 				}
 
 				// Add selected invariants to new machine
-				for (EventBInvariant invariant : invariants) {
+				for (EventBInvariant invariant : selection.invariants) {
 					addRodinElement(IInvariant.ELEMENT_TYPE, root, invariant);
 				}
 				// Add selected variables to new machine
-				for (EventBVariable variable : variables) {
+				for (EventBVariable variable : selection.variables) {
 					for (IVariable inheritedVariable : root.getVariables()) {
 						// If the variable has been inherited, we have to get
 						// rid of it to avoid duplicates.
@@ -163,7 +135,7 @@ public class EventBSlicer {
 				}
 
 				// Add selected events to new machine
-				for (EventBEvent event : events) {
+				for (EventBEvent event : selection.events) {
 					for (IEvent inheritedEvent : root.getEvents()) {
 						// If the event has been inherited, we have to get rid
 						// of it to avoid duplicates.
@@ -182,28 +154,28 @@ public class EventBSlicer {
 					rodinEvent.setConvergence(event.getConvergence(), null);
 					// Add parameters to the event
 					List<EventBParameter> relevantParameters = new ArrayList<>(event.getParameters());
-					relevantParameters.retainAll(parameters);
+					relevantParameters.retainAll(selection.parameters);
 					for (EventBParameter parameter : relevantParameters) {
 						addRodinElement(IParameter.ELEMENT_TYPE, rodinEvent, parameter);
 					}
-					parameters.removeAll(relevantParameters);
+					selection.parameters.removeAll(relevantParameters);
 					// Add witnesses to the event
 					List<EventBWitness> relevantWitnesses = new ArrayList<>(event.getWitnesses());
-					relevantWitnesses.retainAll(witnesses);
+					relevantWitnesses.retainAll(selection.witnesses);
 					for (EventBWitness witness : relevantWitnesses) {
 						addRodinElement(IWitness.ELEMENT_TYPE, rodinEvent, witness);
 					}
-					witnesses.removeAll(relevantWitnesses);
+					selection.witnesses.removeAll(relevantWitnesses);
 					// Add guards to the event
 					List<EventBGuard> relevantGuards = new ArrayList<>(event.getGuards());
-					relevantGuards.retainAll(guards);
+					relevantGuards.retainAll(selection.guards);
 					for (EventBGuard guard : relevantGuards) {
 						addRodinElement(IGuard.ELEMENT_TYPE, rodinEvent, guard);
 					}
-					guards.removeAll(relevantGuards);
+					selection.guards.removeAll(relevantGuards);
 					// Add actions to the event
 					List<EventBAction> relevantActions = new ArrayList<>(event.getActions());
-					relevantActions.retainAll(actions);
+					relevantActions.retainAll(selection.actions);
 					for (EventBAction action : relevantActions) {
 						Map.Entry<String, String> labelAssignmentPair = new AbstractMap.SimpleEntry<String, String>(
 								action.getLabel(), action.getAssignment());
@@ -214,7 +186,7 @@ public class EventBSlicer {
 						}
 						addRodinElement(IAction.ELEMENT_TYPE, rodinEvent, action);
 					}
-					actions.removeAll(relevantActions);
+					selection.actions.removeAll(relevantActions);
 					// Add refinement information
 					for (EventBRefinedEvent refinedEvent : event.getRefinedEvents()) {
 						addRodinElement(IRefinesEvent.ELEMENT_TYPE, rodinEvent, refinedEvent);
@@ -227,7 +199,7 @@ public class EventBSlicer {
 				// Adds seen contexts to new machine.
 				// If whole context selected, we just add it directly,
 				// unless it is already included (because of refinement)
-				for (EventBContext context : contexts) {
+				for (EventBContext context : selection.contexts) {
 					contextsToRemove.addAll(context.getExtendedContextLabels());
 					boolean alreadyIncluded = false;
 					for (ISeesContext seenContext : root.getSeesClauses()) {
@@ -382,3 +354,4 @@ public class EventBSlicer {
 	}
 
 }
+

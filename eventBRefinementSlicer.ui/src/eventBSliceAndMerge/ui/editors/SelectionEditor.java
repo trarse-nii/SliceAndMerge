@@ -1,6 +1,7 @@
 package eventBSliceAndMerge.ui.editors;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -55,8 +56,7 @@ import org.rodinp.core.IRodinFile;
 import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
-import eventBSliceAndMerge.internal.analyzers.EventBTreeElement;
-import eventBSliceAndMerge.internal.analyzers.EventBTreeSubcategory;
+import eventBSliceAndMerge.internal.analyzers.EventBSliceSelection;
 import eventBSliceAndMerge.internal.datastructures.EventBAction;
 import eventBSliceAndMerge.internal.datastructures.EventBAxiom;
 import eventBSliceAndMerge.internal.datastructures.EventBCarrierSet;
@@ -704,6 +704,23 @@ public class SelectionEditor extends EditorPart {
 			}
 		}
 	}
+	
+	/**
+	 * Get internal representations from the selected UI elements
+	 * 
+	 * @return
+	 */
+	private EventBSliceSelection getSelection() {
+		Object[] selectedElements = treeViewer.getCheckedElements();
+		LinkedList<EventBElement> originalElements = new LinkedList<>();
+		for (Object checkedElement : selectedElements) {
+			if (checkedElement instanceof EventBTreeSubcategory) {
+				continue;
+			}
+			originalElements.add(((EventBTreeElement) checkedElement).getOriginalElement());
+		}
+		return new EventBSliceSelection(originalElements);
+	}
 
 	/**
 	 * Label provider for table viewer, implementing the necessary interfaces.
@@ -936,6 +953,7 @@ public class SelectionEditor extends EditorPart {
 	private void createButtons(Composite parent) {
 		Composite buttonBar = new Composite(parent, SWT.NONE);
 		buttonBar.setLayout(new RowLayout());
+
 		// Button for creating a new sub-refinement from the selected elements
 		Button newMachineButton = new Button(buttonBar, SWT.PUSH);
 		newMachineButton.setText("Create Sub-Refinement");
@@ -946,7 +964,7 @@ public class SelectionEditor extends EditorPart {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				WizardDialog wizardDialog = new WizardDialog(parent.getShell(), new MachineCreationWizard(
-						rodinFile.getRodinProject(), machineRoot, treeViewer.getCheckedElements()));
+						rodinFile.getRodinProject(), machineRoot, getSelection()));
 
 				wizardDialog.setBlockOnOpen(true);
 				wizardDialog.open();
@@ -986,7 +1004,6 @@ public class SelectionEditor extends EditorPart {
 		} catch (RodinDBException e) {
 			e.printStackTrace();
 		}
-
 		mergeMachinesButton.addSelectionListener(new SelectionListener() {
 
 			@Override
@@ -1056,12 +1073,12 @@ public class SelectionEditor extends EditorPart {
 				widgetSelected(e);
 			}
 		});
+
 	}
 
 	@Override
 	public void setFocus() {
 		// Intentionally left empty
-
 	}
 
 	/**
