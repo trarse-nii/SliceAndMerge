@@ -12,6 +12,7 @@ import org.rodinp.core.IRodinFile;
 import org.rodinp.core.IRodinProject;
 import org.rodinp.core.RodinDBException;
 
+import eventBSliceAndMerge.internal.analyzers.EventBSliceSelection;
 import eventBSliceAndMerge.internal.analyzers.EventBSlicer;
 
 /**
@@ -26,18 +27,18 @@ public class MachineCreationWizard extends Wizard {
 
 	private IRodinProject rodinProject;
 	private IMachineRoot originalMachineRoot;
-	private Object[] selectedElements;
+	private EventBSliceSelection selection;
 
 	private MachineNamingWizardPage machineNamingPage;
 
 	private String machineName;
 
 	public MachineCreationWizard(IRodinProject rodinProject, IMachineRoot originalMachineRoot,
-			Object[] selectedElements) {
+			EventBSliceSelection selection) {
 		super();
 		this.rodinProject = rodinProject;
 		this.originalMachineRoot = originalMachineRoot;
-		this.selectedElements = selectedElements;
+		this.selection = selection;
 
 	}
 
@@ -73,7 +74,7 @@ public class MachineCreationWizard extends Wizard {
 	 */
 	private void createMachineFromSelection(String machineName) throws RodinDBException {
 		// Create a new slice machine on machineName.bum
-		EventBSlicer.createMachineFromSelection(machineName, selectedElements, rodinProject, originalMachineRoot);
+		EventBSlicer.createMachineFromSelection(machineName, selection, rodinProject, originalMachineRoot);
 
 		// Open new editor window for newly created machine
 		IRodinFile file = rodinProject.getRodinFile(machineName.concat(".bum"));

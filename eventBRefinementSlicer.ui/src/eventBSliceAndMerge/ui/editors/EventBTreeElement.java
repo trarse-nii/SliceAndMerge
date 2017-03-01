@@ -1,4 +1,4 @@
-package eventBSliceAndMerge.internal.analyzers;
+package eventBSliceAndMerge.ui.editors;
 
 import eventBSliceAndMerge.internal.datastructures.EventBElement;
 
