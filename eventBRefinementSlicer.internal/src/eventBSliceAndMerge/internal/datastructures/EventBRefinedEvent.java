@@ -30,9 +30,8 @@ public class EventBRefinedEvent extends EventBElement {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.REFINED_EVENT;
-		return type;
+	public Type getType() {
+		return Type.REFINED_EVENT;
 	}
 
 }

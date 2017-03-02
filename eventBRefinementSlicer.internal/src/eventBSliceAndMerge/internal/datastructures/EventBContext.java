@@ -162,9 +162,8 @@ public class EventBContext extends EventBUnit {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.CONTEXT;
-		return type;
+	public Type getType() {
+		return Type.CONTEXT;
 	}
 
 	/**

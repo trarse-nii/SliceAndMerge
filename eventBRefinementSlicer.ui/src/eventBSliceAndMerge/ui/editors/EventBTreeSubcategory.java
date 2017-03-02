@@ -13,29 +13,28 @@ import eventBSliceAndMerge.internal.datastructures.EventBUnit;
  * @author Aivar Kripsaar
  *
  */
-public class EventBTreeSubcategory {
+public class EventBTreeSubcategory extends EventBTreeNode {
 
 	final String label;
 	final EventBUnit parentUnit;
 	final EventBTreeElement parentElement;
 	final EventBTreeElement[] children;
-	final Object outerType;
 
 	public EventBTreeSubcategory(String label, EventBUnit parent, List<? extends EventBElement> children,
 			Map<EventBElement, EventBTreeElement> elementToTreeElementMap, Object outerType) {
+		super(outerType);
 		this.label = label;
 		this.parentUnit = parent;
 		this.parentElement = null;
-		this.outerType = outerType;
 		this.children = createChildren(children, elementToTreeElementMap);
 	}
 
 	public EventBTreeSubcategory(String label, EventBTreeElement parent, List<? extends EventBElement> children,
 			Map<EventBElement, EventBTreeElement> elementToTreeElementMap, Object outerType) {
+		super(outerType);
 		this.label = label;
 		this.parentElement = parent;
 		this.parentUnit = null;
-		this.outerType = outerType;
 		this.children = createChildren(children, elementToTreeElementMap);
 	}
 	

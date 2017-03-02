@@ -63,9 +63,9 @@ import eventBSliceAndMerge.internal.datastructures.EventBCondition;
 import eventBSliceAndMerge.internal.datastructures.EventBConstant;
 import eventBSliceAndMerge.internal.datastructures.EventBContext;
 import eventBSliceAndMerge.internal.datastructures.EventBElement;
+import eventBSliceAndMerge.internal.datastructures.EventBElement.Type;
 import eventBSliceAndMerge.internal.datastructures.EventBEvent;
 import eventBSliceAndMerge.internal.datastructures.EventBMachine;
-import eventBSliceAndMerge.internal.datastructures.EventBTypes;
 import eventBSliceAndMerge.ui.jobs.EventBDependencyAnalysisJob;
 import eventBSliceAndMerge.ui.util.RodinUtil;
 import eventBSliceAndMerge.ui.wizards.MachineCreationWizard;
@@ -641,7 +641,7 @@ public class SelectionEditor extends EditorPart {
 			}
 		}
 	}
-
+	
 	/**
 	 * Corrects the parents's checked (selection) state based on child's changed
 	 * checked status
@@ -810,21 +810,21 @@ public class SelectionEditor extends EditorPart {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 
 		switch (element.getType()) {
-		case EventBTypes.INVARIANT:
+		case INVARIANT:
 			treeViewer.expandToLevel(treeCategories.get("Invariants"), 1);
 			treeElement = elementToTreeElementMap.get(element);
 			return treeElement;
-		case EventBTypes.VARIABLE:
+		case VARIABLE:
 			treeViewer.expandToLevel(treeCategories.get("Variables"), 1);
 			return elementToTreeElementMap.get(element);
-		case EventBTypes.CONTEXT: {
+		case CONTEXT: {
 			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
 			treeViewer.expandToLevel(treeContexts, 1);
 			return elementToTreeElementMap.get(element);
 		}
-		case EventBTypes.CONSTANT:
-		case EventBTypes.AXIOM:
-		case EventBTypes.CARRIER_SET: {
+		case CONSTANT:
+		case AXIOM:
+		case CARRIER_SET: {
 			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
 			for (EventBTreeElement treeContext : treeContexts.getChildren()) {
 				assert treeContext.getOriginalElement() instanceof EventBContext;
@@ -842,11 +842,11 @@ public class SelectionEditor extends EditorPart {
 					assert child instanceof EventBTreeSubcategory;
 					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
 					String label = "";
-					if (element.getType().equals(EventBTypes.CONSTANT)) {
+					if (element.getType().equals(Type.CONSTANT)) {
 						label = "Constants";
-					} else if (element.getType().equals(EventBTypes.AXIOM)) {
+					} else if (element.getType().equals(Type.AXIOM)) {
 						label = "Axioms";
-					} else if (element.getType().equals(EventBTypes.CARRIER_SET)) {
+					} else if (element.getType().equals(Type.CARRIER_SET)) {
 						label = "Carrier Sets";
 					}
 					if (subcategory.getLabel().equals(label)) {
@@ -859,13 +859,13 @@ public class SelectionEditor extends EditorPart {
 				}
 			}
 		}
-		case EventBTypes.EVENT: {
+		case EVENT: {
 			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
 			treeViewer.expandToLevel(treeEvents, 1);
 			return elementToTreeElementMap.get(element);
 		}
-		case EventBTypes.GUARD:
-		case EventBTypes.ACTION: {
+		case GUARD:
+		case ACTION: {
 			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
 			for (EventBTreeElement treeEvent : treeEvents.getChildren()) {
 				assert treeEvent.getOriginalElement() instanceof EventBEvent;
@@ -883,9 +883,9 @@ public class SelectionEditor extends EditorPart {
 					assert child instanceof EventBTreeSubcategory;
 					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
 					String label = "";
-					if (element.getType().equals(EventBTypes.GUARD)) {
+					if (element.getType().equals(Type.GUARD)) {
 						label = "Guards";
-					} else if (element.getType().equals(EventBTypes.ACTION)) {
+					} else if (element.getType().equals(Type.ACTION)) {
 						label = "Actions";
 					}
 					if (subcategory.getLabel().equals(label)) {
