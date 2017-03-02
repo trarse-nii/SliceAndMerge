@@ -502,7 +502,7 @@ public class SelectionEditor extends EditorPart {
 						return;
 					}
 				}
-				updateSelectionDependenciesForSubtree(event.getElement(), event.getChecked());
+				updateSelectionDependenciesForSubtree((EventBTreeNode)event.getElement(), event.getChecked());
 				correctParentsChecked(node);
 			}
 		});
@@ -576,7 +576,7 @@ public class SelectionEditor extends EditorPart {
 	 * @param checked
 	 *            New checked status of element
 	 */
-	private void updateSelectionDependenciesForElement(Object element, boolean checked) {
+	private void updateSelectionDependenciesForElement(EventBTreeNode element, boolean checked) {
 		if (element instanceof EventBTreeAtomicNode) {
 			for (EventBElement dependee : getDependees(((EventBTreeAtomicNode) element).originalElement)) {
 				updateSelectionDependency(dependee, true, checked);
@@ -597,7 +597,7 @@ public class SelectionEditor extends EditorPart {
 	 * @param checked
 	 *            New checked status of element
 	 */
-	private void updateSelectionDependenciesForSubtree(Object element, boolean checked) {
+	private void updateSelectionDependenciesForSubtree(EventBTreeNode element, boolean checked) {
 		if (!(checked ^ treeViewer.getChecked(element))) {
 			// If checked state of this element doesn't change, nothing else
 			// needs to be done.
@@ -611,7 +611,7 @@ public class SelectionEditor extends EditorPart {
 		}
 		for (Object child : contentProvider.getChildren(element)) {
 			treeViewer.setChecked(child, checked);
-			updateSelectionDependenciesForSubtree(child, checked);
+			updateSelectionDependenciesForSubtree((EventBTreeNode)child, checked);
 		}
 	}
 
@@ -624,14 +624,14 @@ public class SelectionEditor extends EditorPart {
 	 * @param checked
 	 *            Desired checked state for children of parent
 	 */
-	private void setChildrenChecked(Object parent, boolean checked) {
+	private void setChildrenChecked(EventBTreeNode parent, boolean checked) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 		if (!contentProvider.hasChildren(parent)) {
 			return;
 		}
 		for (Object child : contentProvider.getChildren(parent)) {
+			// Update a child only if its checked status changes
 			if (checked ^ treeViewer.getChecked(child)) {
-				// We only update a child if its checked status changes
 				setCheckedElement((EventBTreeNode)child, checked);
 			}
 		}
@@ -739,7 +739,7 @@ public class SelectionEditor extends EditorPart {
 	 * @param element
 	 *            Element to update
 	 */
-	private void updateElement(Object element) {
+	private void updateElement(EventBTreeNode element) {
 		if (element == null) {
 			return;
 		}
