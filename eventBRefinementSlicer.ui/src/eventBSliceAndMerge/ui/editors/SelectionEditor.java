@@ -332,8 +332,8 @@ public class SelectionEditor extends EditorPart {
 						IMachineRoot precedingMachineRoot = RodinUtil.getPrecedingMachineRoot(machineRoot);
 						boolean skip = false;
 						try {
-							for(IVariable v: precedingMachineRoot.getVariables()){
-								if(v.getIdentifierString().equals(elem.getLabel())){
+							for (IVariable v : precedingMachineRoot.getVariables()) {
+								if (v.getIdentifierString().equals(elem.getLabel())) {
 									skip = true;
 									break;
 								}
@@ -341,12 +341,11 @@ public class SelectionEditor extends EditorPart {
 						} catch (RodinDBException e1) {
 							e1.printStackTrace();
 						}
-						if(skip){
+						if (skip) {
 							continue;
 						}
 						selection.add(elem);
-						// TODO: Need to add something by considering
-						// dependencies?
+						selection.addAll(getDependees(elem));
 						try {
 							EventBSlicer.createMachineFromSelection(
 									machineRoot.getRodinFile().getBareName() + "-slice" + format.format(count) + "-"
@@ -923,6 +922,7 @@ public class SelectionEditor extends EditorPart {
 	/* ----- Auxiliary methods ----- */
 
 	/**
+	 * Fetches all elements a given element depends on
 	 * 
 	 * @param element
 	 * @return
@@ -932,6 +932,7 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
+	 * Fetches all elements a given element depends on
 	 * 
 	 * @param element
 	 * @return
@@ -941,6 +942,7 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
+	 * Fetches all elements that depend on a given element
 	 * 
 	 * @param element
 	 * @return
@@ -950,6 +952,7 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
+	 * Fetches all elements that depend on a given element
 	 * 
 	 * @param element
 	 * @return
