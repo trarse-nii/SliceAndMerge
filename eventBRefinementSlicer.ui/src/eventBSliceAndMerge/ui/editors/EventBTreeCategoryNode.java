@@ -1,11 +1,12 @@
 package eventBSliceAndMerge.ui.editors;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import eventBSliceAndMerge.internal.datastructures.EventBElement;
-import eventBSliceAndMerge.internal.datastructures.EventBUnit;
+import eventBSliceAndMerge.internal.datastructures.EventBElement.Type;
 
 /**
  * Container class for tree subcategories (e.g. Variables, Invariants, Events).
@@ -13,54 +14,57 @@ import eventBSliceAndMerge.internal.datastructures.EventBUnit;
  * @author Aivar Kripsaar
  *
  */
-public class EventBTreeSubcategory extends EventBTreeNode {
+public class EventBTreeCategoryNode extends EventBTreeNode {
+
+	/* Map from EventB element types to label texts */
+	private static HashMap<Type, String> labelMap;
+	static {
+		labelMap = new HashMap<Type, String>();
+		labelMap.put(Type.INVARIANT, "Invariants");
+		labelMap.put(Type.VARIABLE, "Variables");
+		labelMap.put(Type.EVENT, "Events");
+		labelMap.put(Type.CONTEXT, "Seen Contexts");
+		labelMap.put(Type.PARAMETER, "Parameters");
+		labelMap.put(Type.WITNESS, "Witnesses");
+		labelMap.put(Type.GUARD, "Guards");
+		labelMap.put(Type.ACTION, "Actions");
+		labelMap.put(Type.AXIOM, "Axioms");
+		labelMap.put(Type.CONSTANT, "Constants");
+		labelMap.put(Type.CARRIER_SET, "Carrier Sets");
+	}
 
 	final String label;
-	final EventBUnit parentUnit;
-	final EventBTreeElement parentElement;
-	final EventBTreeElement[] children;
+	final EventBTreeAtomicNode parentElement;
+	final EventBTreeAtomicNode[] children;
 
-	public EventBTreeSubcategory(String label, EventBUnit parent, List<? extends EventBElement> children,
-			Map<EventBElement, EventBTreeElement> elementToTreeElementMap, Object outerType) {
+	public EventBTreeCategoryNode(Type type, EventBTreeAtomicNode parent, List<? extends EventBElement> children,
+			Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap, Object outerType) {
 		super(outerType);
-		this.label = label;
-		this.parentUnit = parent;
-		this.parentElement = null;
-		this.children = createChildren(children, elementToTreeElementMap);
-	}
-
-	public EventBTreeSubcategory(String label, EventBTreeElement parent, List<? extends EventBElement> children,
-			Map<EventBElement, EventBTreeElement> elementToTreeElementMap, Object outerType) {
-		super(outerType);
-		this.label = label;
+		this.label = labelMap.get(type);
 		this.parentElement = parent;
-		this.parentUnit = null;
 		this.children = createChildren(children, elementToTreeElementMap);
 	}
-	
-	private EventBTreeElement[] createChildren(List<? extends EventBElement> children, Map<EventBElement, EventBTreeElement> elementToTreeElementMap){
-		List<EventBTreeElement> treeChildren = new ArrayList<>();
+
+	private EventBTreeAtomicNode[] createChildren(List<? extends EventBElement> children,
+			Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap) {
+		List<EventBTreeAtomicNode> treeChildren = new ArrayList<>();
 		for (EventBElement originalChild : children) {
-			EventBTreeElement treeChild = new EventBTreeElement(this, originalChild, outerType);
+			EventBTreeAtomicNode treeChild = new EventBTreeAtomicNode(this, originalChild, outerType);
 			elementToTreeElementMap.put(originalChild, treeChild);
 			treeChildren.add(treeChild);
 		}
-		return treeChildren.toArray(new EventBTreeElement[treeChildren.size()]);
+		return treeChildren.toArray(new EventBTreeAtomicNode[treeChildren.size()]);
 	}
 
 	public String getLabel() {
 		return label;
 	}
 
-	public EventBUnit getParentUnit() {
-		return parentUnit;
-	}
-
-	public EventBTreeElement getParentElement() {
+	public EventBTreeAtomicNode getParentElement() {
 		return parentElement;
 	}
 
-	public EventBTreeElement[] getChildren() {
+	public EventBTreeAtomicNode[] getChildren() {
 		return children;
 	}
 
@@ -71,8 +75,8 @@ public class EventBTreeSubcategory extends EventBTreeNode {
 	 *            Editor internal representation of element
 	 * @return Tree container element of the desired element
 	 */
-	public EventBTreeElement findTreeElement(EventBElement originalElement) {
-		for (EventBTreeElement child : children) {
+	public EventBTreeAtomicNode findTreeElement(EventBElement originalElement) {
+		for (EventBTreeAtomicNode child : children) {
 			if (child.getOriginalElement().equals(originalElement)) {
 				return child;
 			}
@@ -92,7 +96,6 @@ public class EventBTreeSubcategory extends EventBTreeNode {
 		result = prime * result + outerType.hashCode();
 		result = prime * result + ((label == null) ? 0 : label.hashCode());
 		result = prime * result + ((parentElement == null) ? 0 : parentElement.hashCode());
-		result = prime * result + ((parentUnit == null) ? 0 : parentUnit.hashCode());
 		return result;
 	}
 
@@ -104,7 +107,7 @@ public class EventBTreeSubcategory extends EventBTreeNode {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		EventBTreeSubcategory other = (EventBTreeSubcategory) obj;
+		EventBTreeCategoryNode other = (EventBTreeCategoryNode) obj;
 		if (!outerType.equals(other.outerType))
 			return false;
 		if (label == null) {
@@ -116,11 +119,6 @@ public class EventBTreeSubcategory extends EventBTreeNode {
 			if (other.parentElement != null)
 				return false;
 		} else if (!parentElement.equals(other.parentElement))
-			return false;
-		if (parentUnit == null) {
-			if (other.parentUnit != null)
-				return false;
-		} else if (!parentUnit.equals(other.parentUnit))
 			return false;
 		return true;
 	}

@@ -8,19 +8,19 @@ import eventBSliceAndMerge.internal.datastructures.EventBElement;
  * @author Aivar Kripsaar
  *
  */
-public class EventBTreeElement extends EventBTreeNode {
+public class EventBTreeAtomicNode extends EventBTreeNode {
 
-	final EventBTreeSubcategory parent;
+	final EventBTreeCategoryNode parentCategory;
 	final EventBElement originalElement;
 
-	public EventBTreeElement(EventBTreeSubcategory parent, EventBElement originalElement, Object outerType) {
+	public EventBTreeAtomicNode(EventBTreeCategoryNode parent, EventBElement originalElement, Object outerType) {
 		super(outerType);
-		this.parent = parent;
+		this.parentCategory = parent;
 		this.originalElement = originalElement;
 	}
 
-	public EventBTreeSubcategory getParent() {
-		return parent;
+	public EventBTreeCategoryNode getParentCategory() {
+		return parentCategory;
 	}
 
 	public EventBElement getOriginalElement() {
@@ -49,7 +49,7 @@ public class EventBTreeElement extends EventBTreeNode {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		EventBTreeElement other = (EventBTreeElement) obj;
+		EventBTreeAtomicNode other = (EventBTreeAtomicNode) obj;
 		if (!outerType.equals(other.outerType))
 			return false;
 		if (originalElement == null) {
