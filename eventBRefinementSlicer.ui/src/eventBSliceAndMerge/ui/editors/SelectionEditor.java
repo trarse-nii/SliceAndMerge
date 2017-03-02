@@ -3,6 +3,7 @@ package eventBSliceAndMerge.ui.editors;
 import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -87,34 +88,31 @@ public class SelectionEditor extends EditorPart {
 	private static final String LABEL_SPECIAL = "Special";
 	private static final String LABEL_COMMENT = "Comment";
 
-	/* indexes of the columns */
+	/* Indexes of the columns */
 	private static final int ELEMENT_COLUMN = 0;
 	private static final int CONTENT_COLUMN = 1;
 	private static final int SPECIAL_COLUMN = 2;
 	private static final int COMMENT_COLUMN = 3;
-
-	private IRodinFile rodinFile;
-	private IMachineRoot machineRoot;
-	private EventBMachine machine;
-
-	// We require a duplicate of the checked state because of the limitations of
-	// the TreeViewer API
-	private Map<Object, Boolean> selectionMap = new HashMap<>();
 
 	// Map from category label to internal representation of category.
 	// Only intended for use with categories that cannot occur more then once in
 	// the machine.
 	// Good: Invariant, Variable, Event, Seen Context
 	// Bad: Action, Guard, Witness, Parameter, Axiom, Constant, Carrier Set
-	private Map<String, EventBTreeSubcategory> treeCategories = new HashMap<>();
+	private Map<Type, EventBTreeCategoryNode> treeCategories = new HashMap<>();
 
 	private Map<EventBElement, Integer> selectionDependees = new HashMap<>();
 	private Map<EventBElement, Integer> selectionDependers = new HashMap<>();
 
 	// Map of internal representation of element to tree-internal wrapper
-	private Map<EventBElement, EventBTreeElement> elementToTreeElementMap = new HashMap<>();
+	private Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap = new HashMap<>();
 
 	private ContainerCheckedTreeViewer treeViewer = null;
+
+	/* Target file/machine objects */
+	private IRodinFile rodinFile;
+	private IMachineRoot machineRoot;
+	private EventBMachine machine;
 
 	/* ----- Non-trivial implementation of EditorPart methods ----- */
 
@@ -261,7 +259,7 @@ public class SelectionEditor extends EditorPart {
 			public void widgetSelected(SelectionEvent e) {
 				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
 				for (Object category : categories) {
-					setCheckedElement(category, true);
+					setCheckedElement((EventBTreeCategoryNode)category, true);
 				}
 				treeViewer.refresh();
 			}
@@ -284,7 +282,7 @@ public class SelectionEditor extends EditorPart {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				for (EventBElement dependee : selectionDependees.keySet()) {
-					EventBTreeElement element = findTreeElement(dependee, true);
+					EventBTreeAtomicNode element = findTreeElement(dependee, true);
 					if (element != null && !treeViewer.getChecked(element)) {
 						if (!(element.getOriginalElement() instanceof EventBContext)
 								&& element.getOriginalElement().getParent() instanceof EventBContext) {
@@ -313,10 +311,10 @@ public class SelectionEditor extends EditorPart {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
 					Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
-					EventBTreeSubcategory category;
-					EventBTreeElement[] allVariables = null;
+					EventBTreeCategoryNode category;
+					EventBTreeAtomicNode[] allVariables = null;
 					for (Object c : categories) {
-						category = (EventBTreeSubcategory) c;
+						category = (EventBTreeCategoryNode) c;
 						if (category.getLabel().equals("Variables")) {
 							allVariables = category.getChildren();
 							break;
@@ -327,7 +325,7 @@ public class SelectionEditor extends EditorPart {
 					StringBuffer message = new StringBuffer("Created sub-refinements each with variable\n");
 					DecimalFormat format = new DecimalFormat("000");
 					int count = 0;
-					for (EventBTreeElement var : allVariables) {
+					for (EventBTreeAtomicNode var : allVariables) {
 						EventBElement elem = var.originalElement;
 						IMachineRoot precedingMachineRoot = RodinUtil.getPrecedingMachineRoot(machineRoot);
 						boolean skip = false;
@@ -433,35 +431,6 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Adjusts size of columns to fit visible content. Also resizes last column
-	 * to fill remainder of space.
-	 */
-	private void packColumns() {
-		Tree tree = treeViewer.getTree();
-		int columnsWidth = 0;
-		for (TreeColumn column : tree.getColumns()) {
-			column.pack();
-		}
-		// After packing all columns, we manually change the size of the last
-		// column
-		for (TreeColumn column : tree.getColumns()) {
-			columnsWidth += column.getWidth();
-		}
-		TreeColumn lastColumn = tree.getColumn(tree.getColumnCount() - 1);
-		columnsWidth -= lastColumn.getWidth();
-
-		Rectangle area = tree.getClientArea();
-		int width = area.width;
-
-		// We set the width of the last column to be the width of the tree area
-		// minus the width of every other
-		// column added up, filling up the rest of the area
-		if (lastColumn.getWidth() < width - columnsWidth) {
-			lastColumn.setWidth(width - columnsWidth);
-		}
-	}
-
-	/**
 	 * Creates a tree viewer element with elements that can be checked off
 	 * 
 	 * @param tree
@@ -508,38 +477,68 @@ public class SelectionEditor extends EditorPart {
 		treeViewer.addCheckStateListener(new ICheckStateListener() {
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
+				EventBTreeNode node = (EventBTreeNode) event.getElement();
 				// If the element is part of a context, we wish to disable
 				// selection, because only whole
 				// contexts should be selectable
 				// We have to hack this in by undoing the checking of the
 				// checkbox manually
-				if (event.getElement() instanceof EventBTreeElement) {
-					EventBElement element = ((EventBTreeElement) event.getElement()).getOriginalElement();
+				if (event.getElement() instanceof EventBTreeAtomicNode) {
+					EventBElement element = ((EventBTreeAtomicNode) event.getElement()).getOriginalElement();
 					if ((element instanceof EventBAxiom || element instanceof EventBConstant
 							|| element instanceof EventBCarrierSet)) {
 						treeViewer.setSubtreeChecked(event.getElement(), !event.getChecked());
 						// Correct checked state of parents
-						correctParentsChecked(event.getElement());
+						correctParentsChecked(node);
 						return;
 					}
-				} else if (event.getElement() instanceof EventBTreeSubcategory) {
-					EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) event.getElement();
+				} else if (event.getElement() instanceof EventBTreeCategoryNode) {
+					EventBTreeCategoryNode treeCategory = (EventBTreeCategoryNode) event.getElement();
 					if (treeCategory.getParentElement() != null
 							&& treeCategory.getParentElement().getOriginalElement() instanceof EventBContext) {
 						treeViewer.setSubtreeChecked(event.getElement(), !event.getChecked());
 						// Correct checked state of parents
-						correctParentsChecked(event.getElement());
+						correctParentsChecked(node);
 						return;
 					}
 				}
 				updateSelectionDependenciesForSubtree(event.getElement(), event.getChecked());
-				correctParentsChecked(event.getElement());
+				correctParentsChecked(node);
 			}
 		});
 
 		treeViewer.setContentProvider(new TreeContentProvider());
 		treeViewer.setInput(machine);
 		this.treeViewer = treeViewer;
+	}
+
+	/**
+	 * Adjusts size of columns to fit visible content. Also resizes last column
+	 * to fill remainder of space.
+	 */
+	private void packColumns() {
+		Tree tree = treeViewer.getTree();
+		int columnsWidth = 0;
+		for (TreeColumn column : tree.getColumns()) {
+			column.pack();
+		}
+		// After packing all columns, we manually change the size of the last
+		// column
+		for (TreeColumn column : tree.getColumns()) {
+			columnsWidth += column.getWidth();
+		}
+		TreeColumn lastColumn = tree.getColumn(tree.getColumnCount() - 1);
+		columnsWidth -= lastColumn.getWidth();
+
+		Rectangle area = tree.getClientArea();
+		int width = area.width;
+
+		// We set the width of the last column to be the width of the tree area
+		// minus the width of every other
+		// column added up, filling up the rest of the area
+		if (lastColumn.getWidth() < width - columnsWidth) {
+			lastColumn.setWidth(width - columnsWidth);
+		}
 	}
 
 	/* ----- Methods for managing selection considering dependencies ----- */
@@ -553,15 +552,12 @@ public class SelectionEditor extends EditorPart {
 	 * @param checked
 	 *            Desired checked state
 	 */
-	private void setCheckedElement(Object element, boolean checked) {
+	private void setCheckedElement(EventBTreeNode element, boolean checked) {
 		treeViewer.setSubtreeChecked(element, checked);
 		updateElement(element);
 
 		// Get dependency information and add it to the local maps
 		updateSelectionDependenciesForElement(element, checked);
-
-		// Update the selection map
-		selectionMap.put(element, checked);
 
 		// Update children of selected element and update their dependencies
 		setChildrenChecked(element, checked);
@@ -581,11 +577,11 @@ public class SelectionEditor extends EditorPart {
 	 *            New checked status of element
 	 */
 	private void updateSelectionDependenciesForElement(Object element, boolean checked) {
-		if (element instanceof EventBTreeElement) {
-			for (EventBElement dependee : getDependees((EventBTreeElement) element)) {
+		if (element instanceof EventBTreeAtomicNode) {
+			for (EventBElement dependee : getDependees(((EventBTreeAtomicNode) element).originalElement)) {
 				updateSelectionDependency(dependee, true, checked);
 			}
-			for (EventBElement depender : getDependers((EventBTreeElement) element)) {
+			for (EventBElement depender : getDependers(((EventBTreeAtomicNode) element).originalElement)) {
 				updateSelectionDependency(depender, false, checked);
 			}
 		}
@@ -602,13 +598,12 @@ public class SelectionEditor extends EditorPart {
 	 *            New checked status of element
 	 */
 	private void updateSelectionDependenciesForSubtree(Object element, boolean checked) {
-		if (!(checked ^ selectionMap.getOrDefault(element, false))) {
+		if (!(checked ^ treeViewer.getChecked(element))) {
 			// If checked state of this element doesn't change, nothing else
 			// needs to be done.
 			treeViewer.update(element, null);
 			return;
 		}
-		selectionMap.put(element, checked);
 		updateSelectionDependenciesForElement(element, checked);
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 		if (!contentProvider.hasChildren(element)) {
@@ -635,13 +630,13 @@ public class SelectionEditor extends EditorPart {
 			return;
 		}
 		for (Object child : contentProvider.getChildren(parent)) {
-			if (checked ^ selectionMap.getOrDefault(child, false)) {
+			if (checked ^ treeViewer.getChecked(child)) {
 				// We only update a child if its checked status changes
-				setCheckedElement(child, checked);
+				setCheckedElement((EventBTreeNode)child, checked);
 			}
 		}
 	}
-	
+
 	/**
 	 * Corrects the parents's checked (selection) state based on child's changed
 	 * checked status
@@ -649,22 +644,21 @@ public class SelectionEditor extends EditorPart {
 	 * @param element
 	 *            The element which has had its checked status changed.
 	 */
-	private void correctParentsChecked(Object element) {
-		if (element instanceof EventBTreeElement) {
-			EventBTreeElement treeElement = (EventBTreeElement) element;
-			EventBTreeSubcategory parent = treeElement.getParent();
-			if (parent == null) {
-				return;
-			}
-			correctElementChecked(parent);
-		} else if (element instanceof EventBTreeSubcategory) {
-			EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) element;
-			EventBTreeElement parent = treeCategory.getParentElement();
-			if (parent == null) {
-				return;
-			}
-			correctElementChecked(parent);
+	private void correctParentsChecked(EventBTreeNode element) {
+		EventBTreeNode parent = null;
+		if (element instanceof EventBTreeAtomicNode) {
+			EventBTreeAtomicNode treeElement = (EventBTreeAtomicNode) element;
+			parent = treeElement.getParentCategory();
+			
+		} else {
+			assert element instanceof EventBTreeCategoryNode;
+			EventBTreeCategoryNode treeCategory = (EventBTreeCategoryNode) element;
+			parent = treeCategory.getParentElement();
 		}
+		if (parent == null) {
+			return;
+		}
+		correctElementChecked(parent);
 	}
 
 	/**
@@ -674,7 +668,7 @@ public class SelectionEditor extends EditorPart {
 	 * @param element
 	 *            Tree element which needs to be checked and corrected
 	 */
-	private void correctElementChecked(Object element) {
+	private void correctElementChecked(EventBTreeNode element) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 		if (!contentProvider.hasChildren(element)) {
 			return;
@@ -693,18 +687,15 @@ public class SelectionEditor extends EditorPart {
 			treeViewer.setChecked(element, true);
 			treeViewer.setGrayed(element, false);
 			treeViewer.update(element, null);
-			selectionMap.put(element, true);
 			correctParentsChecked(element);
 		} else if (isPartiallyChecked) {
 			treeViewer.setGrayChecked(element, true);
 			treeViewer.update(element, null);
-			selectionMap.put(element, true);
 			correctParentsChecked(element);
 		} else {
 			treeViewer.setChecked(element, false);
 			treeViewer.setGrayed(element, false);
 			treeViewer.update(element, null);
-			selectionMap.put(element, false);
 			correctParentsChecked(element);
 		}
 	}
@@ -753,14 +744,14 @@ public class SelectionEditor extends EditorPart {
 			return;
 		}
 		treeViewer.update(element, null);
-		if (element instanceof EventBTreeElement) {
-			EventBTreeElement treeElement = (EventBTreeElement) element;
-			if (treeElement.getParent() != null) {
-				updateElement(treeElement.getParent());
+		if (element instanceof EventBTreeAtomicNode) {
+			EventBTreeAtomicNode treeElement = (EventBTreeAtomicNode) element;
+			if (treeElement.getParentCategory() != null) {
+				updateElement(treeElement.getParentCategory());
 			}
 		}
-		if (element instanceof EventBTreeSubcategory) {
-			EventBTreeSubcategory treeCategory = (EventBTreeSubcategory) element;
+		if (element instanceof EventBTreeCategoryNode) {
+			EventBTreeCategoryNode treeCategory = (EventBTreeCategoryNode) element;
 			if (treeCategory.getParentElement() != null) {
 				updateElement(treeCategory.getParentElement());
 			}
@@ -781,10 +772,10 @@ public class SelectionEditor extends EditorPart {
 		Object[] selectedElements = treeViewer.getCheckedElements();
 		LinkedList<EventBElement> originalElements = new LinkedList<>();
 		for (Object checkedElement : selectedElements) {
-			if (checkedElement instanceof EventBTreeSubcategory) {
+			if (checkedElement instanceof EventBTreeCategoryNode) {
 				continue;
 			}
-			originalElements.add(((EventBTreeElement) checkedElement).getOriginalElement());
+			originalElements.add(((EventBTreeAtomicNode) checkedElement).getOriginalElement());
 		}
 		return new EventBSliceSelection(originalElements);
 	}
@@ -801,32 +792,25 @@ public class SelectionEditor extends EditorPart {
 	 *            be visible
 	 * @return Tree-internal container element for given Event-B element
 	 */
-	private EventBTreeElement findTreeElement(EventBElement element, boolean expand) {
-		EventBTreeElement treeElement = null;
+	private EventBTreeAtomicNode findTreeElement(EventBElement element, boolean expand) {
+		EventBTreeAtomicNode treeElement = null;
 		if (!expand && elementToTreeElementMap.containsKey(element)) {
 			return elementToTreeElementMap.get(element);
 		}
 
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
+		Type type = element.getType();
+		EventBTreeCategoryNode category = treeCategories.get(type);
+		// TODO: by this logic only findable the first element when multiple
+		// elements exist for a category?
 
-		switch (element.getType()) {
-		case INVARIANT:
-			treeViewer.expandToLevel(treeCategories.get("Invariants"), 1);
-			treeElement = elementToTreeElementMap.get(element);
-			return treeElement;
-		case VARIABLE:
-			treeViewer.expandToLevel(treeCategories.get("Variables"), 1);
-			return elementToTreeElementMap.get(element);
-		case CONTEXT: {
-			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
-			treeViewer.expandToLevel(treeContexts, 1);
+		if (type == Type.INVARIANT || type == Type.VARIABLE || type == Type.CONTEXT || type == Type.EVENT) {
+			treeViewer.expandToLevel(category, 1);
 			return elementToTreeElementMap.get(element);
 		}
-		case CONSTANT:
-		case AXIOM:
-		case CARRIER_SET: {
-			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
-			for (EventBTreeElement treeContext : treeContexts.getChildren()) {
+
+		if (type == Type.CARRIER_SET) {
+			for (EventBTreeAtomicNode treeContext : category.getChildren()) {
 				assert treeContext.getOriginalElement() instanceof EventBContext;
 				EventBContext context = (EventBContext) treeContext.getOriginalElement();
 				if (!context.containsElement(element)) {
@@ -839,8 +823,8 @@ public class SelectionEditor extends EditorPart {
 				for (Object child : childrenOfContext) {
 					// We pick out the correct subcategory for the element we
 					// are searching for
-					assert child instanceof EventBTreeSubcategory;
-					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
+					assert child instanceof EventBTreeCategoryNode;
+					EventBTreeCategoryNode subcategory = (EventBTreeCategoryNode) child;
 					String label = "";
 					if (element.getType().equals(Type.CONSTANT)) {
 						label = "Constants";
@@ -859,15 +843,9 @@ public class SelectionEditor extends EditorPart {
 				}
 			}
 		}
-		case EVENT: {
-			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
-			treeViewer.expandToLevel(treeEvents, 1);
-			return elementToTreeElementMap.get(element);
-		}
-		case GUARD:
-		case ACTION: {
-			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
-			for (EventBTreeElement treeEvent : treeEvents.getChildren()) {
+
+		if (type == Type.ACTION) {
+			for (EventBTreeAtomicNode treeEvent : category.getChildren()) {
 				assert treeEvent.getOriginalElement() instanceof EventBEvent;
 				EventBEvent event = (EventBEvent) treeEvent.getOriginalElement();
 				if (!event.containsElement(element)) {
@@ -880,8 +858,8 @@ public class SelectionEditor extends EditorPart {
 				for (Object child : childrenofEvent) {
 					// We pick out the correct subcategory for the searched
 					// element
-					assert child instanceof EventBTreeSubcategory;
-					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
+					assert child instanceof EventBTreeCategoryNode;
+					EventBTreeCategoryNode subcategory = (EventBTreeCategoryNode) child;
 					String label = "";
 					if (element.getType().equals(Type.GUARD)) {
 						label = "Guards";
@@ -898,25 +876,8 @@ public class SelectionEditor extends EditorPart {
 				}
 			}
 		}
-		default:
-			break;
-		}
 
 		return treeElement;
-	}
-
-	/**
-	 * Add categories to internal label to category map. Only for unique
-	 * categories like Invariants or Events. Not ones which occur multiple times
-	 * per machine, such as Actions or Guards of Events.
-	 * 
-	 * @param categories
-	 *            Array of categories to add
-	 */
-	private void addCategories(EventBTreeSubcategory[] categories) {
-		for (EventBTreeSubcategory category : categories) {
-			treeCategories.put(category.getLabel(), category);
-		}
 	}
 
 	/* ----- Auxiliary methods ----- */
@@ -932,16 +893,6 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Fetches all elements a given element depends on
-	 * 
-	 * @param element
-	 * @return
-	 */
-	private Set<EventBElement> getDependees(EventBTreeElement element) {
-		return getDependees(element.getOriginalElement());
-	}
-
-	/**
 	 * Fetches all elements that depend on a given element
 	 * 
 	 * @param element
@@ -949,16 +900,6 @@ public class SelectionEditor extends EditorPart {
 	 */
 	private Set<EventBElement> getDependers(EventBElement element) {
 		return machine.getDependencies().getDependersForElement(element);
-	}
-
-	/**
-	 * Fetches all elements that depend on a given element
-	 * 
-	 * @param element
-	 * @return
-	 */
-	private Set<EventBElement> getDependers(EventBTreeElement element) {
-		return getDependers(element.getOriginalElement());
 	}
 
 	/* ----- Internal classes ----- */
@@ -998,11 +939,11 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public Color getForeground(Object element, int columnIndex) {
-			if (element instanceof EventBTreeSubcategory) {
+			if (element instanceof EventBTreeCategoryNode) {
 				// TODO: Add color coding for categories
 				return null;
 			}
-			if (element instanceof EventBTreeElement) {
+			if (element instanceof EventBTreeAtomicNode) {
 				if (treeViewer.getChecked(element) || checkElementForDependencies(element)) {
 					// If the element is being highlighted, we give the text a
 					// different color for easier
@@ -1047,8 +988,8 @@ public class SelectionEditor extends EditorPart {
 		 *         being depended on by another element
 		 */
 		private Boolean checkElementForDependencies(Object element) {
-			if (element instanceof EventBTreeElement) {
-				EventBTreeElement treeElement = (EventBTreeElement) element;
+			if (element instanceof EventBTreeAtomicNode) {
+				EventBTreeAtomicNode treeElement = (EventBTreeAtomicNode) element;
 				if (selectionDependees.containsKey(treeElement.getOriginalElement())
 						&& !treeViewer.getChecked(treeElement)) {
 					// Element itself depends on another element
@@ -1072,7 +1013,7 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public Color getBackground(Object element, int columnIndex) {
-			if (!(element instanceof EventBTreeElement || element instanceof EventBTreeSubcategory)) {
+			if (!(element instanceof EventBTreeAtomicNode || element instanceof EventBTreeCategoryNode)) {
 				return null;
 			}
 			if (treeViewer == null) {
@@ -1088,12 +1029,12 @@ public class SelectionEditor extends EditorPart {
 				return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
 			}
 
-			if (element instanceof EventBTreeSubcategory) {
+			if (element instanceof EventBTreeCategoryNode) {
 				// We don't deal with further cases for categories
 				return null;
 			}
 
-			if (selectionDependers.containsKey(((EventBTreeElement) element).getOriginalElement())) {
+			if (selectionDependers.containsKey(((EventBTreeAtomicNode) element).getOriginalElement())) {
 				// If the element depends on a currently selected element
 				return Display.getDefault().getSystemColor(SWT.COLOR_CYAN);
 			}
@@ -1108,16 +1049,16 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public String getColumnText(Object element, int columnIndex) {
-			if (element instanceof EventBTreeSubcategory) {
+			if (element instanceof EventBTreeCategoryNode) {
 				// Categories only need their labels displayed
 				if (columnIndex == ELEMENT_COLUMN) {
-					return ((EventBTreeSubcategory) element).getLabel();
+					return ((EventBTreeCategoryNode) element).getLabel();
 				}
 			}
-			if (!(element instanceof EventBTreeElement)) {
+			if (!(element instanceof EventBTreeAtomicNode)) {
 				return null;
 			}
-			element = ((EventBTreeElement) element).getOriginalElement();
+			element = ((EventBTreeAtomicNode) element).getOriginalElement();
 			if (!(element instanceof EventBElement)) {
 				return null;
 			}
@@ -1180,9 +1121,9 @@ public class SelectionEditor extends EditorPart {
 	 */
 	class TreeContentProvider implements ITreeContentProvider {
 
-		private EventBTreeSubcategory[] treeRootCategories;
-		private Map<EventBEvent, EventBTreeSubcategory[]> eventSubcategories = new HashMap<>();
-		private Map<EventBContext, EventBTreeSubcategory[]> contextSubcategories = new HashMap<>();
+		private EventBTreeCategoryNode[] treeRootCategories;
+		private Map<EventBEvent, EventBTreeCategoryNode[]> eventSubcategories = new HashMap<>();
+		private Map<EventBContext, EventBTreeCategoryNode[]> contextSubcategories = new HashMap<>();
 
 		@Override
 		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
@@ -1202,16 +1143,16 @@ public class SelectionEditor extends EditorPart {
 				}
 				return true;
 			}
-			if (element instanceof EventBTreeSubcategory) {
-				return ((EventBTreeSubcategory) element).getChildren().length > 0;
+			if (element instanceof EventBTreeCategoryNode) {
+				return ((EventBTreeCategoryNode) element).getChildren().length > 0;
 			}
-			if (element instanceof EventBTreeElement) {
-				if (((EventBTreeElement) element).getOriginalElement() instanceof EventBEvent) {
-					EventBEvent event = (EventBEvent) ((EventBTreeElement) element).getOriginalElement();
+			if (element instanceof EventBTreeAtomicNode) {
+				if (((EventBTreeAtomicNode) element).getOriginalElement() instanceof EventBEvent) {
+					EventBEvent event = (EventBEvent) ((EventBTreeAtomicNode) element).getOriginalElement();
 					return !(event.isEmpty());
 				}
-				if (((EventBTreeElement) element).getOriginalElement() instanceof EventBContext) {
-					EventBContext context = (EventBContext) ((EventBTreeElement) element).getOriginalElement();
+				if (((EventBTreeAtomicNode) element).getOriginalElement() instanceof EventBContext) {
+					EventBContext context = (EventBContext) ((EventBTreeAtomicNode) element).getOriginalElement();
 					return !(context.isEmpty());
 				}
 			}
@@ -1220,8 +1161,8 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public Object getParent(Object element) {
-			if (element instanceof EventBTreeElement) {
-				return ((EventBTreeElement) element).getParent();
+			if (element instanceof EventBTreeAtomicNode) {
+				return ((EventBTreeAtomicNode) element).getParentCategory();
 			}
 			return null;
 		}
@@ -1230,19 +1171,13 @@ public class SelectionEditor extends EditorPart {
 		public Object[] getElements(Object inputElement) {
 			EventBMachine machine = (EventBMachine) inputElement;
 			if (treeRootCategories == null) {
-				EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine,
-						machine.getInvariants(), elementToTreeElementMap, this);
-				EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine,
-						machine.getVariables(), elementToTreeElementMap, this);
-				EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents(),
-						elementToTreeElementMap, this);
-				EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine,
-						machine.getSeenContexts(), elementToTreeElementMap, this);
-				EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
-				addCategories(treeChildren);
-				treeRootCategories = treeChildren;
+				EventBTreeCategoryNode[] children = new EventBTreeCategoryNode[4];
+				children[0] = addCategory(Type.INVARIANT, machine.getInvariants(), elementToTreeElementMap);
+				children[1] = addCategory(Type.VARIABLE, machine.getVariables(), elementToTreeElementMap);
+				children[2] = addCategory(Type.EVENT, machine.getEvents(), elementToTreeElementMap);
+				children[3] = addCategory(Type.CONTEXT, machine.getSeenContexts(), elementToTreeElementMap);
+				treeRootCategories = children;
 			}
-
 			return treeRootCategories;
 		}
 
@@ -1251,46 +1186,44 @@ public class SelectionEditor extends EditorPart {
 			if ((parentElement instanceof EventBMachine)) {
 				return getElements(parentElement);
 			}
-			if (parentElement instanceof EventBTreeSubcategory) {
-				return ((EventBTreeSubcategory) parentElement).getChildren();
+			if (parentElement instanceof EventBTreeCategoryNode) {
+				return ((EventBTreeCategoryNode) parentElement).getChildren();
 			}
-			if (parentElement instanceof EventBTreeElement) {
-				if (!(((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent
-						|| ((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBContext)) {
+			if (parentElement instanceof EventBTreeAtomicNode) {
+				if (!(((EventBTreeAtomicNode) parentElement).getOriginalElement() instanceof EventBEvent
+						|| ((EventBTreeAtomicNode) parentElement).getOriginalElement() instanceof EventBContext)) {
 					return null;
 				}
-				if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent) {
-					EventBEvent originalElement = (EventBEvent) ((EventBTreeElement) parentElement)
+				if (((EventBTreeAtomicNode) parentElement).getOriginalElement() instanceof EventBEvent) {
+					EventBEvent originalElement = (EventBEvent) ((EventBTreeAtomicNode) parentElement)
 							.getOriginalElement();
-					EventBTreeElement parent = (EventBTreeElement) parentElement;
+					EventBTreeAtomicNode parent = (EventBTreeAtomicNode) parentElement;
 					if (!eventSubcategories.containsKey(originalElement)) {
-						EventBTreeSubcategory parameters = new EventBTreeSubcategory("Parameters", parent,
-								originalElement.getParameters(), elementToTreeElementMap, this);
-						EventBTreeSubcategory witnesses = new EventBTreeSubcategory("Witnesses", parent,
-								originalElement.getWitnesses(), elementToTreeElementMap, this);
-						EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent,
-								originalElement.getGuards(), elementToTreeElementMap, this);
-						EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent,
-								originalElement.getActions(), elementToTreeElementMap, this);
-						EventBTreeSubcategory[] children = { parameters, witnesses, guards, actions };
-						addCategories(children);
+						EventBTreeCategoryNode[] children = new EventBTreeCategoryNode[4];
+						children[0] = addCategory(Type.PARAMETER, parent, originalElement.getParameters(),
+								elementToTreeElementMap);
+						children[1] = addCategory(Type.WITNESS, parent, originalElement.getWitnesses(),
+								elementToTreeElementMap);
+						children[2] = addCategory(Type.GUARD, parent, originalElement.getGuards(),
+								elementToTreeElementMap);
+						children[3] = addCategory(Type.ACTION, parent, originalElement.getActions(),
+								elementToTreeElementMap);
 						eventSubcategories.put(originalElement, children);
 					}
 					return eventSubcategories.get(originalElement);
 				}
-				if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBContext) {
-					EventBContext originalElement = (EventBContext) ((EventBTreeElement) parentElement)
+				if (((EventBTreeAtomicNode) parentElement).getOriginalElement() instanceof EventBContext) {
+					EventBContext originalElement = (EventBContext) ((EventBTreeAtomicNode) parentElement)
 							.getOriginalElement();
-					EventBTreeElement parent = (EventBTreeElement) parentElement;
+					EventBTreeAtomicNode parent = (EventBTreeAtomicNode) parentElement;
 					if (!contextSubcategories.containsKey(originalElement)) {
-						EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", parent,
-								originalElement.getAxioms(), elementToTreeElementMap, this);
-						EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", parent,
-								originalElement.getConstants(), elementToTreeElementMap, this);
-						EventBTreeSubcategory carrierSets = new EventBTreeSubcategory("Carrier Sets", parent,
-								originalElement.getCarrierSets(), elementToTreeElementMap, this);
-						EventBTreeSubcategory[] children = { axioms, constants, carrierSets };
-						addCategories(children);
+						EventBTreeCategoryNode[] children = new EventBTreeCategoryNode[3];
+						children[0] = addCategory(Type.AXIOM, parent, originalElement.getAxioms(),
+								elementToTreeElementMap);
+						children[1] = addCategory(Type.CONSTANT, parent, originalElement.getConstants(),
+								elementToTreeElementMap);
+						children[2] = addCategory(Type.CARRIER_SET, parent, originalElement.getCarrierSets(),
+								elementToTreeElementMap);
 						contextSubcategories.put(originalElement, children);
 					}
 					return contextSubcategories.get(originalElement);
@@ -1298,6 +1231,23 @@ public class SelectionEditor extends EditorPart {
 			}
 			return null;
 		}
+
+		private EventBTreeCategoryNode addCategory(Type type, List<? extends EventBElement> children,
+				Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap) {
+			EventBTreeCategoryNode category = new EventBTreeCategoryNode(type, null, children, elementToTreeElementMap,
+					this);
+			treeCategories.put(type, category);
+			return category;
+		}
+
+		private EventBTreeCategoryNode addCategory(Type type, EventBTreeAtomicNode parent,
+				List<? extends EventBElement> children, Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap) {
+			EventBTreeCategoryNode category = new EventBTreeCategoryNode(type, parent, children, elementToTreeElementMap,
+					this);
+			treeCategories.put(type, category);
+			return category;
+		}
+
 	}
 
 }
