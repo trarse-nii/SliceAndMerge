@@ -1,13 +1,14 @@
 package eventBSliceAndMerge.ui.editors;
 
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ILabelProviderListener;
@@ -46,29 +47,27 @@ import org.eclipse.ui.IEditorSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 import org.eclipse.ui.part.EditorPart;
-import org.eclipse.ui.part.FileEditorInput;
-import org.eventb.core.IEventBRoot;
 import org.eventb.core.IMachineRoot;
 import org.eventb.core.IRefinesMachine;
-import org.eventb.core.ast.FormulaFactory;
+import org.eventb.core.IVariable;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IRodinFile;
-import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
 import eventBSliceAndMerge.internal.analyzers.EventBSliceSelection;
+import eventBSliceAndMerge.internal.analyzers.EventBSlicer;
 import eventBSliceAndMerge.internal.datastructures.EventBAction;
 import eventBSliceAndMerge.internal.datastructures.EventBAxiom;
 import eventBSliceAndMerge.internal.datastructures.EventBCarrierSet;
 import eventBSliceAndMerge.internal.datastructures.EventBCondition;
 import eventBSliceAndMerge.internal.datastructures.EventBConstant;
 import eventBSliceAndMerge.internal.datastructures.EventBContext;
-import eventBSliceAndMerge.internal.datastructures.EventBDependencies;
 import eventBSliceAndMerge.internal.datastructures.EventBElement;
 import eventBSliceAndMerge.internal.datastructures.EventBEvent;
 import eventBSliceAndMerge.internal.datastructures.EventBMachine;
 import eventBSliceAndMerge.internal.datastructures.EventBTypes;
 import eventBSliceAndMerge.ui.jobs.EventBDependencyAnalysisJob;
+import eventBSliceAndMerge.ui.util.RodinUtil;
 import eventBSliceAndMerge.ui.wizards.MachineCreationWizard;
 import eventBSliceAndMerge.ui.wizards.MergeMachineWithPredecessorWizard;
 
@@ -82,11 +81,13 @@ import eventBSliceAndMerge.ui.wizards.MergeMachineWithPredecessorWizard;
 
 public class SelectionEditor extends EditorPart {
 
+	/* Labels used in the column titles of the table-like view */
 	private static final String LABEL_ELEMENT = "Element";
 	private static final String LABEL_CONTENT = "Content";
 	private static final String LABEL_SPECIAL = "Special";
 	private static final String LABEL_COMMENT = "Comment";
 
+	/* indexes of the columns */
 	private static final int ELEMENT_COLUMN = 0;
 	private static final int CONTENT_COLUMN = 1;
 	private static final int SPECIAL_COLUMN = 2;
@@ -115,21 +116,13 @@ public class SelectionEditor extends EditorPart {
 
 	private ContainerCheckedTreeViewer treeViewer = null;
 
-	@Override
-	public void doSave(IProgressMonitor monitor) {
-
-	}
-
-	@Override
-	public void doSaveAs() {
-
-	}
+	/* ----- Non-trivial implementation of EditorPart methods ----- */
 
 	@Override
 	public void init(IEditorSite site, IEditorInput input) throws PartInitException {
 		setSite(site);
 		setInput(input);
-		rodinFile = getRodinFileFromInput(input);
+		rodinFile = RodinUtil.getRodinFileFromInput(input);
 		IInternalElement internalElementRoot = rodinFile.getRoot();
 		assert (internalElementRoot instanceof IMachineRoot);
 		machineRoot = (IMachineRoot) internalElementRoot;
@@ -141,34 +134,21 @@ public class SelectionEditor extends EditorPart {
 		EventBDependencyAnalysisJob.doEventBDependencyAnalysis(machine);
 	}
 
-	/**
-	 * Gets the internal representation of the Rodin File from the editor input
-	 * 
-	 * @param input
-	 *            The editor's input
-	 * @return Internal representation of the Rodin File
-	 */
-	protected IRodinFile getRodinFileFromInput(IEditorInput input) {
-		FileEditorInput editorInput = (FileEditorInput) input;
-		IFile inputFile = editorInput.getFile();
-		IRodinFile rodinFile = RodinCore.valueOf(inputFile);
-		return rodinFile;
+	@Override
+	public void createPartControl(Composite parent) {
+		GridLayout layout = new GridLayout();
+		layout.numColumns = 1;
+		parent.setLayout(layout);
+		createButtons(parent);
+		createTree(parent);
+		setPartName(machineRoot.getComponentName());
 	}
 
-	/**
-	 * Gets the internal Rodin File
-	 * 
-	 * @return Internal representation of the Rodin File
-	 */
-	public IRodinFile getRodinFile() {
-		if (rodinFile == null) {
-			throw new IllegalStateException("Editor has not been initialized yet");
-		}
-		return rodinFile;
-	}
+	/* ----- Trivial implementation of EditorPart methods ----- */
 
-	public FormulaFactory getFormulaFactory() {
-		return ((IEventBRoot) machineRoot).getFormulaFactory();
+	@Override
+	public void setFocus() {
+		// Intentionally left empty
 	}
 
 	@Override
@@ -177,9 +157,225 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	@Override
+	public void doSave(IProgressMonitor monitor) {
+
+	}
+
+	@Override
+	public void doSaveAs() {
+
+	}
+
+	@Override
 	public boolean isSaveAsAllowed() {
 		return false;
 	}
+
+	/* ----- Methods for functions via buttons ----- */
+
+	/**
+	 * Creates buttons for editor
+	 * 
+	 * @param parent
+	 *            The parent editor
+	 */
+	private void createButtons(Composite parent) {
+		Composite buttonBar = new Composite(parent, SWT.NONE);
+		buttonBar.setLayout(new RowLayout());
+
+		// Button for creating a new sub-refinement from the selected elements
+		Button newMachineButton = new Button(buttonBar, SWT.PUSH);
+		newMachineButton.setText("Create Sub-Refinement");
+		newMachineButton.setToolTipText(
+				"Create a new Event-B Machine based on the current selection of elements in this editor");
+		newMachineButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				WizardDialog wizardDialog = new WizardDialog(parent.getShell(),
+						new MachineCreationWizard(rodinFile.getRodinProject(), machineRoot, getSelection()));
+
+				wizardDialog.setBlockOnOpen(true);
+				wizardDialog.open();
+				System.out.println();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+			}
+		});
+
+		// We add an extra container for the next button to allow a tooltip when
+		// the button is disabled
+		final Composite mergeButtonContainer = new Composite(buttonBar, SWT.NONE);
+		mergeButtonContainer.setLayout(new FillLayout());
+
+		// A button to merge the currently opened machine with its direct
+		// ancestor (i.e. the machine this one
+		// refines)
+		Button mergeMachinesButton = new Button(mergeButtonContainer, SWT.PUSH);
+		mergeMachinesButton.setText("Merge With Direct Predecessor");
+		mergeMachinesButton.setToolTipText("Merge this machine with the one it refines, producing a new machine");
+		try {
+			// If current machine has no machine that it refines, we disable the
+			// button and display a tooltip
+			// explaining why the button is disabled
+			IRefinesMachine refinesMachines[] = machineRoot.getRefinesClauses();
+			if (refinesMachines.length > 0) {
+				mergeMachinesButton.setEnabled(true);
+				mergeButtonContainer.setToolTipText("");
+			} else {
+				mergeMachinesButton.setEnabled(false);
+				mergeButtonContainer
+						.setToolTipText("Nothing to merge with. Current machine does not refine any other machine.");
+			}
+		} catch (RodinDBException e) {
+			e.printStackTrace();
+		}
+		mergeMachinesButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				WizardDialog wizardDialog = new WizardDialog(parent.getShell(),
+						new MergeMachineWithPredecessorWizard(rodinFile.getRodinProject(), machineRoot));
+
+				wizardDialog.setBlockOnOpen(true);
+				wizardDialog.open();
+				System.out.println();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+			}
+		});
+
+		// A button to select all elements of the machine opened in the editor
+		Button selectAllButton = new Button(buttonBar, SWT.PUSH);
+		selectAllButton.setText("Select All");
+		selectAllButton.setToolTipText("Select all elements");
+		selectAllButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
+				for (Object category : categories) {
+					setCheckedElement(category, true);
+				}
+				treeViewer.refresh();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+
+			}
+		});
+
+		// A button to select all elements that currently selected elements
+		// depend on
+		Button selectAllDependenciesButton = new Button(buttonBar, SWT.PUSH);
+		selectAllDependenciesButton.setText("Select All Dependencies");
+		selectAllDependenciesButton
+				.setToolTipText("Select all elements that the currently selected elements depend on");
+		selectAllDependenciesButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				for (EventBElement dependee : selectionDependees.keySet()) {
+					EventBTreeElement element = findTreeElement(dependee, true);
+					if (element != null && !treeViewer.getChecked(element)) {
+						if (!(element.getOriginalElement() instanceof EventBContext)
+								&& element.getOriginalElement().getParent() instanceof EventBContext) {
+							setCheckedElement(findTreeElement(element.getOriginalElement().getParent(), false), true);
+						} else {
+							setCheckedElement(element, true);
+						}
+					}
+				}
+				treeViewer.refresh();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+			}
+		});
+
+		// A button for debug mode
+		if (System.getProperty("debug") != null) {
+			Button debugButton = new Button(buttonBar, SWT.PUSH);
+			debugButton.setText("Run test mode");
+			debugButton.setToolTipText("Run test mode");
+			debugButton.addSelectionListener(new SelectionListener() {
+
+				@Override
+				public void widgetSelected(SelectionEvent e) {
+					Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
+					EventBTreeSubcategory category;
+					EventBTreeElement[] allVariables = null;
+					for (Object c : categories) {
+						category = (EventBTreeSubcategory) c;
+						if (category.getLabel().equals("Variables")) {
+							allVariables = category.getChildren();
+							break;
+						}
+					}
+					// Generate all sub-refinements by specifying one variable
+					LinkedList<EventBElement> selection = new LinkedList<EventBElement>();
+					StringBuffer message = new StringBuffer("Created sub-refinements each with variable\n");
+					DecimalFormat format = new DecimalFormat("000");
+					int count = 0;
+					for (EventBTreeElement var : allVariables) {
+						EventBElement elem = var.originalElement;
+						IMachineRoot precedingMachineRoot = RodinUtil.getPrecedingMachineRoot(machineRoot);
+						boolean skip = false;
+						try {
+							for(IVariable v: precedingMachineRoot.getVariables()){
+								if(v.getIdentifierString().equals(elem.getLabel())){
+									skip = true;
+									break;
+								}
+							}
+						} catch (RodinDBException e1) {
+							e1.printStackTrace();
+						}
+						if(skip){
+							continue;
+						}
+						selection.add(elem);
+						// TODO: Need to add something by considering
+						// dependencies?
+						try {
+							EventBSlicer.createMachineFromSelection(
+									machineRoot.getRodinFile().getBareName() + "-slice" + format.format(count) + "-"
+											+ elem.getLabel(),
+									new EventBSliceSelection(selection), rodinFile.getRodinProject(), machineRoot);
+							message.append(elem.getLabel());
+							message.append(", ");
+						} catch (RodinDBException e1) {
+							e1.printStackTrace();
+						}
+						selection.clear();
+						count++;
+					}
+					message.delete(message.length() - 2, message.length());
+					MessageDialog.open(MessageDialog.INFORMATION, treeViewer.getControl().getShell(), "Test Mode",
+							message.toString(), SWT.NONE);
+				}
+
+				@Override
+				public void widgetDefaultSelected(SelectionEvent e) {
+					widgetSelected(e);
+				}
+			});
+
+		}
+
+	}
+
+	/* ----- Methods for manipulating on the tree view UI ----- */
 
 	/**
 	 * Creates a tree UI element, which is the main body of the selection editor
@@ -198,9 +394,7 @@ public class SelectionEditor extends EditorPart {
 		tree.setLayoutData(gridData);
 
 		String[] titles = { LABEL_ELEMENT, LABEL_CONTENT, LABEL_SPECIAL, LABEL_COMMENT };
-
 		TreeColumn column;
-
 		for (String title : titles) {
 			column = new TreeColumn(tree, SWT.NONE);
 			column.setText(title);
@@ -223,7 +417,6 @@ public class SelectionEditor extends EditorPart {
 		// removed, simply replaced by the
 		// standard selection & highlight colors of the OS
 		tree.addListener(SWT.EraseItem, new Listener() {
-
 			@Override
 			public void handleEvent(Event event) {
 				GC gc = event.gc;
@@ -287,7 +480,6 @@ public class SelectionEditor extends EditorPart {
 		// Any time the tree is either expanded or collapsed, the columns must
 		// once again be packed
 		treeViewer.addTreeListener(new ITreeViewerListener() {
-
 			@Override
 			public void treeExpanded(TreeExpansionEvent event) {
 				Display.getDefault().asyncExec(new Runnable() {
@@ -297,7 +489,6 @@ public class SelectionEditor extends EditorPart {
 						packColumns();
 					}
 				});
-
 			}
 
 			@Override
@@ -316,7 +507,6 @@ public class SelectionEditor extends EditorPart {
 		// care of additional
 		// highlighting and dependency related changes
 		treeViewer.addCheckStateListener(new ICheckStateListener() {
-
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				// If the element is part of a context, we wish to disable
@@ -346,136 +536,14 @@ public class SelectionEditor extends EditorPart {
 				updateSelectionDependenciesForSubtree(event.getElement(), event.getChecked());
 				correctParentsChecked(event.getElement());
 			}
-
 		});
 
-		treeViewer.setContentProvider(new ITreeContentProvider() {
-
-			private EventBTreeSubcategory[] treeRootCategories;
-			private Map<EventBEvent, EventBTreeSubcategory[]> eventSubcategories = new HashMap<>();
-			private Map<EventBContext, EventBTreeSubcategory[]> contextSubcategories = new HashMap<>();
-
-			@Override
-			public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-
-			}
-
-			@Override
-			public void dispose() {
-
-			}
-
-			@Override
-			public boolean hasChildren(Object element) {
-				if (element instanceof EventBMachine) {
-					EventBMachine machine = (EventBMachine) element;
-					if (machine.getInvariants().isEmpty() && machine.getVariables().isEmpty()) {
-						return false;
-					}
-					return true;
-				}
-				if (element instanceof EventBTreeSubcategory) {
-					return ((EventBTreeSubcategory) element).getChildren().length > 0;
-				}
-				if (element instanceof EventBTreeElement) {
-					if (((EventBTreeElement) element).getOriginalElement() instanceof EventBEvent) {
-						EventBEvent event = (EventBEvent) ((EventBTreeElement) element).getOriginalElement();
-						return !(event.isEmpty());
-					}
-					if (((EventBTreeElement) element).getOriginalElement() instanceof EventBContext) {
-						EventBContext context = (EventBContext) ((EventBTreeElement) element).getOriginalElement();
-						return !(context.isEmpty());
-					}
-				}
-				return false;
-			}
-
-			@Override
-			public Object getParent(Object element) {
-				if (element instanceof EventBTreeElement) {
-					return ((EventBTreeElement) element).getParent();
-				}
-				return null;
-			}
-
-			@Override
-			public Object[] getElements(Object inputElement) {
-				EventBMachine machine = (EventBMachine) inputElement;
-				if (treeRootCategories == null) {
-					EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine,
-							machine.getInvariants(), elementToTreeElementMap, this);
-					EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine,
-							machine.getVariables(), elementToTreeElementMap, this);
-					EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents(),
-							elementToTreeElementMap, this);
-					EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine,
-							machine.getSeenContexts(), elementToTreeElementMap, this);
-					EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
-					addCategories(treeChildren);
-					treeRootCategories = treeChildren;
-				}
-
-				return treeRootCategories;
-			}
-
-			@Override
-			public Object[] getChildren(Object parentElement) {
-				if ((parentElement instanceof EventBMachine)) {
-					return getElements(parentElement);
-				}
-				if (parentElement instanceof EventBTreeSubcategory) {
-					return ((EventBTreeSubcategory) parentElement).getChildren();
-				}
-				if (parentElement instanceof EventBTreeElement) {
-					if (!(((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent
-							|| ((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBContext)) {
-						return null;
-					}
-					if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent) {
-						EventBEvent originalElement = (EventBEvent) ((EventBTreeElement) parentElement)
-								.getOriginalElement();
-						EventBTreeElement parent = (EventBTreeElement) parentElement;
-						if (!eventSubcategories.containsKey(originalElement)) {
-							EventBTreeSubcategory parameters = new EventBTreeSubcategory("Parameters", parent,
-									originalElement.getParameters(), elementToTreeElementMap, this);
-							EventBTreeSubcategory witnesses = new EventBTreeSubcategory("Witnesses", parent,
-									originalElement.getWitnesses(), elementToTreeElementMap, this);
-							EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent,
-									originalElement.getGuards(), elementToTreeElementMap, this);
-							EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent,
-									originalElement.getActions(), elementToTreeElementMap, this);
-							EventBTreeSubcategory[] children = { parameters, witnesses, guards, actions };
-							addCategories(children);
-							eventSubcategories.put(originalElement, children);
-						}
-						return eventSubcategories.get(originalElement);
-					}
-					if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBContext) {
-						EventBContext originalElement = (EventBContext) ((EventBTreeElement) parentElement)
-								.getOriginalElement();
-						EventBTreeElement parent = (EventBTreeElement) parentElement;
-						if (!contextSubcategories.containsKey(originalElement)) {
-							EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", parent,
-									originalElement.getAxioms(), elementToTreeElementMap, this);
-							EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", parent,
-									originalElement.getConstants(), elementToTreeElementMap, this);
-							EventBTreeSubcategory carrierSets = new EventBTreeSubcategory("Carrier Sets", parent,
-									originalElement.getCarrierSets(), elementToTreeElementMap, this);
-							EventBTreeSubcategory[] children = { axioms, constants, carrierSets };
-							addCategories(children);
-							contextSubcategories.put(originalElement, children);
-						}
-						return contextSubcategories.get(originalElement);
-					}
-				}
-				return null;
-			}
-		});
-
+		treeViewer.setContentProvider(new TreeContentProvider());
 		treeViewer.setInput(machine);
-
 		this.treeViewer = treeViewer;
 	}
+
+	/* ----- Methods for managing selection considering dependencies ----- */
 
 	/**
 	 * Sets the checked status for the given element and its children. Also
@@ -515,15 +583,10 @@ public class SelectionEditor extends EditorPart {
 	 */
 	private void updateSelectionDependenciesForElement(Object element, boolean checked) {
 		if (element instanceof EventBTreeElement) {
-			EventBDependencies dependencies = machine.getDependencies();
-			Set<EventBElement> dependees = dependencies
-					.getDependeesForElement(((EventBTreeElement) element).getOriginalElement());
-			for (EventBElement dependee : dependees) {
+			for (EventBElement dependee : getDependees((EventBTreeElement) element)) {
 				updateSelectionDependency(dependee, true, checked);
 			}
-			Set<EventBElement> dependers = dependencies
-					.getDependersForElement(((EventBTreeElement) element).getOriginalElement());
-			for (EventBElement depender : dependers) {
+			for (EventBElement depender : getDependers((EventBTreeElement) element)) {
 				updateSelectionDependency(depender, false, checked);
 			}
 		}
@@ -705,6 +768,11 @@ public class SelectionEditor extends EditorPart {
 		}
 	}
 
+	/*
+	 * ----- Methods for transformation between UI representations and internal
+	 * representations -----
+	 */
+
 	/**
 	 * Get internal representations from the selected UI elements
 	 * 
@@ -721,6 +789,176 @@ public class SelectionEditor extends EditorPart {
 		}
 		return new EventBSliceSelection(originalElements);
 	}
+
+	/**
+	 * Finds the tree-internal container for a given editor-internal Event-B
+	 * element
+	 * 
+	 * @param element
+	 *            The Event-B element for which the tree-internal container is
+	 *            desired
+	 * @param expand
+	 *            True if tree in editor should be expanded to have the element
+	 *            be visible
+	 * @return Tree-internal container element for given Event-B element
+	 */
+	private EventBTreeElement findTreeElement(EventBElement element, boolean expand) {
+		EventBTreeElement treeElement = null;
+		if (!expand && elementToTreeElementMap.containsKey(element)) {
+			return elementToTreeElementMap.get(element);
+		}
+
+		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
+
+		switch (element.getType()) {
+		case EventBTypes.INVARIANT:
+			treeViewer.expandToLevel(treeCategories.get("Invariants"), 1);
+			treeElement = elementToTreeElementMap.get(element);
+			return treeElement;
+		case EventBTypes.VARIABLE:
+			treeViewer.expandToLevel(treeCategories.get("Variables"), 1);
+			return elementToTreeElementMap.get(element);
+		case EventBTypes.CONTEXT: {
+			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
+			treeViewer.expandToLevel(treeContexts, 1);
+			return elementToTreeElementMap.get(element);
+		}
+		case EventBTypes.CONSTANT:
+		case EventBTypes.AXIOM:
+		case EventBTypes.CARRIER_SET: {
+			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
+			for (EventBTreeElement treeContext : treeContexts.getChildren()) {
+				assert treeContext.getOriginalElement() instanceof EventBContext;
+				EventBContext context = (EventBContext) treeContext.getOriginalElement();
+				if (!context.containsElement(element)) {
+					continue;
+				}
+				if (expand) {
+					treeViewer.expandToLevel(treeContext, 1);
+				}
+				Object[] childrenOfContext = contentProvider.getChildren(treeContext);
+				for (Object child : childrenOfContext) {
+					// We pick out the correct subcategory for the element we
+					// are searching for
+					assert child instanceof EventBTreeSubcategory;
+					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
+					String label = "";
+					if (element.getType().equals(EventBTypes.CONSTANT)) {
+						label = "Constants";
+					} else if (element.getType().equals(EventBTypes.AXIOM)) {
+						label = "Axioms";
+					} else if (element.getType().equals(EventBTypes.CARRIER_SET)) {
+						label = "Carrier Sets";
+					}
+					if (subcategory.getLabel().equals(label)) {
+						if (expand) {
+							treeViewer.expandToLevel(subcategory, 1);
+							packColumns();
+						}
+						return elementToTreeElementMap.get(element);
+					}
+				}
+			}
+		}
+		case EventBTypes.EVENT: {
+			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
+			treeViewer.expandToLevel(treeEvents, 1);
+			return elementToTreeElementMap.get(element);
+		}
+		case EventBTypes.GUARD:
+		case EventBTypes.ACTION: {
+			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
+			for (EventBTreeElement treeEvent : treeEvents.getChildren()) {
+				assert treeEvent.getOriginalElement() instanceof EventBEvent;
+				EventBEvent event = (EventBEvent) treeEvent.getOriginalElement();
+				if (!event.containsElement(element)) {
+					continue;
+				}
+				if (expand) {
+					treeViewer.expandToLevel(treeEvent, 1);
+				}
+				Object[] childrenofEvent = contentProvider.getChildren(treeEvent);
+				for (Object child : childrenofEvent) {
+					// We pick out the correct subcategory for the searched
+					// element
+					assert child instanceof EventBTreeSubcategory;
+					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
+					String label = "";
+					if (element.getType().equals(EventBTypes.GUARD)) {
+						label = "Guards";
+					} else if (element.getType().equals(EventBTypes.ACTION)) {
+						label = "Actions";
+					}
+					if (subcategory.getLabel().equals(label)) {
+						if (expand) {
+							treeViewer.expandToLevel(subcategory, 1);
+							packColumns();
+						}
+						return elementToTreeElementMap.get(element);
+					}
+				}
+			}
+		}
+		default:
+			break;
+		}
+
+		return treeElement;
+	}
+
+	/**
+	 * Add categories to internal label to category map. Only for unique
+	 * categories like Invariants or Events. Not ones which occur multiple times
+	 * per machine, such as Actions or Guards of Events.
+	 * 
+	 * @param categories
+	 *            Array of categories to add
+	 */
+	private void addCategories(EventBTreeSubcategory[] categories) {
+		for (EventBTreeSubcategory category : categories) {
+			treeCategories.put(category.getLabel(), category);
+		}
+	}
+
+	/* ----- Auxiliary methods ----- */
+
+	/**
+	 * 
+	 * @param element
+	 * @return
+	 */
+	private Set<EventBElement> getDependees(EventBElement element) {
+		return machine.getDependencies().getDependeesForElement(element);
+	}
+
+	/**
+	 * 
+	 * @param element
+	 * @return
+	 */
+	private Set<EventBElement> getDependees(EventBTreeElement element) {
+		return getDependees(element.getOriginalElement());
+	}
+
+	/**
+	 * 
+	 * @param element
+	 * @return
+	 */
+	private Set<EventBElement> getDependers(EventBElement element) {
+		return machine.getDependencies().getDependersForElement(element);
+	}
+
+	/**
+	 * 
+	 * @param element
+	 * @return
+	 */
+	private Set<EventBElement> getDependers(EventBTreeElement element) {
+		return getDependers(element.getOriginalElement());
+	}
+
+	/* ----- Internal classes ----- */
 
 	/**
 	 * Label provider for table viewer, implementing the necessary interfaces.
@@ -792,7 +1030,6 @@ public class SelectionEditor extends EditorPart {
 						break;
 					}
 				}
-
 			}
 			return null;
 		}
@@ -933,316 +1170,130 @@ public class SelectionEditor extends EditorPart {
 
 	}
 
-	@Override
-	public void createPartControl(Composite parent) {
-		GridLayout layout = new GridLayout();
-		layout.numColumns = 1;
-		parent.setLayout(layout);
-		createButtons(parent);
-		createTree(parent);
-		setPartName(machineRoot.getComponentName());
-
-	}
-
 	/**
-	 * Creates buttons for editor
 	 * 
-	 * @param parent
-	 *            The parent editor
+	 * @author Aivar Kripsaar
+	 *
 	 */
-	private void createButtons(Composite parent) {
-		Composite buttonBar = new Composite(parent, SWT.NONE);
-		buttonBar.setLayout(new RowLayout());
+	class TreeContentProvider implements ITreeContentProvider {
 
-		// Button for creating a new sub-refinement from the selected elements
-		Button newMachineButton = new Button(buttonBar, SWT.PUSH);
-		newMachineButton.setText("Create Sub-Refinement");
-		newMachineButton.setToolTipText(
-				"Create a new Event-B Machine based on the current selection of elements in this editor");
-		newMachineButton.addSelectionListener(new SelectionListener() {
+		private EventBTreeSubcategory[] treeRootCategories;
+		private Map<EventBEvent, EventBTreeSubcategory[]> eventSubcategories = new HashMap<>();
+		private Map<EventBContext, EventBTreeSubcategory[]> contextSubcategories = new HashMap<>();
 
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				WizardDialog wizardDialog = new WizardDialog(parent.getShell(),
-						new MachineCreationWizard(rodinFile.getRodinProject(), machineRoot, getSelection()));
-
-				wizardDialog.setBlockOnOpen(true);
-				wizardDialog.open();
-				System.out.println();
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-
-		// We add an extra container for the next button to allow a tooltip when
-		// the button is disabled
-		final Composite mergeButtonContainer = new Composite(buttonBar, SWT.NONE);
-		mergeButtonContainer.setLayout(new FillLayout());
-
-		// A button to merge the currently opened machine with its direct
-		// ancestor (i.e. the machine this one
-		// refines)
-		Button mergeMachinesButton = new Button(mergeButtonContainer, SWT.PUSH);
-		mergeMachinesButton.setText("Merge With Direct Predecessor");
-		mergeMachinesButton.setToolTipText("Merge this machine with the one it refines, producing a new machine");
-		try {
-			// If current machine has no machine that it refines, we disable the
-			// button and display a tooltip
-			// explaining why the button is disabled
-			IRefinesMachine refinesMachines[] = machineRoot.getRefinesClauses();
-			if (refinesMachines.length > 0) {
-				mergeMachinesButton.setEnabled(true);
-				mergeButtonContainer.setToolTipText("");
-			} else {
-				mergeMachinesButton.setEnabled(false);
-				mergeButtonContainer
-						.setToolTipText("Nothing to merge with. Current machine does not refine any other machine.");
-			}
-		} catch (RodinDBException e) {
-			e.printStackTrace();
+		@Override
+		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		}
-		mergeMachinesButton.addSelectionListener(new SelectionListener() {
 
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				WizardDialog wizardDialog = new WizardDialog(parent.getShell(),
-						new MergeMachineWithPredecessorWizard(rodinFile.getRodinProject(), machineRoot));
+		@Override
+		public void dispose() {
 
-				wizardDialog.setBlockOnOpen(true);
-				wizardDialog.open();
-				System.out.println();
-			}
+		}
 
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-
-		// A button to select all elements of the machine opened in the editor
-		Button selectAllButton = new Button(buttonBar, SWT.PUSH);
-		selectAllButton.setText("Select All");
-		selectAllButton.setToolTipText("Select all elements");
-		selectAllButton.addSelectionListener(new SelectionListener() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
-				for (Object category : categories) {
-					setCheckedElement(category, true);
+		@Override
+		public boolean hasChildren(Object element) {
+			if (element instanceof EventBMachine) {
+				EventBMachine machine = (EventBMachine) element;
+				if (machine.getInvariants().isEmpty() && machine.getVariables().isEmpty()) {
+					return false;
 				}
-				treeViewer.refresh();
+				return true;
+			}
+			if (element instanceof EventBTreeSubcategory) {
+				return ((EventBTreeSubcategory) element).getChildren().length > 0;
+			}
+			if (element instanceof EventBTreeElement) {
+				if (((EventBTreeElement) element).getOriginalElement() instanceof EventBEvent) {
+					EventBEvent event = (EventBEvent) ((EventBTreeElement) element).getOriginalElement();
+					return !(event.isEmpty());
+				}
+				if (((EventBTreeElement) element).getOriginalElement() instanceof EventBContext) {
+					EventBContext context = (EventBContext) ((EventBTreeElement) element).getOriginalElement();
+					return !(context.isEmpty());
+				}
+			}
+			return false;
+		}
+
+		@Override
+		public Object getParent(Object element) {
+			if (element instanceof EventBTreeElement) {
+				return ((EventBTreeElement) element).getParent();
+			}
+			return null;
+		}
+
+		@Override
+		public Object[] getElements(Object inputElement) {
+			EventBMachine machine = (EventBMachine) inputElement;
+			if (treeRootCategories == null) {
+				EventBTreeSubcategory invariants = new EventBTreeSubcategory("Invariants", machine,
+						machine.getInvariants(), elementToTreeElementMap, this);
+				EventBTreeSubcategory variables = new EventBTreeSubcategory("Variables", machine,
+						machine.getVariables(), elementToTreeElementMap, this);
+				EventBTreeSubcategory events = new EventBTreeSubcategory("Events", machine, machine.getEvents(),
+						elementToTreeElementMap, this);
+				EventBTreeSubcategory contexts = new EventBTreeSubcategory("Seen Contexts", machine,
+						machine.getSeenContexts(), elementToTreeElementMap, this);
+				EventBTreeSubcategory[] treeChildren = { invariants, variables, events, contexts };
+				addCategories(treeChildren);
+				treeRootCategories = treeChildren;
 			}
 
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
+			return treeRootCategories;
+		}
 
+		@Override
+		public Object[] getChildren(Object parentElement) {
+			if ((parentElement instanceof EventBMachine)) {
+				return getElements(parentElement);
 			}
-		});
-
-		// A button to select all elements that currently selected elements
-		// depend on
-		Button selectAllDependenciesButton = new Button(buttonBar, SWT.PUSH);
-		selectAllDependenciesButton.setText("Select All Dependencies");
-		selectAllDependenciesButton
-				.setToolTipText("Select all elements that the currently selected elements depend on");
-		selectAllDependenciesButton.addSelectionListener(new SelectionListener() {
-
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				for (EventBElement dependee : selectionDependees.keySet()) {
-					EventBTreeElement element = findTreeElement(dependee, true);
-					if (element != null && !treeViewer.getChecked(element)) {
-						if (!(element.getOriginalElement() instanceof EventBContext)
-								&& element.getOriginalElement().getParent() instanceof EventBContext) {
-							setCheckedElement(findTreeElement(element.getOriginalElement().getParent(), false), true);
-						} else {
-							setCheckedElement(element, true);
-						}
+			if (parentElement instanceof EventBTreeSubcategory) {
+				return ((EventBTreeSubcategory) parentElement).getChildren();
+			}
+			if (parentElement instanceof EventBTreeElement) {
+				if (!(((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent
+						|| ((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBContext)) {
+					return null;
+				}
+				if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBEvent) {
+					EventBEvent originalElement = (EventBEvent) ((EventBTreeElement) parentElement)
+							.getOriginalElement();
+					EventBTreeElement parent = (EventBTreeElement) parentElement;
+					if (!eventSubcategories.containsKey(originalElement)) {
+						EventBTreeSubcategory parameters = new EventBTreeSubcategory("Parameters", parent,
+								originalElement.getParameters(), elementToTreeElementMap, this);
+						EventBTreeSubcategory witnesses = new EventBTreeSubcategory("Witnesses", parent,
+								originalElement.getWitnesses(), elementToTreeElementMap, this);
+						EventBTreeSubcategory guards = new EventBTreeSubcategory("Guards", parent,
+								originalElement.getGuards(), elementToTreeElementMap, this);
+						EventBTreeSubcategory actions = new EventBTreeSubcategory("Actions", parent,
+								originalElement.getActions(), elementToTreeElementMap, this);
+						EventBTreeSubcategory[] children = { parameters, witnesses, guards, actions };
+						addCategories(children);
+						eventSubcategories.put(originalElement, children);
 					}
+					return eventSubcategories.get(originalElement);
 				}
-				treeViewer.refresh();
-			}
-
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-
-		// A button for debug mode
-		if (System.getProperty("debug") != null) {
-			Button debugButton = new Button(buttonBar, SWT.PUSH);
-			debugButton.setText("Run test (debug mode)");
-			debugButton.setToolTipText("Run test in the internal development mode");
-			debugButton.addSelectionListener(new SelectionListener() {
-
-				@Override
-				public void widgetSelected(SelectionEvent e) {
-					// TODO: implement
-					/**
-					 * Object[] categories = ((ITreeContentProvider)
-					 * treeViewer.getContentProvider()).getChildren(machine);
-					 * EventBTreeSubcategory category; EventBTreeElement[]
-					 * allVariables = null; for (Object c : categories) {
-					 * category = (EventBTreeSubcategory) c; if
-					 * (category.getLabel().equals("Variables")) { allVariables
-					 * = category.getChildren(); } } // TODO select from
-					 * allVariables and consider dependencies
-					 * EventBTreeElement[] selected = new EventBTreeElement[0];
-					 * try {
-					 * EventBSlicer.createMachineFromSelection("newMachine",
-					 * selected, rodinFile.getRodinProject(), machineRoot); }
-					 * catch (RodinDBException e1) { e1.printStackTrace(); }
-					 **/
-				}
-
-				@Override
-				public void widgetDefaultSelected(SelectionEvent e) {
-					widgetSelected(e);
-				}
-			});
-
-		}
-
-	}
-
-	@Override
-	public void setFocus() {
-		// Intentionally left empty
-	}
-
-	/**
-	 * Finds the tree-internal container for a given editor-internal Event-B
-	 * element
-	 * 
-	 * @param element
-	 *            The Event-B element for which the tree-internal container is
-	 *            desired
-	 * @param expand
-	 *            True if tree in editor should be expanded to have the element
-	 *            be visible
-	 * @return Tree-internal container element for given Event-B element
-	 */
-	private EventBTreeElement findTreeElement(EventBElement element, boolean expand) {
-		EventBTreeElement treeElement = null;
-		if (!expand && elementToTreeElementMap.containsKey(element)) {
-			return elementToTreeElementMap.get(element);
-		}
-
-		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
-
-		switch (element.getType()) {
-		case EventBTypes.INVARIANT:
-			treeViewer.expandToLevel(treeCategories.get("Invariants"), 1);
-			treeElement = elementToTreeElementMap.get(element);
-			return treeElement;
-		case EventBTypes.VARIABLE:
-			treeViewer.expandToLevel(treeCategories.get("Variables"), 1);
-			return elementToTreeElementMap.get(element);
-		case EventBTypes.CONTEXT: {
-			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
-			treeViewer.expandToLevel(treeContexts, 1);
-			return elementToTreeElementMap.get(element);
-		}
-		case EventBTypes.CONSTANT:
-		case EventBTypes.AXIOM:
-		case EventBTypes.CARRIER_SET: {
-			EventBTreeSubcategory treeContexts = treeCategories.get("Seen Contexts");
-			for (EventBTreeElement treeContext : treeContexts.getChildren()) {
-				assert treeContext.getOriginalElement() instanceof EventBContext;
-				EventBContext context = (EventBContext) treeContext.getOriginalElement();
-				if (!context.containsElement(element)) {
-					continue;
-				}
-				if (expand) {
-					treeViewer.expandToLevel(treeContext, 1);
-				}
-				Object[] childrenOfContext = contentProvider.getChildren(treeContext);
-				for (Object child : childrenOfContext) {
-					// We pick out the correct subcategory for the element we
-					// are searching for
-					assert child instanceof EventBTreeSubcategory;
-					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
-					String label = "";
-					if (element.getType().equals(EventBTypes.CONSTANT)) {
-						label = "Constants";
-					} else if (element.getType().equals(EventBTypes.AXIOM)) {
-						label = "Axioms";
-					} else if (element.getType().equals(EventBTypes.CARRIER_SET)) {
-						label = "Carrier Sets";
+				if (((EventBTreeElement) parentElement).getOriginalElement() instanceof EventBContext) {
+					EventBContext originalElement = (EventBContext) ((EventBTreeElement) parentElement)
+							.getOriginalElement();
+					EventBTreeElement parent = (EventBTreeElement) parentElement;
+					if (!contextSubcategories.containsKey(originalElement)) {
+						EventBTreeSubcategory axioms = new EventBTreeSubcategory("Axioms", parent,
+								originalElement.getAxioms(), elementToTreeElementMap, this);
+						EventBTreeSubcategory constants = new EventBTreeSubcategory("Constants", parent,
+								originalElement.getConstants(), elementToTreeElementMap, this);
+						EventBTreeSubcategory carrierSets = new EventBTreeSubcategory("Carrier Sets", parent,
+								originalElement.getCarrierSets(), elementToTreeElementMap, this);
+						EventBTreeSubcategory[] children = { axioms, constants, carrierSets };
+						addCategories(children);
+						contextSubcategories.put(originalElement, children);
 					}
-					if (subcategory.getLabel().equals(label)) {
-						if (expand) {
-							treeViewer.expandToLevel(subcategory, 1);
-							packColumns();
-						}
-						return elementToTreeElementMap.get(element);
-					}
+					return contextSubcategories.get(originalElement);
 				}
 			}
-		}
-		case EventBTypes.EVENT: {
-			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
-			treeViewer.expandToLevel(treeEvents, 1);
-			return elementToTreeElementMap.get(element);
-		}
-		case EventBTypes.GUARD:
-		case EventBTypes.ACTION: {
-			EventBTreeSubcategory treeEvents = treeCategories.get("Events");
-			for (EventBTreeElement treeEvent : treeEvents.getChildren()) {
-				assert treeEvent.getOriginalElement() instanceof EventBEvent;
-				EventBEvent event = (EventBEvent) treeEvent.getOriginalElement();
-				if (!event.containsElement(element)) {
-					continue;
-				}
-				if (expand) {
-					treeViewer.expandToLevel(treeEvent, 1);
-				}
-				Object[] childrenofEvent = contentProvider.getChildren(treeEvent);
-				for (Object child : childrenofEvent) {
-					// We pick out the correct subcategory for the searched
-					// element
-					assert child instanceof EventBTreeSubcategory;
-					EventBTreeSubcategory subcategory = (EventBTreeSubcategory) child;
-					String label = "";
-					if (element.getType().equals(EventBTypes.GUARD)) {
-						label = "Guards";
-					} else if (element.getType().equals(EventBTypes.ACTION)) {
-						label = "Actions";
-					}
-					if (subcategory.getLabel().equals(label)) {
-						if (expand) {
-							treeViewer.expandToLevel(subcategory, 1);
-							packColumns();
-						}
-						return elementToTreeElementMap.get(element);
-					}
-				}
-			}
-		}
-		default:
-			break;
-		}
-
-		return treeElement;
-	}
-
-	/**
-	 * Add categories to internal label to category map. Only for unique
-	 * categories like Invariants or Events. Not ones which occur multiple times
-	 * per machine, such as Actions or Guards of Events.
-	 * 
-	 * @param categories
-	 *            Array of categories to add
-	 */
-	private void addCategories(EventBTreeSubcategory[] categories) {
-		for (EventBTreeSubcategory category : categories) {
-			treeCategories.put(category.getLabel(), category);
+			return null;
 		}
 	}
 
