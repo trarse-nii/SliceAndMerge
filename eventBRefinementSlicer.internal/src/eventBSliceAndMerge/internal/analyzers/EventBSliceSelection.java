@@ -31,7 +31,10 @@ public class EventBSliceSelection {
 	List<EventBContext> contexts = new ArrayList<>();
 
 	/**
-	 * Default constructor
+	 * Constructor
+	 * 
+	 * @param elements
+	 *            list of selected EventBElement
 	 */
 	public EventBSliceSelection(List<EventBElement> elements) {
 		for (EventBElement element : elements) {

@@ -64,9 +64,8 @@ public class EventBAction extends EventBElement implements Depender {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.ACTION;
-		return type;
+	public Type getType() {
+		return Type.ACTION;
 	}
 
 	@Override

@@ -26,12 +26,14 @@ public class EventBGuard extends EventBCondition {
 		this.parentEvent = parentEvent;
 	}
 
-	public EventBGuard(String label, String predicate, String comment, ISCGuard scGuard, EventBEvent parentEvent, EventBUnit parentUnit) {
+	public EventBGuard(String label, String predicate, String comment, ISCGuard scGuard, EventBEvent parentEvent,
+			EventBUnit parentUnit) {
 		super(label, predicate, scGuard, comment, parentUnit);
 		this.parentEvent = parentEvent;
 	}
 
-	public EventBGuard(IGuard guard, ISCGuard scGuard, EventBEvent parentEvent, EventBUnit parentUnit) throws RodinDBException {
+	public EventBGuard(IGuard guard, ISCGuard scGuard, EventBEvent parentEvent, EventBUnit parentUnit)
+			throws RodinDBException {
 		super(guard, scGuard, parentUnit);
 		this.parentEvent = parentEvent;
 	}
@@ -72,8 +74,7 @@ public class EventBGuard extends EventBCondition {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.GUARD;
-		return type;
+	public Type getType() {
+		return Type.GUARD;
 	}
 }

@@ -8,16 +8,15 @@ import eventBSliceAndMerge.internal.datastructures.EventBElement;
  * @author Aivar Kripsaar
  *
  */
-public class EventBTreeElement {
+public class EventBTreeElement extends EventBTreeNode {
 
 	final EventBTreeSubcategory parent;
 	final EventBElement originalElement;
-	final Object outerType;
-	
+
 	public EventBTreeElement(EventBTreeSubcategory parent, EventBElement originalElement, Object outerType) {
+		super(outerType);
 		this.parent = parent;
 		this.originalElement = originalElement;
-		this.outerType = outerType;
 	}
 
 	public EventBTreeSubcategory getParent() {

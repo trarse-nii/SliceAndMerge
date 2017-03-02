@@ -5,13 +5,18 @@ import org.rodinp.core.IInternalElement;
 import org.rodinp.core.RodinDBException;
 
 /**
- * Base class for custom internal representation of Event-B elements, more specific classes inherit from this
- * one. Meant to simplify access to various information contained within elements.
+ * Base class for custom internal representation of Event-B elements, more
+ * specific classes inherit from this one. Meant to simplify access to various
+ * information contained within elements.
  * 
  * @author Aivar Kripsaar
  *
  */
 public class EventBElement {
+
+	public enum Type {
+		ACTION, ATTRIBUTE, AXIOM, CARRIER_SET, CONDITION, CONSTANT, CONTEXT, ELEMENT, EVENT, GUARD, INVARIANT, MACHINE, UNIT, VARIABLE, REFINED_EVENT, PARAMETER, WITNESS
+	}
 
 	protected EventBUnit parent = null;
 	protected String label = "";
@@ -29,7 +34,8 @@ public class EventBElement {
 		this.parent = parent;
 	}
 
-	public EventBElement(IInternalElement internalElement, IInternalElement scElement, EventBUnit parent) throws RodinDBException {
+	public EventBElement(IInternalElement internalElement, IInternalElement scElement, EventBUnit parent)
+			throws RodinDBException {
 		this.parent = parent;
 		this.scElement = scElement;
 		if (internalElement instanceof ICommentedElement && ((ICommentedElement) internalElement).hasComment()) {
@@ -61,9 +67,11 @@ public class EventBElement {
 	}
 
 	/**
-	 * Getter for statically checked Rodin-internal representation of this element
+	 * Getter for statically checked Rodin-internal representation of this
+	 * element
 	 * 
-	 * @return The statically checked Rodin-internal representation of this element
+	 * @return The statically checked Rodin-internal representation of this
+	 *         element
 	 */
 	public IInternalElement getScElement() {
 		return scElement;
@@ -74,9 +82,8 @@ public class EventBElement {
 	 * 
 	 * @return String representation of this element's type
 	 */
-	public String getType() {
-		final String type = EventBTypes.ELEMENT;
-		return type;
+	public Type getType() {
+		return Type.ELEMENT;
 	}
 
 	@Override
@@ -85,9 +92,11 @@ public class EventBElement {
 	}
 
 	/**
-	 * Returns array of this element's two string descriptors - the label and the comment
+	 * Returns array of this element's two string descriptors - the label and
+	 * the comment
 	 * 
-	 * @return Array containing this elements string descriptors (e.g. label and comment)
+	 * @return Array containing this elements string descriptors (e.g. label and
+	 *         comment)
 	 */
 	public Object[] toArray() {
 		Object[] array = { label, comment };

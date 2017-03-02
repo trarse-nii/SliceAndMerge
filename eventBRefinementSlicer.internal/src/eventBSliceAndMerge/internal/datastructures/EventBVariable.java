@@ -35,9 +35,8 @@ public class EventBVariable extends EventBAttribute {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.VARIABLE;
-		return type;
+	public Type getType() {
+		return Type.VARIABLE;
 	}
 
 	public boolean isAbstract() {
