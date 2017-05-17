@@ -833,7 +833,11 @@ public class SelectionEditor extends EditorPart {
 
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 		Type type = element.getType();
-		EventBTreeCategoryNode category = treeCategories.get(type);
+		EventBTreeCategoryNode category;
+		if(type == Type.ACTION){
+			type = Type.EVENT;
+		}
+		category = treeCategories.get(type);
 		// TODO: by this logic only findable the first element when multiple
 		// elements exist for a category?
 
