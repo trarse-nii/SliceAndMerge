@@ -109,9 +109,10 @@ public class SelectionEditor extends EditorPart {
 
 	private ContainerCheckedTreeViewer treeViewer = null;
 
-	// We require a duplicate of the checked state because of the limitations of the TreeViewer API
+	// We require a duplicate of the checked state because of the limitations of
+	// the TreeViewer API
 	private Map<Object, Boolean> selectionMap = new HashMap<>();
-	
+
 	/* Target file/machine objects */
 	private IRodinFile rodinFile;
 	private IMachineRoot machineRoot;
@@ -262,7 +263,29 @@ public class SelectionEditor extends EditorPart {
 			public void widgetSelected(SelectionEvent e) {
 				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
 				for (Object category : categories) {
-					setCheckedElement((EventBTreeCategoryNode)category, true);
+					setCheckedElement((EventBTreeCategoryNode) category, true);
+				}
+				treeViewer.refresh();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+
+			}
+		});
+
+		// A button to select all elements of the machine opened in the editor
+		Button deselectAllButton = new Button(buttonBar, SWT.PUSH);
+		deselectAllButton.setText("Deselect All");
+		deselectAllButton.setToolTipText("Deselect all elements");
+		deselectAllButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
+				for (Object category : categories) {
+					setCheckedElement((EventBTreeCategoryNode) category, false);
 				}
 				treeViewer.refresh();
 			}
@@ -505,7 +528,7 @@ public class SelectionEditor extends EditorPart {
 						return;
 					}
 				}
-				updateSelectionDependenciesForSubtree((EventBTreeNode)event.getElement(), event.getChecked());
+				updateSelectionDependenciesForSubtree((EventBTreeNode) event.getElement(), event.getChecked());
 				correctParentsChecked(node);
 			}
 		});
@@ -564,7 +587,7 @@ public class SelectionEditor extends EditorPart {
 
 		// Update the selection map
 		selectionMap.put(element, checked);
-		
+
 		// Update children of selected element and update their dependencies
 		setChildrenChecked(element, checked);
 
@@ -618,7 +641,7 @@ public class SelectionEditor extends EditorPart {
 		}
 		for (Object child : contentProvider.getChildren(element)) {
 			treeViewer.setChecked(child, checked);
-			updateSelectionDependenciesForSubtree((EventBTreeNode)child, checked);
+			updateSelectionDependenciesForSubtree((EventBTreeNode) child, checked);
 		}
 	}
 
@@ -639,7 +662,7 @@ public class SelectionEditor extends EditorPart {
 		for (Object child : contentProvider.getChildren(parent)) {
 			// Update a child only if its checked status changes
 			if (checked ^ selectionMap.getOrDefault(child, false)) {
-				setCheckedElement((EventBTreeNode)child, checked);
+				setCheckedElement((EventBTreeNode) child, checked);
 			}
 		}
 	}
@@ -656,7 +679,7 @@ public class SelectionEditor extends EditorPart {
 		if (element instanceof EventBTreeAtomicNode) {
 			EventBTreeAtomicNode treeElement = (EventBTreeAtomicNode) element;
 			parent = treeElement.getParentCategory();
-			
+
 		} else {
 			assert element instanceof EventBTreeCategoryNode;
 			EventBTreeCategoryNode treeCategory = (EventBTreeCategoryNode) element;
@@ -1251,9 +1274,10 @@ public class SelectionEditor extends EditorPart {
 		}
 
 		private EventBTreeCategoryNode addCategory(Type type, EventBTreeAtomicNode parent,
-				List<? extends EventBElement> children, Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap) {
-			EventBTreeCategoryNode category = new EventBTreeCategoryNode(type, parent, children, elementToTreeElementMap,
-					this);
+				List<? extends EventBElement> children,
+				Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap) {
+			EventBTreeCategoryNode category = new EventBTreeCategoryNode(type, parent, children,
+					elementToTreeElementMap, this);
 			treeCategories.put(type, category);
 			return category;
 		}
