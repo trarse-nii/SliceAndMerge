@@ -2,7 +2,7 @@
 <feature
       id="eventBSliceAndMerge"
       label="Slice and Merge"
-      version="1.0.0.qualifier">
+      version="0.9.1.qualifier">
 
    <description url="http://www.example.com/description">
       A plug-in for the Rodin platform which lets the user easily cut
@@ -11,12 +11,17 @@ the user merge two directly related machines (where one machine refines the othe
    </description>
 
    <copyright url="http://www.example.com/copyright">
-      [Enter Copyright Description here.]
+      Aivar Kripsaar, Tsutomu Kobayashi, and Fuyuki Ishikawa at National Institute of Informatics, Japan
    </copyright>
 
-   <license url="http://www.example.com/license">
-      [Enter License Description here.]
+   <license url="">
+      Eclipse Public License 1.0
    </license>
+
+   <url>
+      <discovery label="Slice and Merge" url="http://research.nii.ac.jp/slicenmerge/"/>
+      <discovery label="SliceAndMerge Development on GitHub" url="https://github.com/trarse-nii/SliceAndMerge"/>
+   </url>
 
    <plugin
          id="eventBSliceAndMerge.internal"
