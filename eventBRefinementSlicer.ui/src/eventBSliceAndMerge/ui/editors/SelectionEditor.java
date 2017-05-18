@@ -279,7 +279,7 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
-		// A button to select all elements of the machine opened in the editor
+		// A button to deselect all elements of the machine opened in the editor
 		Button deselectAllButton = new Button(buttonBar, SWT.PUSH);
 		deselectAllButton.setText("Deselect All");
 		deselectAllButton.setToolTipText("Deselect all elements");
@@ -883,6 +883,7 @@ public class SelectionEditor extends EditorPart {
 		}
 
 		if (type == Type.CARRIER_SET) {
+			category = treeCategories.get(Type.CONTEXT);
 			for (EventBTreeAtomicNode treeContext : category.getChildren()) {
 				assert treeContext.getOriginalElement() instanceof EventBContext;
 				EventBContext context = (EventBContext) treeContext.getOriginalElement();
