@@ -24,6 +24,11 @@ public class EventBParameter extends EventBAttribute {
 		this.parentEvent = parentEvent;
 	}
 
+	@Override
+	public String getLabelFullPath() {
+		return parentEvent.label + "/" + label;
+	}
+
 	public EventBUnit getParentUnit() {
 		return this.getParent();
 	}

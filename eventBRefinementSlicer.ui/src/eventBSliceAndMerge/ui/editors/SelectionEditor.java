@@ -86,14 +86,16 @@ public class SelectionEditor extends EditorPart {
 	/* Labels used in the column titles of the table-like view */
 	private static final String LABEL_ELEMENT = "Element";
 	private static final String LABEL_CONTENT = "Content";
-	private static final String LABEL_SPECIAL = "Special";
+	private static final String LABEL_STATUS = "Status";
+	private static final String LABEL_SPECIAL = "Note";
 	private static final String LABEL_COMMENT = "Comment";
 
 	/* Indexes of the columns */
 	private static final int ELEMENT_COLUMN = 0;
 	private static final int CONTENT_COLUMN = 1;
-	private static final int SPECIAL_COLUMN = 2;
-	private static final int COMMENT_COLUMN = 3;
+	private static final int STATUS_COLUMN = 2;
+	private static final int SPECIAL_COLUMN = 3;
+	private static final int COMMENT_COLUMN = 4;
 
 	// Map from category label to internal representation of category.
 	// Only intended for use with categories that cannot occur more then once in
@@ -102,8 +104,8 @@ public class SelectionEditor extends EditorPart {
 	// Bad: Action, Guard, Witness, Parameter, Axiom, Constant, Carrier Set
 	private Map<Type, EventBTreeCategoryNode> treeCategories = new HashMap<>();
 
-	private Map<EventBElement, Integer> selectionDependees = new HashMap<>();
-	private Map<EventBElement, Integer> selectionDependers = new HashMap<>();
+	private Map<EventBElement, Set<EventBElement>> selectionDependees = new HashMap<>();
+	private Map<EventBElement, Set<EventBElement>> selectionDependers = new HashMap<>();
 
 	// Map of internal representation of element to tree-internal wrapper
 	private Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap = new HashMap<>();
@@ -114,7 +116,9 @@ public class SelectionEditor extends EditorPart {
 	// the TreeViewer API
 	private Map<Object, Boolean> selectionMap = new HashMap<>();
 
-	// Set of tree elements that must be checked
+	// Status of elements
+	private HashSet<EventBTreeNode> userChecked = new HashSet<>();
+	private HashSet<EventBTreeNode> autoChecked = new HashSet<>();
 	private HashSet<EventBTreeNode> alwaysChecked = new HashSet<>();
 
 	/* Target file/machine objects */
@@ -290,6 +294,8 @@ public class SelectionEditor extends EditorPart {
 				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
 				for (Object category : categories) {
 					setCheckedElement((EventBTreeCategoryNode) category, false);
+					userChecked.clear();
+					autoChecked.clear();
 				}
 				treeViewer.refresh();
 			}
@@ -311,8 +317,26 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				for (EventBElement dependee : selectionDependees.keySet()) {
+				// Select all necessary elements that the selected elements
+				// depend on
+				LinkedList<EventBElement> toBeAdded = new LinkedList<>(selectionDependees.keySet());
+				// Also select all no-cost elements that depend only on the
+				// selected elements (variables)
+				for (EventBElement depender : selectionDependers.keySet()) {
+					boolean keep = true;
+					for (EventBElement dependee : getDependees(depender)) {
+						if (!getSelection().variables.contains(dependee)) {
+							keep = false;
+							break;
+						}
+					}
+					if (keep) {
+						toBeAdded.add(depender);
+					}
+				}
+				for (EventBElement dependee : toBeAdded) {
 					EventBTreeAtomicNode element = findTreeElement(dependee, true);
+					autoChecked.add(element);
 					if (element != null && !treeViewer.getChecked(element)) {
 						if (!(element.getOriginalElement() instanceof EventBContext)
 								&& element.getOriginalElement().getParent() instanceof EventBContext) {
@@ -420,7 +444,7 @@ public class SelectionEditor extends EditorPart {
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		tree.setLayoutData(gridData);
 
-		String[] titles = { LABEL_ELEMENT, LABEL_CONTENT, LABEL_SPECIAL, LABEL_COMMENT };
+		String[] titles = { LABEL_ELEMENT, LABEL_CONTENT, LABEL_STATUS, LABEL_SPECIAL, LABEL_COMMENT };
 		TreeColumn column;
 		for (String title : titles) {
 			column = new TreeColumn(tree, SWT.NONE);
@@ -513,6 +537,14 @@ public class SelectionEditor extends EditorPart {
 				if (alwaysChecked.contains(node)) {
 					treeViewer.setChecked(node, true);
 					return;
+				}
+
+				// Record user selection
+				if (event.getChecked()) {
+					userChecked.add((EventBTreeNode) event.getElement());
+				} else {
+					userChecked.remove((EventBTreeNode) event.getElement());
+					autoChecked.remove((EventBTreeNode) event.getElement());
 				}
 
 				// If the element is part of a context, we wish to disable
@@ -615,6 +647,14 @@ public class SelectionEditor extends EditorPart {
 	 *            Desired checked state
 	 */
 	private void setCheckedElement(EventBTreeNode element, boolean checked) {
+		setCheckedElementSub(element, checked);
+		// Correct always-check elements
+		for (EventBTreeNode n : alwaysChecked) {
+			setCheckedElementSub(n, true);
+		}
+	}
+
+	private void setCheckedElementSub(EventBTreeNode element, boolean checked) {
 		treeViewer.setSubtreeChecked(element, checked);
 		updateElement(element);
 
@@ -629,7 +669,6 @@ public class SelectionEditor extends EditorPart {
 
 		// Correct checked state of parents
 		correctParentsChecked(element);
-
 	}
 
 	/**
@@ -643,11 +682,12 @@ public class SelectionEditor extends EditorPart {
 	 */
 	private void updateSelectionDependenciesForElement(EventBTreeNode element, boolean checked) {
 		if (element instanceof EventBTreeAtomicNode) {
-			for (EventBElement dependee : getDependees(((EventBTreeAtomicNode) element).originalElement)) {
-				updateSelectionDependency(dependee, true, checked);
+			EventBElement targetElement = ((EventBTreeAtomicNode) element).originalElement;
+			for (EventBElement dependee : getDependees(targetElement)) {
+				updateSelectionDependency(targetElement, dependee, true, checked);
 			}
-			for (EventBElement depender : getDependers(((EventBTreeAtomicNode) element).originalElement)) {
-				updateSelectionDependency(depender, false, checked);
+			for (EventBElement depender : getDependers(targetElement)) {
+				updateSelectionDependency(targetElement, depender, false, checked);
 			}
 		}
 		treeViewer.update(element, null);
@@ -783,19 +823,26 @@ public class SelectionEditor extends EditorPart {
 	 *            True if dependency count needs to be increased (when another
 	 *            dependency partner of the given element has been selected).
 	 */
-	private void updateSelectionDependency(EventBElement dependecy, boolean dependee, boolean increase) {
-		Map<EventBElement, Integer> dependencyMap;
+	private void updateSelectionDependency(EventBElement targetElement, EventBElement dependecy, boolean dependee,
+			boolean increase) {
+		Map<EventBElement, Set<EventBElement>> dependencyMap;
 		if (dependee) {
 			dependencyMap = selectionDependees;
 		} else {
 			dependencyMap = selectionDependers;
 		}
-		int count = dependencyMap.containsKey(dependecy) ? dependencyMap.get(dependecy) : 0;
-		count += increase ? 1 : -1;
-		if (count > 0) {
-			dependencyMap.put(dependecy, count);
+		Set<EventBElement> elements = dependencyMap.get(dependecy);
+		if (elements == null) {
+			elements = new HashSet<>();
+			dependencyMap.put(dependecy, elements);
+		}
+		if (increase) {
+			elements.add(targetElement);
 		} else {
-			dependencyMap.remove(dependecy);
+			elements.remove(targetElement);
+			if (elements.isEmpty()) {
+				dependencyMap.remove(dependecy);
+			}
 		}
 		// Element needs to be updated so that its highlighting is correct.
 		updateElement(findTreeElement(dependecy, false));
@@ -1022,6 +1069,8 @@ public class SelectionEditor extends EditorPart {
 					switch (columnIndex) {
 					case ELEMENT_COLUMN:
 						return Display.getDefault().getSystemColor(SWT.COLOR_BLACK);
+					case STATUS_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_BLUE);
 					case CONTENT_COLUMN:
 						return Display.getDefault().getSystemColor(SWT.COLOR_MAGENTA);
 					case SPECIAL_COLUMN:
@@ -1031,13 +1080,15 @@ public class SelectionEditor extends EditorPart {
 					default:
 						break;
 					}
-				} else if (treeViewer.getChecked(element) || checkElementForDependencies(element)) {
+				} else if (treeViewer.getChecked(element) || checkElementForDependencies(element) != null) {
 					// If the element is being highlighted, we give the text a
 					// different color for easier
 					// readability.
 					switch (columnIndex) {
 					case ELEMENT_COLUMN:
 						return Display.getDefault().getSystemColor(SWT.COLOR_CYAN);
+					case STATUS_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_BLUE);
 					case CONTENT_COLUMN:
 						return Display.getDefault().getSystemColor(SWT.COLOR_MAGENTA);
 					case SPECIAL_COLUMN:
@@ -1051,6 +1102,8 @@ public class SelectionEditor extends EditorPart {
 					switch (columnIndex) {
 					case ELEMENT_COLUMN:
 						return Display.getDefault().getSystemColor(SWT.COLOR_DARK_CYAN);
+					case STATUS_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_BLUE);
 					case CONTENT_COLUMN:
 						return Display.getDefault().getSystemColor(SWT.COLOR_DARK_MAGENTA);
 					case SPECIAL_COLUMN:
@@ -1071,31 +1124,32 @@ public class SelectionEditor extends EditorPart {
 		 * 
 		 * @param element
 		 *            The elements for which dependency needs to be checked.
-		 * @return True if the given element or at least one of its children is
-		 *         being depended on by another element
+		 * @return elements by which the given element or at least one of its
+		 *         children is being depended on - or null if such elements do
+		 *         not exist
 		 */
-		private Boolean checkElementForDependencies(Object element) {
+		private Set<EventBElement> checkElementForDependencies(Object element) {
 			if (element instanceof EventBTreeAtomicNode) {
 				EventBTreeAtomicNode treeElement = (EventBTreeAtomicNode) element;
 				if (selectionDependees.containsKey(treeElement.getOriginalElement())
 						&& !treeViewer.getChecked(treeElement)) {
 					// Element itself depends on another element
-					return true;
+					return selectionDependees.get(treeElement.getOriginalElement());
 				}
 			}
 			ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 			if (!contentProvider.hasChildren(element)) {
 				// Element has no children, thus can't have any children that
 				// depend on any other element
-				return false;
+				return null;
 			}
 			for (Object child : contentProvider.getChildren(element)) {
 				// If even one child returns true, then we should return true;
-				if (checkElementForDependencies(child)) {
-					return true;
+				if (checkElementForDependencies(child) != null) {
+					return new HashSet<EventBElement>();
 				}
 			}
-			return false;
+			return null;
 		}
 
 		@Override
@@ -1106,7 +1160,7 @@ public class SelectionEditor extends EditorPart {
 			if (treeViewer == null) {
 				return null;
 			}
-			if (checkElementForDependencies(element)) {
+			if (checkElementForDependencies(element) != null) {
 				// If the element or one of its children is depended upon by a
 				// currently selected element
 				return Display.getDefault().getSystemColor(SWT.COLOR_RED);
@@ -1152,11 +1206,23 @@ public class SelectionEditor extends EditorPart {
 			EventBElement eventBElement = (EventBElement) originalElement;
 			switch (columnIndex) {
 			case ELEMENT_COLUMN:
+				return eventBElement.getLabel();
+			case STATUS_COLUMN:
 				if (alwaysChecked.contains(element)) {
-					return eventBElement.getLabel() + " [Must be in Sub-Refinement]";
-				} else {
-					return eventBElement.getLabel();
+					return "Auto-Selected (Fixed)";
+				} else if (userChecked.contains(element)) {
+					return "User-Selected";
+				} else if (autoChecked.contains(element)) {
+					return "Auto-Selected";
+				} else if (checkElementForDependencies(element) != null
+						&& !checkElementForDependencies(element).isEmpty()) {
+					LinkedList<String> tmp = new LinkedList<>();
+					for (EventBElement e : checkElementForDependencies(element)) {
+						tmp.add(e.getLabelFullPath());
+					}
+					return "Necessary for " + tmp.toString();
 				}
+				return null;
 			case CONTENT_COLUMN:
 				if (eventBElement instanceof EventBCondition) {
 					return ((EventBCondition) eventBElement).getPredicate();

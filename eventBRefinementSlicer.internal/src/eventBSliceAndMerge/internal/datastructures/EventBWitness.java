@@ -25,6 +25,11 @@ public class EventBWitness extends EventBCondition {
 		this.parentEvent = parentEvent;
 	}
 
+	@Override
+	public String getLabelFullPath() {
+		return parentEvent.label + "/" + label;
+	}
+
 	public EventBEvent getParentEvent() {
 		return parentEvent;
 	}

@@ -39,6 +39,11 @@ public class EventBGuard extends EventBCondition {
 	}
 
 	@Override
+	public String getLabelFullPath() {
+		return parentEvent.label + "/" + label;
+	}
+
+	@Override
 	public Set<EventBAttribute> calculateDependees() {
 		Set<EventBAttribute> occurredAttributes = super.calculateDependees();
 		// Also check parameters
