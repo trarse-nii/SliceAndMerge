@@ -2,7 +2,7 @@
 <feature
       id="eventBSliceAndMerge"
       label="Slice and Merge"
-      version="1.0.0.qualifier">
+      version="0.9.0.qualifier">
 
    <description url="http://www.example.com/description">
       A plug-in for the Rodin platform which lets the user easily cut
