@@ -2,6 +2,7 @@ package eventBSliceAndMerge.ui.editors;
 
 import java.text.DecimalFormat;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,9 @@ public class SelectionEditor extends EditorPart {
 	// We require a duplicate of the checked state because of the limitations of
 	// the TreeViewer API
 	private Map<Object, Boolean> selectionMap = new HashMap<>();
+
+	// Set of tree elements that must be checked
+	private HashSet<EventBTreeNode> alwaysChecked = new HashSet<>();
 
 	/* Target file/machine objects */
 	private IRodinFile rodinFile;
@@ -504,6 +508,13 @@ public class SelectionEditor extends EditorPart {
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				EventBTreeNode node = (EventBTreeNode) event.getElement();
+
+				// Recover if a always-check element is unchecked
+				if (alwaysChecked.contains(node)) {
+					treeViewer.setChecked(node, true);
+					return;
+				}
+
 				// If the element is part of a context, we wish to disable
 				// selection, because only whole
 				// contexts should be selectable
@@ -536,6 +547,31 @@ public class SelectionEditor extends EditorPart {
 		treeViewer.setContentProvider(new TreeContentProvider());
 		treeViewer.setInput(machine);
 		this.treeViewer = treeViewer;
+
+		// Select all the inherited variables and record them as "always-check"
+		// elements
+		HashSet<String> variables = new HashSet<>();
+		try {
+			for (IRefinesMachine refines : machineRoot.getRefinesClauses()) {
+				IMachineRoot abstractRoot = refines.getAbstractMachineRoot();
+				for (IVariable var : abstractRoot.getVariables()) {
+					variables.add(var.getIdentifierString());
+				}
+			}
+		} catch (RodinDBException e) {
+			e.printStackTrace();
+		}
+		for (EventBElement elem : elementToTreeElementMap.keySet()) {
+			if (elem.getType() == Type.VARIABLE) {
+				if (variables.contains(elem.getLabel())) {
+					alwaysChecked.add(elementToTreeElementMap.get(elem));
+				}
+			}
+		}
+		for (EventBTreeNode node : alwaysChecked) {
+			setCheckedElement(node, true);
+		}
+
 	}
 
 	/**
@@ -834,7 +870,7 @@ public class SelectionEditor extends EditorPart {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 		Type type = element.getType();
 		EventBTreeCategoryNode category;
-		if(type == Type.ACTION){
+		if (type == Type.ACTION) {
 			type = Type.EVENT;
 		}
 		category = treeCategories.get(type);
@@ -981,7 +1017,20 @@ public class SelectionEditor extends EditorPart {
 				return null;
 			}
 			if (element instanceof EventBTreeAtomicNode) {
-				if (treeViewer.getChecked(element) || checkElementForDependencies(element)) {
+				if (alwaysChecked.contains(element)) {
+					switch (columnIndex) {
+					case ELEMENT_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_BLACK);
+					case CONTENT_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_MAGENTA);
+					case SPECIAL_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_GRAY);
+					case COMMENT_COLUMN:
+						return Display.getDefault().getSystemColor(SWT.COLOR_GREEN);
+					default:
+						break;
+					}
+				} else if (treeViewer.getChecked(element) || checkElementForDependencies(element)) {
 					// If the element is being highlighted, we give the text a
 					// different color for easier
 					// readability.
@@ -1095,14 +1144,18 @@ public class SelectionEditor extends EditorPart {
 			if (!(element instanceof EventBTreeAtomicNode)) {
 				return null;
 			}
-			element = ((EventBTreeAtomicNode) element).getOriginalElement();
-			if (!(element instanceof EventBElement)) {
+			Object originalElement = ((EventBTreeAtomicNode) element).getOriginalElement();
+			if (!(originalElement instanceof EventBElement)) {
 				return null;
 			}
-			EventBElement eventBElement = (EventBElement) element;
+			EventBElement eventBElement = (EventBElement) originalElement;
 			switch (columnIndex) {
 			case ELEMENT_COLUMN:
-				return eventBElement.getLabel();
+				if (alwaysChecked.contains(element)) {
+					return eventBElement.getLabel() + " [Must be in Sub-Refinement]";
+				} else {
+					return eventBElement.getLabel();
+				}
 			case CONTENT_COLUMN:
 				if (eventBElement instanceof EventBCondition) {
 					return ((EventBCondition) eventBElement).getPredicate();
