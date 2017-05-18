@@ -22,7 +22,7 @@ import eventBSliceAndMerge.internal.datastructures.EventBWitness;
 public class EventBSliceSelection {
 
 	List<EventBInvariant> invariants = new ArrayList<>();
-	List<EventBVariable> variables = new ArrayList<>();
+	public List<EventBVariable> variables = new ArrayList<>();
 	List<EventBEvent> events = new ArrayList<>();
 	List<EventBParameter> parameters = new ArrayList<>();
 	List<EventBWitness> witnesses = new ArrayList<>();

@@ -58,6 +58,16 @@ public class EventBElement {
 	}
 
 	/**
+	 * Returns label describing this element (usually its name) including the
+	 * parent label (expected to be overridden by specific subclasses)
+	 * 
+	 * @return
+	 */
+	public String getLabelFullPath() {
+			return label;
+	}
+
+	/**
 	 * Getter for optional comment describing this element
 	 * 
 	 * @return String comment descibing this element
