@@ -28,8 +28,7 @@ public class EventBAxiom extends EventBCondition {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.AXIOM;
-		return type;
+	public Type getType() {
+		return Type.AXIOM;
 	}
 }

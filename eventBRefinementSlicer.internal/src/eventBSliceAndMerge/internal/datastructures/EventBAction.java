@@ -50,6 +50,11 @@ public class EventBAction extends EventBElement implements Depender {
 		this.parentEvent = parentEvent;
 	}
 
+	@Override
+	public String getLabelFullPath() {
+		return parentEvent.label + "/" + label;
+	}
+
 	public String getAssignment() {
 		return assignment;
 	}
@@ -64,9 +69,8 @@ public class EventBAction extends EventBElement implements Depender {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.ACTION;
-		return type;
+	public Type getType() {
+		return Type.ACTION;
 	}
 
 	@Override

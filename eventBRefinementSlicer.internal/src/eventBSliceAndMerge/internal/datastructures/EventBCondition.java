@@ -83,9 +83,8 @@ public class EventBCondition extends EventBElement implements Depender {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.CONDITION;
-		return type;
+	public Type getType() {
+		return Type.CONDITION;
 	}
 
 	@Override
