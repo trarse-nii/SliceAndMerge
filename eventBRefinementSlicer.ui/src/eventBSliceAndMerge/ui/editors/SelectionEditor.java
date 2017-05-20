@@ -274,7 +274,6 @@ public class SelectionEditor extends EditorPart {
 				for (Object category : categories) {
 					setChecked((EventBTreeCategoryNode) category, true, true);
 				}
-				treeViewer.refresh();
 			}
 
 			@Override
@@ -296,7 +295,6 @@ public class SelectionEditor extends EditorPart {
 				for (Object category : categories) {
 					setChecked((EventBTreeCategoryNode) category, false, true);
 				}
-				treeViewer.refresh();
 			}
 
 			@Override
@@ -311,7 +309,7 @@ public class SelectionEditor extends EditorPart {
 		Button selectAllDependenciesButton = new Button(buttonBar, SWT.PUSH);
 		selectAllDependenciesButton.setText("Auto Select");
 		selectAllDependenciesButton.setToolTipText(
-				"Select all elements that the selected elements depend on and that depend on only the seleected elements");
+				"Select all elements that the selected elements depend on and that depend only on the selected elements");
 		selectAllDependenciesButton.addSelectionListener(new SelectionListener() {
 
 			@Override
@@ -345,7 +343,6 @@ public class SelectionEditor extends EditorPart {
 						}
 					}
 				}
-				treeViewer.refresh();
 			}
 
 			@Override
@@ -559,7 +556,9 @@ public class SelectionEditor extends EditorPart {
 			}
 		}
 		for (EventBTreeNode node : alwaysChecked) {
-			setChecked(node, true, true);
+			treeViewer.setChecked(node, true);
+			selectionMap.put(node, true);
+			treeViewer.update(node, null);
 		}
 
 		updateNoCostElements();
@@ -644,6 +643,12 @@ public class SelectionEditor extends EditorPart {
 			}
 		}
 
+		// Start the update of the node
+		if(auto){
+			treeViewer.setChecked(node, checked);
+		}
+		selectionMap.put(node, checked);
+
 		// Update the status
 		if (node instanceof EventBTreeAtomicNode) {
 			if (checked) {
@@ -660,42 +665,10 @@ public class SelectionEditor extends EditorPart {
 			}
 		}
 
-		if (auto) {
-			treeViewer.setSubtreeChecked(node, checked);
-			updateElement(node);
-
-			// Get dependency information and add it to the local maps
-			updateSelectionDependenciesForElement(node, checked);
-
-			// Update the selection map
-			selectionMap.put(node, checked);
-
-			// Update children of selected element and update their dependencies
-			setChildrenChecked(node, checked);
-
-		} else {
-			updateSelectionDependenciesForSubtree(node, checked);
-		}
-
-		// Correct checked state of parents
-		correctParentsChecked(node);
-
-		// Update information on elements that can be selected with no cost
-		updateNoCostElements();
-	}
-
-	/**
-	 * Updates the local dependency maps to account for the change of the
-	 * checked state of an element
-	 * 
-	 * @param element
-	 *            Element that has had its checked state changed
-	 * @param checked
-	 *            New checked status of element
-	 */
-	private void updateSelectionDependenciesForElement(EventBTreeNode element, boolean checked) {
-		if (element instanceof EventBTreeAtomicNode) {
-			EventBElement targetElement = ((EventBTreeAtomicNode) element).originalElement;
+		// Update the dependency information and the presentation of each
+		// dependee/dependant
+		if (node instanceof EventBTreeAtomicNode) {
+			EventBElement targetElement = ((EventBTreeAtomicNode) node).originalElement;
 			for (EventBElement dependee : getDependees(targetElement)) {
 				updateSelectionDependency(targetElement, dependee, true, checked);
 			}
@@ -703,57 +676,23 @@ public class SelectionEditor extends EditorPart {
 				updateSelectionDependency(targetElement, depender, false, checked);
 			}
 		}
-		treeViewer.update(element, null);
-	}
 
-	/**
-	 * Updates the local dependency maps to account for the change of the
-	 * checked state of an element and its subtree
-	 * 
-	 * @param element
-	 *            Element that has had its checked state changed
-	 * @param checked
-	 *            New checked status of element
-	 */
-	private void updateSelectionDependenciesForSubtree(EventBTreeNode element, boolean checked) {
-		if (!(checked ^ selectionMap.getOrDefault(element, false))) {
-			// If checked state of this element doesn't change, nothing else
-			// needs to be done.
-			treeViewer.update(element, null);
-			return;
-		}
-		selectionMap.put(element, checked);
-		updateSelectionDependenciesForElement(element, checked);
+		// Update the presentation that reflects the changes made above
+		treeViewer.update(node, null);
+		
+		// Recursively update the descendants
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
-		if (!contentProvider.hasChildren(element)) {
-			return;
-		}
-		for (Object child : contentProvider.getChildren(element)) {
-			treeViewer.setChecked(child, checked);
-			updateSelectionDependenciesForSubtree((EventBTreeNode) child, checked);
-		}
-	}
-
-	/**
-	 * Gets all children of given parent element and sets their checked status
-	 * as desired.
-	 * 
-	 * @param parent
-	 *            Parent element of children we need to change
-	 * @param checked
-	 *            Desired checked state for children of parent
-	 */
-	private void setChildrenChecked(EventBTreeNode parent, boolean checked) {
-		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
-		if (!contentProvider.hasChildren(parent)) {
-			return;
-		}
-		for (Object child : contentProvider.getChildren(parent)) {
-			// Update a child only if its checked status changes
-			if (checked ^ selectionMap.getOrDefault(child, false)) {
-				setChecked((EventBTreeNode) child, checked, true);
+		if (contentProvider.hasChildren(node)) {
+			for (Object child : contentProvider.getChildren(node)) {
+				setChecked((EventBTreeNode) child, checked, auto);
 			}
 		}
+
+		// Correct checked state of parents
+		correctParentsChecked(node);
+
+		// Update information on elements that can be selected with no cost
+		updateNoCostElements();
 	}
 
 	/**
@@ -782,7 +721,7 @@ public class SelectionEditor extends EditorPart {
 		if (!contentProvider.hasChildren(element)) {
 			return;
 		}
-		
+
 		Boolean isChecked = true;
 		Boolean isPartiallyChecked = false;
 		for (Object child : contentProvider.getChildren(element)) {
@@ -795,20 +734,18 @@ public class SelectionEditor extends EditorPart {
 		}
 		if (isChecked) {
 			treeViewer.setChecked(element, true);
-			treeViewer.setGrayed(element, false);
-			treeViewer.update(element, null);
 			selectionMap.put(element, true);
 		} else if (isPartiallyChecked) {
 			treeViewer.setGrayChecked(element, true);
-			treeViewer.update(element, null);
 			selectionMap.put(element, true);
 		} else {
 			treeViewer.setChecked(element, false);
 			treeViewer.setGrayed(element, false);
-			treeViewer.update(element, null);
 			selectionMap.put(element, false);
 		}
-		correctParentsChecked(element);
+		treeViewer.update(element, null);
+		
+		correctParentsChecked(parent);
 	}
 
 	/**
@@ -877,8 +814,10 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	private void updateNoCostElements() {
+		HashSet<EventBTreeNode> oldNoCost = new HashSet<>(noCost);
 		noCost.clear();
 		for (EventBElement depender : selectionDependers.keySet()) {
+			EventBTreeAtomicNode node = elementToTreeElementMap.get(depender);
 			boolean keep = true;
 			for (EventBElement dependee : getDependees(depender)) {
 				if (!getSelection().variables.contains(dependee)) {
@@ -887,7 +826,13 @@ public class SelectionEditor extends EditorPart {
 				}
 			}
 			if (keep) {
-				noCost.add(elementToTreeElementMap.get(depender));
+				noCost.add(node);
+				updateElement(node);
+			}
+		}
+		for(EventBTreeNode node: oldNoCost){
+			if(!noCost.contains(node)){
+				updateElement(node);
 			}
 		}
 	}
