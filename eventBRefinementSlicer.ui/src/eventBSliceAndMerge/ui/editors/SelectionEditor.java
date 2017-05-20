@@ -108,7 +108,7 @@ public class SelectionEditor extends EditorPart {
 	private Map<EventBElement, Set<EventBElement>> selectionDependers = new HashMap<>();
 
 	// Map of internal representation of element to tree-internal wrapper
-	private Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap = new HashMap<>();
+	private Map<EventBElement, EventBTreeAtomicNode> element2TreeNode = new HashMap<>();
 
 	private ContainerCheckedTreeViewer treeViewer = null;
 
@@ -116,7 +116,7 @@ public class SelectionEditor extends EditorPart {
 	// the TreeViewer API
 	private Map<EventBTreeNode, Boolean> selectionMap = new HashMap<>();
 
-	// Status of elements
+	// Status of nodes
 	private HashSet<EventBTreeNode> userChecked = new HashSet<>();
 	private HashSet<EventBTreeNode> autoChecked = new HashSet<>();
 	private HashSet<EventBTreeNode> alwaysChecked = new HashSet<>();
@@ -271,9 +271,11 @@ public class SelectionEditor extends EditorPart {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
+				HashSet<EventBTreeNode> nodes = new HashSet<>();
 				for (Object category : categories) {
-					setChecked((EventBTreeCategoryNode) category, true, true);
+					nodes.add((EventBTreeNode) category);
 				}
+				setChecked(nodes, true, true);
 			}
 
 			@Override
@@ -292,9 +294,11 @@ public class SelectionEditor extends EditorPart {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
+				HashSet<EventBTreeNode> nodes = new HashSet<>();
 				for (Object category : categories) {
-					setChecked((EventBTreeCategoryNode) category, false, true);
+					nodes.add((EventBTreeNode) category);
 				}
+				setChecked(nodes, false, true);
 			}
 
 			@Override
@@ -314,9 +318,12 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
+				HashSet<EventBTreeNode> toBeAdded = new HashSet<>();
 				// Select all necessary elements that the selected elements
 				// depend on
-				LinkedList<EventBElement> toBeAdded = new LinkedList<>(selectionDependees.keySet());
+				for(EventBElement dependee: selectionDependees.keySet()){
+					toBeAdded.add(findTreeNode(dependee, false));
+				}
 				// Also select all no-cost elements that depend only on the
 				// selected elements (variables)
 				for (EventBElement depender : selectionDependers.keySet()) {
@@ -328,21 +335,24 @@ public class SelectionEditor extends EditorPart {
 						}
 					}
 					if (keep) {
-						toBeAdded.add(depender);
+						toBeAdded.add(findTreeNode(depender, false));
 					}
 				}
+
+				setChecked(toBeAdded, true, true);
+				/*
 				for (EventBElement dependee : toBeAdded) {
-					EventBTreeAtomicNode element = findTreeElement(dependee, true);
-					autoChecked.add(element);
-					if (element != null && !treeViewer.getChecked(element)) {
-						if (!(element.getOriginalElement() instanceof EventBContext)
-								&& element.getOriginalElement().getParent() instanceof EventBContext) {
-							setChecked(findTreeElement(element.getOriginalElement().getParent(), false), true, true);
+					EventBTreeAtomicNode node = findTreeNode(dependee, false);
+					if (node != null && !treeViewer.getChecked(node)) {
+						if (!(node.getOriginalElement() instanceof EventBContext)
+								&& node.getOriginalElement().getParent() instanceof EventBContext) {
+							setChecked(findTreeNode(node.getOriginalElement().getParent(), false), true, true);
 						} else {
-							setChecked(element, true, true);
+							setChecked(node, true, true);
 						}
 					}
 				}
+				*/
 			}
 
 			@Override
@@ -548,10 +558,10 @@ public class SelectionEditor extends EditorPart {
 		} catch (RodinDBException e) {
 			e.printStackTrace();
 		}
-		for (EventBElement elem : elementToTreeElementMap.keySet()) {
+		for (EventBElement elem : element2TreeNode.keySet()) {
 			if (elem.getType() == Type.VARIABLE) {
 				if (variables.contains(elem.getLabel())) {
-					alwaysChecked.add(elementToTreeElementMap.get(elem));
+					alwaysChecked.add(element2TreeNode.get(elem));
 				}
 			}
 		}
@@ -597,7 +607,9 @@ public class SelectionEditor extends EditorPart {
 
 	/**
 	 * Automated action to check/uncheck element or reaction to check/uncheck
-	 * action just done by the user
+	 * action just done by the user. If you call this method many times for
+	 * multiple nodes, you should rather use another setChecked that accepts a
+	 * set of nodes.
 	 * 
 	 * @param node
 	 *            Target Node
@@ -609,6 +621,49 @@ public class SelectionEditor extends EditorPart {
 	 *            or reaction to the status already made by the user
 	 */
 	private void setChecked(EventBTreeNode node, boolean checked, boolean auto) {
+		HashSet<EventBTreeNode> nodes = new HashSet<>();
+		nodes.add(node);
+		setChecked(nodes, checked, auto);
+	}
+
+	/**
+	 * Automated action to check/uncheck element or reaction to check/uncheck
+	 * action just done by the user
+	 * 
+	 * @param nodes
+	 *            Target Nodes
+	 * @param checked
+	 *            The status to be made (auto case) or the status just made
+	 *            (user case)
+	 * @param auto
+	 *            Whether this call is for automated action to make the status
+	 *            or reaction to the status already made by the user
+	 */
+	private void setChecked(Set<EventBTreeNode> nodes, boolean checked, boolean auto) {
+		for (EventBTreeNode node : nodes) {
+			setCheckedSub(node, checked, auto);
+		}
+
+		// Update information on elements that can be selected with no cost
+		updateNoCostElements();
+
+		// Adjust highlighting on parent elements
+		correctParentsHighlighted();
+	}
+
+	/**
+	 * Implementation of the recursive procedure for the setChecked method
+	 * 
+	 * @param node
+	 *            Target Node
+	 * @param checked
+	 *            The status to be made (auto case) or the status just made
+	 *            (user case)
+	 * @param auto
+	 *            Whether this call is for automated action to make the status
+	 *            or reaction to the status already made by the user
+	 */
+	private void setCheckedSub(EventBTreeNode node, boolean checked, boolean auto) {
 		// First dispose the check/uncheck if necessary - in the case of
 		// reaction to the user only by undoing it
 
@@ -637,14 +692,12 @@ public class SelectionEditor extends EditorPart {
 			}
 			if (invalid) {
 				treeViewer.setSubtreeChecked(node, !checked);
-				correctParentsChecked(node);
 				return;
-
 			}
 		}
 
 		// Start the update of the node
-		if(auto){
+		if (auto) {
 			treeViewer.setChecked(node, checked);
 		}
 		selectionMap.put(node, checked);
@@ -679,73 +732,93 @@ public class SelectionEditor extends EditorPart {
 
 		// Update the presentation that reflects the changes made above
 		treeViewer.update(node, null);
-		
+
 		// Recursively update the descendants
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 		if (contentProvider.hasChildren(node)) {
 			for (Object child : contentProvider.getChildren(node)) {
-				setChecked((EventBTreeNode) child, checked, auto);
+				setCheckedSub((EventBTreeNode) child, checked, auto);
 			}
 		}
-
-		// Correct checked state of parents
-		correctParentsChecked(node);
-
-		// Update information on elements that can be selected with no cost
-		updateNoCostElements();
 	}
 
 	/**
-	 * Corrects the parents's checked (selection) state based on child's changed
-	 * checked status
+	 * Recursively correct highlight of parent nodes depending on their
+	 * descendants
 	 * 
-	 * @param element
-	 *            The element which has had its checked status changed.
 	 */
-	private void correctParentsChecked(EventBTreeNode element) {
-		EventBTreeNode parent = null;
-		if (element instanceof EventBTreeAtomicNode) {
-			EventBTreeAtomicNode treeElement = (EventBTreeAtomicNode) element;
-			parent = treeElement.getParentCategory();
-
-		} else {
-			assert element instanceof EventBTreeCategoryNode;
-			EventBTreeCategoryNode treeCategory = (EventBTreeCategoryNode) element;
-			parent = treeCategory.getParentElement();
+	private void correctParentsHighlighted() {
+		Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
+		for (Object category : categories) {
+			correctParentsHighlightedSub((EventBTreeNode) category);
 		}
-		if (parent == null) {
-			return;
-		}
+	}
 
+	/**
+	 * Recursively correct highlight of parent nodes depending on their
+	 * descendants
+	 * 
+	 * @param node
+	 * @return 0: unchecked, 1: grayed, 2: checked - plus 3 if noCost
+	 */
+	private int correctParentsHighlightedSub(EventBTreeNode node) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
-		if (!contentProvider.hasChildren(element)) {
-			return;
-		}
-
-		Boolean isChecked = true;
-		Boolean isPartiallyChecked = false;
-		for (Object child : contentProvider.getChildren(element)) {
-			if (treeViewer.getChecked(child) || treeViewer.getGrayed(child)) {
-				isPartiallyChecked = true;
+		if (!contentProvider.hasChildren(node)) {
+			if (treeViewer.getChecked(node)) {
+				if (noCost.contains(node)) {
+					return 5;
+				} else {
+					return 2;
+				}
+			} else {
+				if (noCost.contains(node)) {
+					return 3;
+				} else {
+					return 0;
+				}
 			}
-			if (!treeViewer.getChecked(child) || treeViewer.getGrayed(child)) {
-				isChecked = false;
+		}
+		boolean hasUnchecked = false;
+		boolean hasPartiallyChecked = false;
+		boolean hasChecked = false;
+		boolean hasNoCost = false;
+		for (Object child : contentProvider.getChildren(node)) {
+			int result = correctParentsHighlightedSub((EventBTreeNode) child);
+			if(result > 2){
+				hasNoCost = true;
+				result = result - 3;
+			}
+			if (result == 0) {
+				hasUnchecked = true;
+			} else if (result == 1) {
+				hasPartiallyChecked = true;
+			} else {
+				hasChecked = true;
 			}
 		}
-		if (isChecked) {
-			treeViewer.setChecked(element, true);
-			selectionMap.put(element, true);
-		} else if (isPartiallyChecked) {
-			treeViewer.setGrayChecked(element, true);
-			selectionMap.put(element, true);
+		int ret;
+		if (!hasUnchecked && !hasPartiallyChecked) {
+			ret = 2;
+			treeViewer.setChecked(node, true);
+			selectionMap.put(node, true);
+		} else if (!hasPartiallyChecked && !hasChecked) {
+			ret = 0;
+			treeViewer.setChecked(node, false);
+			selectionMap.put(node, false);
 		} else {
-			treeViewer.setChecked(element, false);
-			treeViewer.setGrayed(element, false);
-			selectionMap.put(element, false);
+			ret = 1;
+			treeViewer.setGrayed(node, true);
+			selectionMap.put(node, true);
 		}
-		treeViewer.update(element, null);
-		
-		correctParentsChecked(parent);
+		if(hasNoCost){
+			ret = ret + 3;
+			noCost.add(node);
+		}
+		else{
+			noCost.remove(node);
+		}
+		treeViewer.update(node, null);
+		return ret;
 	}
 
 	/**
@@ -783,41 +856,14 @@ public class SelectionEditor extends EditorPart {
 				dependencyMap.remove(dependecy);
 			}
 		}
-		// Element needs to be updated so that its highlighting is correct.
-		updateElement(findTreeElement(dependecy, false));
-	}
-
-	/**
-	 * Updates an element as well as all of its parents in the editor's tree
-	 * viewer.
-	 * 
-	 * @param element
-	 *            Element to update
-	 */
-	private void updateElement(EventBTreeNode element) {
-		if (element == null) {
-			return;
-		}
-		treeViewer.update(element, null);
-		if (element instanceof EventBTreeAtomicNode) {
-			EventBTreeAtomicNode treeElement = (EventBTreeAtomicNode) element;
-			if (treeElement.getParentCategory() != null) {
-				updateElement(treeElement.getParentCategory());
-			}
-		}
-		if (element instanceof EventBTreeCategoryNode) {
-			EventBTreeCategoryNode treeCategory = (EventBTreeCategoryNode) element;
-			if (treeCategory.getParentElement() != null) {
-				updateElement(treeCategory.getParentElement());
-			}
-		}
+		treeViewer.update(findTreeNode(dependecy, false), null);
 	}
 
 	private void updateNoCostElements() {
 		HashSet<EventBTreeNode> oldNoCost = new HashSet<>(noCost);
 		noCost.clear();
 		for (EventBElement depender : selectionDependers.keySet()) {
-			EventBTreeAtomicNode node = elementToTreeElementMap.get(depender);
+			EventBTreeAtomicNode node = findTreeNode(depender, false);
 			boolean keep = true;
 			for (EventBElement dependee : getDependees(depender)) {
 				if (!getSelection().variables.contains(dependee)) {
@@ -827,12 +873,12 @@ public class SelectionEditor extends EditorPart {
 			}
 			if (keep) {
 				noCost.add(node);
-				updateElement(node);
+				treeViewer.update(node, null);
 			}
 		}
-		for(EventBTreeNode node: oldNoCost){
-			if(!noCost.contains(node)){
-				updateElement(node);
+		for (EventBTreeNode node : oldNoCost) {
+			if (!noCost.contains(node)) {
+				treeViewer.update(node, null);
 			}
 		}
 	}
@@ -872,10 +918,10 @@ public class SelectionEditor extends EditorPart {
 	 *            be visible
 	 * @return Tree-internal container element for given Event-B element
 	 */
-	private EventBTreeAtomicNode findTreeElement(EventBElement element, boolean expand) {
-		EventBTreeAtomicNode treeElement = null;
-		if (!expand && elementToTreeElementMap.containsKey(element)) {
-			return elementToTreeElementMap.get(element);
+	private EventBTreeAtomicNode findTreeNode(EventBElement element, boolean expand) {
+		EventBTreeAtomicNode node = null;
+		if (!expand && element2TreeNode.containsKey(element)) {
+			return element2TreeNode.get(element);
 		}
 
 		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
@@ -890,7 +936,7 @@ public class SelectionEditor extends EditorPart {
 
 		if (type == Type.INVARIANT || type == Type.VARIABLE || type == Type.CONTEXT || type == Type.EVENT) {
 			treeViewer.expandToLevel(category, 1);
-			return elementToTreeElementMap.get(element);
+			return element2TreeNode.get(element);
 		}
 
 		if (type == Type.CARRIER_SET) {
@@ -923,7 +969,7 @@ public class SelectionEditor extends EditorPart {
 							treeViewer.expandToLevel(subcategory, 1);
 							packColumns();
 						}
-						return elementToTreeElementMap.get(element);
+						return element2TreeNode.get(element);
 					}
 				}
 			}
@@ -956,13 +1002,13 @@ public class SelectionEditor extends EditorPart {
 							treeViewer.expandToLevel(subcategory, 1);
 							packColumns();
 						}
-						return elementToTreeElementMap.get(element);
+						return element2TreeNode.get(element);
 					}
 				}
 			}
 		}
 
-		return treeElement;
+		return node;
 	}
 
 	/* ----- Auxiliary methods ----- */
@@ -1296,10 +1342,10 @@ public class SelectionEditor extends EditorPart {
 			EventBMachine machine = (EventBMachine) inputElement;
 			if (treeRootCategories == null) {
 				EventBTreeCategoryNode[] children = new EventBTreeCategoryNode[4];
-				children[0] = addCategory(Type.INVARIANT, machine.getInvariants(), elementToTreeElementMap);
-				children[1] = addCategory(Type.VARIABLE, machine.getVariables(), elementToTreeElementMap);
-				children[2] = addCategory(Type.EVENT, machine.getEvents(), elementToTreeElementMap);
-				children[3] = addCategory(Type.CONTEXT, machine.getSeenContexts(), elementToTreeElementMap);
+				children[0] = addCategoryTopLevel(Type.INVARIANT, machine.getInvariants());
+				children[1] = addCategoryTopLevel(Type.VARIABLE, machine.getVariables());
+				children[2] = addCategoryTopLevel(Type.EVENT, machine.getEvents());
+				children[3] = addCategoryTopLevel(Type.CONTEXT, machine.getSeenContexts());
 				treeRootCategories = children;
 			}
 			return treeRootCategories;
@@ -1324,14 +1370,10 @@ public class SelectionEditor extends EditorPart {
 					EventBTreeAtomicNode parent = (EventBTreeAtomicNode) parentElement;
 					if (!eventSubcategories.containsKey(originalElement)) {
 						EventBTreeCategoryNode[] children = new EventBTreeCategoryNode[4];
-						children[0] = addCategory(Type.PARAMETER, parent, originalElement.getParameters(),
-								elementToTreeElementMap);
-						children[1] = addCategory(Type.WITNESS, parent, originalElement.getWitnesses(),
-								elementToTreeElementMap);
-						children[2] = addCategory(Type.GUARD, parent, originalElement.getGuards(),
-								elementToTreeElementMap);
-						children[3] = addCategory(Type.ACTION, parent, originalElement.getActions(),
-								elementToTreeElementMap);
+						children[0] = addCategoryInnerLevel(Type.PARAMETER, parent, originalElement.getParameters());
+						children[1] = addCategoryInnerLevel(Type.WITNESS, parent, originalElement.getWitnesses());
+						children[2] = addCategoryInnerLevel(Type.GUARD, parent, originalElement.getGuards());
+						children[3] = addCategoryInnerLevel(Type.ACTION, parent, originalElement.getActions());
 						eventSubcategories.put(originalElement, children);
 					}
 					return eventSubcategories.get(originalElement);
@@ -1342,12 +1384,9 @@ public class SelectionEditor extends EditorPart {
 					EventBTreeAtomicNode parent = (EventBTreeAtomicNode) parentElement;
 					if (!contextSubcategories.containsKey(originalElement)) {
 						EventBTreeCategoryNode[] children = new EventBTreeCategoryNode[3];
-						children[0] = addCategory(Type.AXIOM, parent, originalElement.getAxioms(),
-								elementToTreeElementMap);
-						children[1] = addCategory(Type.CONSTANT, parent, originalElement.getConstants(),
-								elementToTreeElementMap);
-						children[2] = addCategory(Type.CARRIER_SET, parent, originalElement.getCarrierSets(),
-								elementToTreeElementMap);
+						children[0] = addCategoryInnerLevel(Type.AXIOM, parent, originalElement.getAxioms());
+						children[1] = addCategoryInnerLevel(Type.CONSTANT, parent, originalElement.getConstants());
+						children[2] = addCategoryInnerLevel(Type.CARRIER_SET, parent, originalElement.getCarrierSets());
 						contextSubcategories.put(originalElement, children);
 					}
 					return contextSubcategories.get(originalElement);
@@ -1356,19 +1395,16 @@ public class SelectionEditor extends EditorPart {
 			return null;
 		}
 
-		private EventBTreeCategoryNode addCategory(Type type, List<? extends EventBElement> children,
-				Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap) {
-			EventBTreeCategoryNode category = new EventBTreeCategoryNode(type, null, children, elementToTreeElementMap,
-					this);
+		private EventBTreeCategoryNode addCategoryTopLevel(Type type, List<? extends EventBElement> children) {
+			EventBTreeCategoryNode category = new EventBTreeCategoryNode(type, null, children, element2TreeNode, this);
 			treeCategories.put(type, category);
 			return category;
 		}
 
-		private EventBTreeCategoryNode addCategory(Type type, EventBTreeAtomicNode parent,
-				List<? extends EventBElement> children,
-				Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap) {
-			EventBTreeCategoryNode category = new EventBTreeCategoryNode(type, parent, children,
-					elementToTreeElementMap, this);
+		private EventBTreeCategoryNode addCategoryInnerLevel(Type type, EventBTreeAtomicNode parent,
+				List<? extends EventBElement> children) {
+			EventBTreeCategoryNode category = new EventBTreeCategoryNode(type, parent, children, element2TreeNode,
+					this);
 			treeCategories.put(type, category);
 			return category;
 		}

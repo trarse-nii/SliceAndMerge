@@ -34,24 +34,24 @@ public class EventBTreeCategoryNode extends EventBTreeNode {
 	}
 
 	final String label;
-	final EventBTreeAtomicNode parentElement;
-	final EventBTreeAtomicNode[] children;
+	final EventBTreeAtomicNode parentNode;
+	final EventBTreeAtomicNode[] childrenNodes;
 
 	public EventBTreeCategoryNode(Type type, EventBTreeAtomicNode parent, List<? extends EventBElement> children,
-			Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap, Object outerType) {
+			Map<EventBElement, EventBTreeAtomicNode> element2TreeNode, Object outerType) {
 		super(outerType);
 		this.label = labelMap.get(type);
-		this.parentElement = parent;
-		this.children = createChildren(children, elementToTreeElementMap);
+		this.parentNode = parent;
+		this.childrenNodes = createChildren(children, element2TreeNode);
 	}
 
-	private EventBTreeAtomicNode[] createChildren(List<? extends EventBElement> children,
-			Map<EventBElement, EventBTreeAtomicNode> elementToTreeElementMap) {
+	private EventBTreeAtomicNode[] createChildren(List<? extends EventBElement> childrenElements,
+			Map<EventBElement, EventBTreeAtomicNode> element2TreeNode) {
 		List<EventBTreeAtomicNode> treeChildren = new ArrayList<>();
-		for (EventBElement originalChild : children) {
-			EventBTreeAtomicNode treeChild = new EventBTreeAtomicNode(this, originalChild, outerType);
-			elementToTreeElementMap.put(originalChild, treeChild);
-			treeChildren.add(treeChild);
+		for (EventBElement childElement : childrenElements) {
+			EventBTreeAtomicNode childNode = new EventBTreeAtomicNode(this, childElement, outerType);
+			element2TreeNode.put(childElement, childNode);
+			treeChildren.add(childNode);
 		}
 		return treeChildren.toArray(new EventBTreeAtomicNode[treeChildren.size()]);
 	}
@@ -61,11 +61,11 @@ public class EventBTreeCategoryNode extends EventBTreeNode {
 	}
 
 	public EventBTreeAtomicNode getParentElement() {
-		return parentElement;
+		return parentNode;
 	}
 
 	public EventBTreeAtomicNode[] getChildren() {
-		return children;
+		return childrenNodes;
 	}
 
 	/**
@@ -76,7 +76,7 @@ public class EventBTreeCategoryNode extends EventBTreeNode {
 	 * @return Tree container element of the desired element
 	 */
 	public EventBTreeAtomicNode findTreeElement(EventBElement originalElement) {
-		for (EventBTreeAtomicNode child : children) {
+		for (EventBTreeAtomicNode child : childrenNodes) {
 			if (child.getOriginalElement().equals(originalElement)) {
 				return child;
 			}
@@ -95,7 +95,7 @@ public class EventBTreeCategoryNode extends EventBTreeNode {
 		int result = 1;
 		result = prime * result + outerType.hashCode();
 		result = prime * result + ((label == null) ? 0 : label.hashCode());
-		result = prime * result + ((parentElement == null) ? 0 : parentElement.hashCode());
+		result = prime * result + ((parentNode == null) ? 0 : parentNode.hashCode());
 		return result;
 	}
 
@@ -115,10 +115,10 @@ public class EventBTreeCategoryNode extends EventBTreeNode {
 				return false;
 		} else if (!label.equals(other.label))
 			return false;
-		if (parentElement == null) {
-			if (other.parentElement != null)
+		if (parentNode == null) {
+			if (other.parentNode != null)
 				return false;
-		} else if (!parentElement.equals(other.parentElement))
+		} else if (!parentNode.equals(other.parentNode))
 			return false;
 		return true;
 	}
