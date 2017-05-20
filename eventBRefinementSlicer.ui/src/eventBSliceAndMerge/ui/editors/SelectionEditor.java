@@ -308,8 +308,7 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
-		// A button to select all elements that currently selected elements
-		// depend on
+		// A button to select all necessary/preferable elements
 		Button selectAllDependenciesButton = new Button(buttonBar, SWT.PUSH);
 		selectAllDependenciesButton.setText("Auto Select");
 		selectAllDependenciesButton.setToolTipText(
@@ -321,8 +320,8 @@ public class SelectionEditor extends EditorPart {
 				HashSet<EventBTreeNode> toBeAdded = new HashSet<>();
 				// Select all necessary elements that the selected elements
 				// depend on
-				for(EventBElement dependee: selectionDependees.keySet()){
-					toBeAdded.add(findTreeNode(dependee, false));
+				for (EventBElement dependee : selectionDependees.keySet()) {
+					toBeAdded.add(element2TreeNode.get(dependee));
 				}
 				// Also select all no-cost elements that depend only on the
 				// selected elements (variables)
@@ -335,24 +334,11 @@ public class SelectionEditor extends EditorPart {
 						}
 					}
 					if (keep) {
-						toBeAdded.add(findTreeNode(depender, false));
+						toBeAdded.add(element2TreeNode.get(depender));
 					}
 				}
 
 				setChecked(toBeAdded, true, true);
-				/*
-				for (EventBElement dependee : toBeAdded) {
-					EventBTreeAtomicNode node = findTreeNode(dependee, false);
-					if (node != null && !treeViewer.getChecked(node)) {
-						if (!(node.getOriginalElement() instanceof EventBContext)
-								&& node.getOriginalElement().getParent() instanceof EventBContext) {
-							setChecked(findTreeNode(node.getOriginalElement().getParent(), false), true, true);
-						} else {
-							setChecked(node, true, true);
-						}
-					}
-				}
-				*/
 			}
 
 			@Override
@@ -698,6 +684,10 @@ public class SelectionEditor extends EditorPart {
 
 		// Start the update of the node
 		if (auto) {
+			// First expand (otherwise not checked)
+			if (checked && node instanceof EventBTreeAtomicNode) {
+				expandToShow(((EventBTreeAtomicNode) node).originalElement);
+			}
 			treeViewer.setChecked(node, checked);
 		}
 		selectionMap.put(node, checked);
@@ -784,7 +774,7 @@ public class SelectionEditor extends EditorPart {
 		boolean hasNoCost = false;
 		for (Object child : contentProvider.getChildren(node)) {
 			int result = correctParentsHighlightedSub((EventBTreeNode) child);
-			if(result > 2){
+			if (result > 2) {
 				hasNoCost = true;
 				result = result - 3;
 			}
@@ -810,11 +800,10 @@ public class SelectionEditor extends EditorPart {
 			treeViewer.setGrayed(node, true);
 			selectionMap.put(node, true);
 		}
-		if(hasNoCost){
+		if (hasNoCost) {
 			ret = ret + 3;
 			noCost.add(node);
-		}
-		else{
+		} else {
 			noCost.remove(node);
 		}
 		treeViewer.update(node, null);
@@ -822,9 +811,7 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Updates maps counting number of dependers and dependees that are
-	 * currently selected (checked) and causes update so that dependencies are
-	 * properly highlighted.
+	 * Updates dependers and dependees of currently selected elements
 	 * 
 	 * @param dependecy
 	 *            Element for which we update dependency counts.
@@ -856,14 +843,14 @@ public class SelectionEditor extends EditorPart {
 				dependencyMap.remove(dependecy);
 			}
 		}
-		treeViewer.update(findTreeNode(dependecy, false), null);
+		treeViewer.update(element2TreeNode.get(dependecy), null);
 	}
 
 	private void updateNoCostElements() {
 		HashSet<EventBTreeNode> oldNoCost = new HashSet<>(noCost);
 		noCost.clear();
 		for (EventBElement depender : selectionDependers.keySet()) {
-			EventBTreeAtomicNode node = findTreeNode(depender, false);
+			EventBTreeAtomicNode node = element2TreeNode.get(depender);
 			boolean keep = true;
 			for (EventBElement dependee : getDependees(depender)) {
 				if (!getSelection().variables.contains(dependee)) {
@@ -879,6 +866,11 @@ public class SelectionEditor extends EditorPart {
 		for (EventBTreeNode node : oldNoCost) {
 			if (!noCost.contains(node)) {
 				treeViewer.update(node, null);
+			}
+		}
+		for(EventBTreeNode node: selectionMap.keySet()){
+			if(selectionMap.containsKey(node)){
+				noCost.remove(node);
 			}
 		}
 	}
@@ -907,37 +899,24 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/**
-	 * Finds the tree-internal container for a given editor-internal Event-B
-	 * element
+	 * Expand to show the element
 	 * 
 	 * @param element
 	 *            The Event-B element for which the tree-internal container is
 	 *            desired
-	 * @param expand
-	 *            True if tree in editor should be expanded to have the element
-	 *            be visible
-	 * @return Tree-internal container element for given Event-B element
 	 */
-	private EventBTreeAtomicNode findTreeNode(EventBElement element, boolean expand) {
-		EventBTreeAtomicNode node = null;
-		if (!expand && element2TreeNode.containsKey(element)) {
-			return element2TreeNode.get(element);
-		}
-
-		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
+	private void expandToShow(EventBElement element) {
 		Type type = element.getType();
-		EventBTreeCategoryNode category;
-		if (type == Type.ACTION) {
-			type = Type.EVENT;
-		}
-		category = treeCategories.get(type);
-		// TODO: by this logic only findable the first element when multiple
-		// elements exist for a category?
+		EventBTreeCategoryNode category = treeCategories.get(type);
+		ITreeContentProvider contentProvider = (ITreeContentProvider) treeViewer.getContentProvider();
 
+		// Elements at depth 1
 		if (type == Type.INVARIANT || type == Type.VARIABLE || type == Type.CONTEXT || type == Type.EVENT) {
 			treeViewer.expandToLevel(category, 1);
-			return element2TreeNode.get(element);
 		}
+
+		// TODO: cover all the kinds of elements
+		// TODO: unify into one logic
 
 		if (type == Type.CARRIER_SET) {
 			category = treeCategories.get(Type.CONTEXT);
@@ -947,9 +926,7 @@ public class SelectionEditor extends EditorPart {
 				if (!context.containsElement(element)) {
 					continue;
 				}
-				if (expand) {
-					treeViewer.expandToLevel(treeContext, 1);
-				}
+				treeViewer.expandToLevel(treeContext, 1);
 				Object[] childrenOfContext = contentProvider.getChildren(treeContext);
 				for (Object child : childrenOfContext) {
 					// We pick out the correct subcategory for the element we
@@ -965,31 +942,24 @@ public class SelectionEditor extends EditorPart {
 						label = "Carrier Sets";
 					}
 					if (subcategory.getLabel().equals(label)) {
-						if (expand) {
-							treeViewer.expandToLevel(subcategory, 1);
-							packColumns();
-						}
-						return element2TreeNode.get(element);
+						treeViewer.expandToLevel(subcategory, 1);
+						packColumns();
 					}
 				}
 			}
 		}
 
-		if (type == Type.ACTION) {
-			for (EventBTreeAtomicNode treeEvent : category.getChildren()) {
-				assert treeEvent.getOriginalElement() instanceof EventBEvent;
-				EventBEvent event = (EventBEvent) treeEvent.getOriginalElement();
+		if (type == Type.ACTION || type == Type.GUARD) {
+			EventBTreeCategoryNode eventsCategory = treeCategories.get(Type.EVENT);
+			treeViewer.expandToLevel(eventsCategory, 1);
+			for (EventBTreeAtomicNode eventNode : eventsCategory.getChildren()) {
+				EventBEvent event = (EventBEvent) eventNode.getOriginalElement();
 				if (!event.containsElement(element)) {
 					continue;
 				}
-				if (expand) {
-					treeViewer.expandToLevel(treeEvent, 1);
-				}
-				Object[] childrenofEvent = contentProvider.getChildren(treeEvent);
+				treeViewer.expandToLevel(eventNode, 1);
+				Object[] childrenofEvent = contentProvider.getChildren(eventNode);
 				for (Object child : childrenofEvent) {
-					// We pick out the correct subcategory for the searched
-					// element
-					assert child instanceof EventBTreeCategoryNode;
 					EventBTreeCategoryNode subcategory = (EventBTreeCategoryNode) child;
 					String label = "";
 					if (element.getType().equals(Type.GUARD)) {
@@ -998,17 +968,12 @@ public class SelectionEditor extends EditorPart {
 						label = "Actions";
 					}
 					if (subcategory.getLabel().equals(label)) {
-						if (expand) {
-							treeViewer.expandToLevel(subcategory, 1);
-							packColumns();
-						}
-						return element2TreeNode.get(element);
+						treeViewer.expandToLevel(subcategory, 1);
+						packColumns();
 					}
 				}
 			}
 		}
-
-		return node;
 	}
 
 	/* ----- Auxiliary methods ----- */
@@ -1219,21 +1184,23 @@ public class SelectionEditor extends EditorPart {
 			case ELEMENT_COLUMN:
 				return eventBElement.getLabel();
 			case STATUS_COLUMN:
-				if (alwaysChecked.contains(element)) {
-					return "Auto-Selected (Fixed)";
-				} else if (userChecked.contains(element)) {
-					return "User-Selected";
-				} else if (autoChecked.contains(element)) {
-					return "Auto-Selected";
-				} else if (checkElementForDependencies(element) != null
-						&& !checkElementForDependencies(element).isEmpty()) {
-					LinkedList<String> tmp = new LinkedList<>();
-					for (EventBElement e : checkElementForDependencies(element)) {
-						tmp.add(e.getLabelFullPath());
+				if (EventBElement.isLeafElement((EventBElement) originalElement)) {
+					if (alwaysChecked.contains(element)) {
+						return "Auto-Selected (Fixed)";
+					} else if (userChecked.contains(element)) {
+						return "User-Selected";
+					} else if (autoChecked.contains(element)) {
+						return "Auto-Selected";
+					} else if (checkElementForDependencies(element) != null
+							&& !checkElementForDependencies(element).isEmpty()) {
+						LinkedList<String> tmp = new LinkedList<>();
+						for (EventBElement e : checkElementForDependencies(element)) {
+							tmp.add(e.getLabelFullPath());
+						}
+						return "Necessary for " + tmp.toString();
+					} else if (noCost.contains(element)) {
+						return "Should accompnay Selected Variables";
 					}
-					return "Necessary for " + tmp.toString();
-				} else if (noCost.contains(element)) {
-					return "Should accompnay Selected Variables";
 				}
 				return null;
 			case CONTENT_COLUMN:

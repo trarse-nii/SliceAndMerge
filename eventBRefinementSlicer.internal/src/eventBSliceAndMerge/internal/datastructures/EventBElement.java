@@ -64,7 +64,7 @@ public class EventBElement {
 	 * @return
 	 */
 	public String getLabelFullPath() {
-			return label;
+		return label;
 	}
 
 	/**
@@ -120,6 +120,11 @@ public class EventBElement {
 	 */
 	public EventBUnit getParent() {
 		return parent;
+	}
+
+	public static boolean isLeafElement(EventBElement element) {
+		return element instanceof EventBAction || element instanceof EventBAttribute
+				|| element instanceof EventBCondition || element instanceof EventBCarrierSet;
 	}
 
 }
