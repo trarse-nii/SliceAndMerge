@@ -58,4 +58,15 @@ public class EventBSliceSelection {
 		}
 	}
 
+	@Override
+	public String toString(){
+		StringBuffer buf = new StringBuffer();
+		buf.append("Variables\n");
+		buf.append(variables.toString());
+		buf.append("\nInvariants\n");
+		buf.append(invariants.toString());
+		buf.append("\nEvent\n");
+		buf.append(events.toString());
+		return buf.toString();
+	}
 }
