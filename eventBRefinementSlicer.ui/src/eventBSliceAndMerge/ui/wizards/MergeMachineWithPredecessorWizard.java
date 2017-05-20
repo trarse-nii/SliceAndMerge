@@ -40,6 +40,8 @@ import org.rodinp.core.IRodinProject;
 import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
+import eventBSliceAndMerge.ui.util.RodinUtil;
+
 /**
  * Wizard to create a new machine, which merges the machine in the editor with the machine it directly
  * refines.
@@ -62,16 +64,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		super();
 		this.rodinProject = rodinProject;
 		this.concreteMachineRoot = concreteMachineRoot;
-
-		// There's only one refines clause per machine by definition. We can't access it directly because
-		// Rodin is silly like that.
-		try {
-			for (IRefinesMachine refinesMachine : concreteMachineRoot.getRefinesClauses()) {
-				this.abstractMachineRoot = refinesMachine.getAbstractMachineRoot();
-			}
-		} catch (RodinDBException e) {
-			e.printStackTrace();
-		}
+		this.abstractMachineRoot = RodinUtil.getPrecedingMachineRoot(concreteMachineRoot);
 	}
 
 	@Override

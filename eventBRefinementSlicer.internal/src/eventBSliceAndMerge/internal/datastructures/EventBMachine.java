@@ -38,13 +38,15 @@ public class EventBMachine extends EventBUnit {
 	public EventBMachine(IMachineRoot machineRoot) throws CoreException {
 		this.scMachineRoot = machineRoot.getSCMachineRoot();
 		for (IInvariant originalInvariant : machineRoot.getInvariants()) {
-			ITraceableElement originalSCElement = SCUtil.findSCElement(originalInvariant, scMachineRoot.getSCInvariants());
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalInvariant,
+					scMachineRoot.getSCInvariants());
 			assert (originalSCElement instanceof ISCInvariant);
 			EventBInvariant invariant = new EventBInvariant(originalInvariant, (ISCInvariant) originalSCElement, this);
 			invariants.add(invariant);
 		}
 		for (IVariable originalVariable : machineRoot.getVariables()) {
-			ITraceableElement originalSCElement = SCUtil.findSCElement(originalVariable, scMachineRoot.getSCVariables());
+			ITraceableElement originalSCElement = SCUtil.findSCElement(originalVariable,
+					scMachineRoot.getSCVariables());
 			assert (originalSCElement instanceof ISCVariable);
 			EventBVariable variable = new EventBVariable(originalVariable, (ISCVariable) originalSCElement, this);
 			variables.add(variable);
@@ -134,8 +136,7 @@ public class EventBMachine extends EventBUnit {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.MACHINE;
-		return type;
+	public Type getType() {
+		return Type.MACHINE;
 	}
 }

@@ -148,9 +148,8 @@ public class EventBEvent extends EventBElement {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.EVENT;
-		return type;
+	public Type getType() {
+		return Type.EVENT;
 	}
 
 	@Override

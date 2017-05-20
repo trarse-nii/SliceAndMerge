@@ -27,9 +27,8 @@ public abstract class EventBUnit extends EventBElement {
 	}
 
 	@Override
-	public String getType() {
-		final String type = EventBTypes.UNIT;
-		return type;
+	public Type getType() {
+		return Type.UNIT;
 	}
 
 	/**

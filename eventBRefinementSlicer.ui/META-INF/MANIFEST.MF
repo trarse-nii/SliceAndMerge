@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Slice and Merge Editor
 Bundle-SymbolicName: eventBSliceAndMerge.ui;singleton:=true
-Bundle-Version: 0.9.0.qualifier
+Bundle-Version: 0.9.1.qualifier
 Bundle-Activator: eventBSliceAndMerge.ui.Activator
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
@@ -11,7 +11,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.core.resources;bundle-version="3.9.1",
  org.eventb.core;bundle-version="3.2.0",
  org.eventb.core.ast,
- eventBSliceAndMerge.internal;bundle-version="0.9.0",
+ eventBSliceAndMerge.internal;bundle-version="0.9.1",
  org.eclipse.swt
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
