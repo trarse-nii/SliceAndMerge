@@ -523,7 +523,7 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
-		treeViewer.setContentProvider(new TreeContentProvider());
+		treeViewer.setContentProvider(new TreeContentProvider(machine));
 		treeViewer.setInput(machine);
 		this.treeViewer = treeViewer;
 
@@ -622,17 +622,20 @@ public class SelectionEditor extends EditorPart {
 	 *            or reaction to the status already made by the user
 	 */
 	private void setChecked(Set<EventBTreeNode> nodes, boolean checked, boolean auto) {
-		// If there are elements in contexts (e.g., constants), include the whole context
+		// If there are elements in contexts (e.g., constants), include the
+		// whole context
 		HashSet<EventBTreeNode> newnodes = new HashSet<>(nodes);
-		for(EventBTreeNode node : nodes){
-			EventBTreeAtomicNode anode = (EventBTreeAtomicNode)node;
-			EventBElement element = anode.originalElement;
-			if(EventBElement.isContextELement(element)){
-				newnodes.remove(node);
-				newnodes.add(anode.getParentCategory().getParentElement());
+		for (EventBTreeNode node : nodes) {
+			if (node instanceof EventBTreeAtomicNode) {
+				EventBTreeAtomicNode anode = (EventBTreeAtomicNode) node;
+				EventBElement element = anode.originalElement;
+				if (EventBElement.isContextELement(element)) {
+					newnodes.remove(node);
+					newnodes.add(anode.getParentCategory().getParentElement());
+				}
 			}
 		}
-		
+
 		for (EventBTreeNode node : newnodes) {
 			setCheckedSub(node, checked, auto);
 		}
@@ -1246,6 +1249,18 @@ public class SelectionEditor extends EditorPart {
 		private EventBTreeCategoryNode[] treeRootCategories;
 		private Map<EventBEvent, EventBTreeCategoryNode[]> eventSubcategories = new HashMap<>();
 		private Map<EventBContext, EventBTreeCategoryNode[]> contextSubcategories = new HashMap<>();
+
+		public TreeContentProvider(EventBMachine machine) {
+			init(getElements(machine));
+		}
+
+		private void init(Object[] elements) {
+			for (Object e : elements) {
+				if (hasChildren(e)) {
+					init(getChildren(e));
+				}
+			}
+		}
 
 		@Override
 		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
