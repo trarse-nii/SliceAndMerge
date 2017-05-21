@@ -59,10 +59,7 @@ import org.rodinp.core.RodinDBException;
 import eventBSliceAndMerge.internal.analyzers.EventBSliceSelection;
 import eventBSliceAndMerge.internal.analyzers.EventBSlicer;
 import eventBSliceAndMerge.internal.datastructures.EventBAction;
-import eventBSliceAndMerge.internal.datastructures.EventBAxiom;
-import eventBSliceAndMerge.internal.datastructures.EventBCarrierSet;
 import eventBSliceAndMerge.internal.datastructures.EventBCondition;
-import eventBSliceAndMerge.internal.datastructures.EventBConstant;
 import eventBSliceAndMerge.internal.datastructures.EventBContext;
 import eventBSliceAndMerge.internal.datastructures.EventBElement;
 import eventBSliceAndMerge.internal.datastructures.EventBElement.Type;
@@ -337,7 +334,6 @@ public class SelectionEditor extends EditorPart {
 						toBeAdded.add(element2TreeNode.get(depender));
 					}
 				}
-
 				setChecked(toBeAdded, true, true);
 			}
 
@@ -626,7 +622,18 @@ public class SelectionEditor extends EditorPart {
 	 *            or reaction to the status already made by the user
 	 */
 	private void setChecked(Set<EventBTreeNode> nodes, boolean checked, boolean auto) {
-		for (EventBTreeNode node : nodes) {
+		// If there are elements in contexts (e.g., constants), include the whole context
+		HashSet<EventBTreeNode> newnodes = new HashSet<>(nodes);
+		for(EventBTreeNode node : nodes){
+			EventBTreeAtomicNode anode = (EventBTreeAtomicNode)node;
+			EventBElement element = anode.originalElement;
+			if(EventBElement.isContextELement(element)){
+				newnodes.remove(node);
+				newnodes.add(anode.getParentCategory().getParentElement());
+			}
+		}
+		
+		for (EventBTreeNode node : newnodes) {
 			setCheckedSub(node, checked, auto);
 		}
 
@@ -657,29 +664,6 @@ public class SelectionEditor extends EditorPart {
 		if (alwaysChecked.contains(node) && !checked) {
 			treeViewer.setChecked(node, true);
 			return;
-		}
-
-		// Do not check/uncheck only a part of the context
-		// Undo if only a part of context is checked/unchecked
-		if (!auto) {
-			boolean invalid = false;
-			if (node instanceof EventBTreeAtomicNode) {
-				EventBElement element = ((EventBTreeAtomicNode) node).getOriginalElement();
-				if ((element instanceof EventBAxiom || element instanceof EventBConstant
-						|| element instanceof EventBCarrierSet)) {
-					invalid = true;
-				}
-			} else if (node instanceof EventBTreeCategoryNode) {
-				EventBTreeCategoryNode treeCategory = (EventBTreeCategoryNode) node;
-				if (treeCategory.getParentElement() != null
-						&& treeCategory.getParentElement().getOriginalElement() instanceof EventBContext) {
-					invalid = true;
-				}
-			}
-			if (invalid) {
-				treeViewer.setSubtreeChecked(node, !checked);
-				return;
-			}
 		}
 
 		// Start the update of the node
@@ -869,8 +853,8 @@ public class SelectionEditor extends EditorPart {
 				treeViewer.update(node, null);
 			}
 		}
-		for(EventBTreeNode node: selectionMap.keySet()){
-			if(selectionMap.containsKey(node)){
+		for (EventBTreeNode node : selectionMap.keySet()) {
+			if (selectionMap.containsKey(node)) {
 				noCost.remove(node);
 			}
 		}
