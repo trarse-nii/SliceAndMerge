@@ -49,7 +49,7 @@ public class EventBTreeCategoryNode extends EventBTreeNode {
 			Map<EventBElement, EventBTreeAtomicNode> element2TreeNode) {
 		List<EventBTreeAtomicNode> treeChildren = new ArrayList<>();
 		for (EventBElement childElement : childrenElements) {
-			EventBTreeAtomicNode childNode = new EventBTreeAtomicNode(this, childElement, outerType);
+			EventBTreeAtomicNode childNode = new EventBTreeAtomicNode(this, childElement, element2TreeNode, outerType);
 			element2TreeNode.put(childElement, childNode);
 			treeChildren.add(childNode);
 		}
