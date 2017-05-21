@@ -843,6 +843,7 @@ public class SelectionEditor extends EditorPart {
 				dependencyMap.remove(dependecy);
 			}
 		}
+		expandToShow(dependecy);
 		treeViewer.update(element2TreeNode.get(dependecy), null);
 	}
 

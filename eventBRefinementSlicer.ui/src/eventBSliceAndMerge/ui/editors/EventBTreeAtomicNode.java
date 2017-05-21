@@ -1,5 +1,7 @@
 package eventBSliceAndMerge.ui.editors;
 
+import java.util.Map;
+
 import eventBSliceAndMerge.internal.datastructures.EventBElement;
 
 /**
@@ -13,10 +15,12 @@ public class EventBTreeAtomicNode extends EventBTreeNode {
 	final EventBTreeCategoryNode parentCategory;
 	final EventBElement originalElement;
 
-	public EventBTreeAtomicNode(EventBTreeCategoryNode parent, EventBElement originalElement, Object outerType) {
+	public EventBTreeAtomicNode(EventBTreeCategoryNode parent, EventBElement originalElement,
+			Map<EventBElement, EventBTreeAtomicNode> element2TreeNode, Object outerType) {
 		super(outerType);
 		this.parentCategory = parent;
 		this.originalElement = originalElement;
+		element2TreeNode.put(originalElement, this);
 	}
 
 	public EventBTreeCategoryNode getParentCategory() {
