@@ -122,9 +122,29 @@ public class EventBElement {
 		return parent;
 	}
 
+	/* ----- Auxiliary static methods ----- */
+
+	/**
+	 * Judge an element is at the leaf (not Machine, Event, etc. but Variable,
+	 * Guard, Action, etc.)
+	 * 
+	 * @param element
+	 * @return
+	 */
 	public static boolean isLeafElement(EventBElement element) {
 		return element instanceof EventBAction || element instanceof EventBAttribute
 				|| element instanceof EventBCondition || element instanceof EventBCarrierSet;
+	}
+
+	/**
+	 * Judge an element is inside a context (Axiom, Constant, or CarrierSet)
+	 * 
+	 * @param element
+	 * @return
+	 */
+	public static boolean isContextELement(EventBElement element) {
+		return element instanceof EventBAxiom || element instanceof EventBConstant
+				|| element instanceof EventBCarrierSet;
 	}
 
 }
