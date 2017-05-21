@@ -284,18 +284,13 @@ public class SelectionEditor extends EditorPart {
 
 		// A button to deselect all elements of the machine opened in the editor
 		Button deselectAllButton = new Button(buttonBar, SWT.PUSH);
-		deselectAllButton.setText("Deselect All");
-		deselectAllButton.setToolTipText("Deselect all elements");
+		deselectAllButton.setText("Reset");
+		deselectAllButton.setToolTipText("Reset the selection");
 		deselectAllButton.addSelectionListener(new SelectionListener() {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
-				HashSet<EventBTreeNode> nodes = new HashSet<>();
-				for (Object category : categories) {
-					nodes.add((EventBTreeNode) category);
-				}
-				setChecked(nodes, false, true);
+				reset();
 			}
 
 			@Override
@@ -547,13 +542,7 @@ public class SelectionEditor extends EditorPart {
 				}
 			}
 		}
-		for (EventBTreeNode node : alwaysChecked) {
-			treeViewer.setChecked(node, true);
-			selectionMap.put(node, true);
-			treeViewer.update(node, null);
-		}
-
-		updateNoCostElements();
+		initialCheck();
 	}
 
 	/**
@@ -586,6 +575,35 @@ public class SelectionEditor extends EditorPart {
 	}
 
 	/* ----- Methods for managing selection considering dependencies ----- */
+
+	/**
+	 * Initial check set
+	 */
+	private void initialCheck() {
+		for (EventBTreeNode node : alwaysChecked) {
+			treeViewer.setChecked(node, true);
+			selectionMap.put(node, true);
+			treeViewer.update(node, null);
+		}
+
+		updateNoCostElements();
+	}
+
+	/**
+	 * Reset into the initial check
+	 */
+	private void reset() {
+		for (Object obj : treeViewer.getCheckedElements()) {
+			treeViewer.setChecked(obj, false);
+		}
+		selectionDependees.clear();
+		selectionDependers.clear();
+		selectionMap.clear();
+		userChecked.clear();
+		autoChecked.clear();
+		treeViewer.refresh();
+		initialCheck();
+	}
 
 	/**
 	 * Automated action to check/uncheck element or reaction to check/uncheck
