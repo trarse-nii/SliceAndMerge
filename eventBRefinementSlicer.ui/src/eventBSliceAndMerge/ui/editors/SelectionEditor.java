@@ -42,6 +42,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
@@ -306,52 +307,7 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				HashSet<EventBTreeNode> toBeAdded;
-
-				// May repeat until conversion (should be twice otherwise bug?)
-				for (int i = 0; i < 5; i++) {
-					toBeAdded = new HashSet<>();
-					// Select all necessary elements that the selected elements
-					// depend on
-					for (EventBElement dependee : selectionDependees.keySet()) {
-						EventBTreeNode node = element2TreeNode.get(dependee);
-						if (!treeViewer.getChecked(node)) {
-							toBeAdded.add(node);
-						}
-					}
-					// Also select all no-cost elements that depend only on the
-					// selected elements (variables)
-					toBeAdded.addAll(noCost);
-
-					if (toBeAdded.isEmpty()) {
-						if (i == 0) {
-							MessageBox box = new MessageBox(parent.getShell(), SWT.ICON_ERROR);
-							box.setText("Auto Select Error");
-							box.setMessage("No elements to automatically select for the current selection");
-							box.open();
-						}
-						break;
-					}
-					MessageBox box = new MessageBox(parent.getShell(), SWT.OK | SWT.CANCEL);
-					box.setText("Auto Select");
-					StringBuffer buf = new StringBuffer();
-					if (i == 0) {
-						buf.append("Select the following elements.\n");
-					} else {
-						buf.append("Auto select again for the result (selecting the following elements)?\n");
-					}
-					for (EventBTreeNode node : toBeAdded) {
-						buf.append(node.toString());
-						buf.append('\n');
-					}
-					box.setMessage(buf.toString());
-					int res = box.open();
-					if (res == SWT.OK) {
-						setChecked(toBeAdded, true, true);
-					} else {
-						break;
-					}
-				}
+				autoSelect(true, parent.getShell());
 			}
 
 			@Override
@@ -380,40 +336,26 @@ public class SelectionEditor extends EditorPart {
 						}
 					}
 					// Generate all sub-refinements by specifying one variable
-					LinkedList<EventBElement> selection = new LinkedList<EventBElement>();
 					StringBuffer message = new StringBuffer("Created sub-refinements each with variable\n");
 					DecimalFormat format = new DecimalFormat("000");
 					int count = 0;
 					for (EventBTreeAtomicNode var : allVariables) {
-						EventBElement elem = var.originalElement;
-						IMachineRoot precedingMachineRoot = RodinUtil.getPrecedingMachineRoot(machineRoot);
-						boolean skip = false;
-						try {
-							for (IVariable v : precedingMachineRoot.getVariables()) {
-								if (v.getIdentifierString().equals(elem.getLabel())) {
-									skip = true;
-									break;
-								}
-							}
-						} catch (RodinDBException e1) {
-							e1.printStackTrace();
-						}
-						if (skip) {
+						if (alwaysChecked.contains(var)) {
 							continue;
 						}
-						selection.add(elem);
-						selection.addAll(getDependees(elem));
+						setChecked(var, true, true);
+						autoSelect(false, parent.getShell());
 						try {
 							EventBSlicer.createMachineFromSelection(
 									machineRoot.getRodinFile().getBareName() + "-slice" + format.format(count) + "-"
-											+ elem.getLabel(),
-									new EventBSliceSelection(selection), rodinFile.getRodinProject(), machineRoot);
-							message.append(elem.getLabel());
+											+ var.originalElement.getLabel(),
+									getSelection(), rodinFile.getRodinProject(), machineRoot);
+							message.append(var.originalElement.getLabel());
 							message.append(", ");
 						} catch (RodinDBException e1) {
 							e1.printStackTrace();
 						}
-						selection.clear();
+						reset();
 						count++;
 					}
 					message.delete(message.length() - 2, message.length());
@@ -623,6 +565,69 @@ public class SelectionEditor extends EditorPart {
 		autoChecked.clear();
 		treeViewer.refresh();
 		initialCheck();
+	}
+
+	/**
+	 * Automatically select elements that the currently selected elements depend
+	 * on and those that depend only on the currently selected elements
+	 * 
+	 * @param preview
+	 *            Whether to show a preview to ask the user to do the selection
+	 * @param shell
+	 *            Shell used to show the preview dialog
+	 * @return Whether some elements are additionally selected or not
+	 */
+	private boolean autoSelect(boolean preview, Shell shell) {
+		HashSet<EventBTreeNode> toBeAdded;
+		boolean ret = false;
+
+		// May repeat until conversion (should be twice otherwise bug?)
+		for (int i = 0; i < 5; i++) {
+			toBeAdded = new HashSet<>();
+			// Select all necessary elements that the selected elements
+			// depend on
+			for (EventBElement dependee : selectionDependees.keySet()) {
+				EventBTreeNode node = element2TreeNode.get(dependee);
+				if (!treeViewer.getChecked(node)) {
+					toBeAdded.add(node);
+				}
+			}
+			// Also select all no-cost elements that depend only on the
+			// selected elements (variables)
+			toBeAdded.addAll(noCost);
+
+			if (toBeAdded.isEmpty()) {
+				if (i == 0 && preview) {
+					MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+					box.setText("Auto Select Error");
+					box.setMessage("No elements to automatically select for the current selection");
+					box.open();
+				}
+				break;
+			}
+			if (preview) {
+				MessageBox box = new MessageBox(shell, SWT.OK | SWT.CANCEL);
+				box.setText("Auto Select");
+				StringBuffer buf = new StringBuffer();
+				if (i == 0) {
+					buf.append("Select the following elements.\n");
+				} else {
+					buf.append("Auto select again for the result (selecting the following elements)?\n");
+				}
+				for (EventBTreeNode node : toBeAdded) {
+					buf.append(node.toString());
+					buf.append('\n');
+				}
+				box.setMessage(buf.toString());
+				int res = box.open();
+				if (res != SWT.OK) {
+					break;
+				}
+			}
+			ret = true;
+			setChecked(toBeAdded, true, true);
+		}
+		return ret;
 	}
 
 	/**
