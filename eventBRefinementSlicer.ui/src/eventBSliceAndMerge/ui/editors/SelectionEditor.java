@@ -95,6 +95,8 @@ public class SelectionEditor extends EditorPart {
 	private static final int SPECIAL_COLUMN = 3;
 	private static final int COMMENT_COLUMN = 4;
 
+	private ContainerCheckedTreeViewer treeViewer = null;
+
 	// Map from category label to internal representation of category.
 	// Only intended for use with categories that cannot occur more then once in
 	// the machine.
@@ -107,12 +109,6 @@ public class SelectionEditor extends EditorPart {
 
 	// Map of internal representation of element to tree-internal wrapper
 	private Map<EventBElement, EventBTreeAtomicNode> element2TreeNode = new HashMap<>();
-
-	private ContainerCheckedTreeViewer treeViewer = null;
-
-	// We require a duplicate of the checked state because of the limitations of
-	// the TreeViewer API
-	private Map<EventBTreeNode, Boolean> selectionMap = new HashMap<>();
 
 	// Status of nodes
 	private HashSet<EventBTreeNode> userChecked = new HashSet<>();
@@ -319,7 +315,7 @@ public class SelectionEditor extends EditorPart {
 					// depend on
 					for (EventBElement dependee : selectionDependees.keySet()) {
 						EventBTreeNode node = element2TreeNode.get(dependee);
-						if (!selectionMap.containsKey(node)) {
+						if (!treeViewer.getChecked(node)) {
 							toBeAdded.add(node);
 						}
 					}
@@ -608,7 +604,6 @@ public class SelectionEditor extends EditorPart {
 	private void initialCheck() {
 		for (EventBTreeNode node : alwaysChecked) {
 			treeViewer.setChecked(node, true);
-			selectionMap.put(node, true);
 			treeViewer.update(node, null);
 		}
 
@@ -624,7 +619,6 @@ public class SelectionEditor extends EditorPart {
 		}
 		selectionDependees.clear();
 		selectionDependers.clear();
-		selectionMap.clear();
 		userChecked.clear();
 		autoChecked.clear();
 		treeViewer.refresh();
@@ -721,7 +715,6 @@ public class SelectionEditor extends EditorPart {
 			}
 			treeViewer.setChecked(node, checked);
 		}
-		selectionMap.put(node, checked);
 
 		// Update the status
 		if (node instanceof EventBTreeAtomicNode) {
@@ -821,15 +814,12 @@ public class SelectionEditor extends EditorPart {
 		if (!hasUnchecked && !hasPartiallyChecked) {
 			ret = 2;
 			treeViewer.setChecked(node, true);
-			selectionMap.put(node, true);
 		} else if (!hasPartiallyChecked && !hasChecked) {
 			ret = 0;
 			treeViewer.setChecked(node, false);
-			selectionMap.put(node, false);
 		} else {
 			ret = 1;
 			treeViewer.setGrayed(node, true);
-			selectionMap.put(node, true);
 		}
 		if (!hasCost) {
 			ret = ret + 3;
@@ -900,10 +890,8 @@ public class SelectionEditor extends EditorPart {
 				treeViewer.update(node, null);
 			}
 		}
-		for (EventBTreeNode node : selectionMap.keySet()) {
-			if (selectionMap.containsKey(node)) {
-				noCost.remove(node);
-			}
+		for (Object node : treeViewer.getCheckedElements()) {
+			noCost.remove(node);
 		}
 	}
 
@@ -919,13 +907,11 @@ public class SelectionEditor extends EditorPart {
 	 */
 	private EventBSliceSelection getSelection() {
 		LinkedList<EventBElement> originalElements = new LinkedList<>();
-		for (EventBTreeNode node : selectionMap.keySet()) {
-			if (selectionMap.get(node)) {
-				if (node instanceof EventBTreeCategoryNode) {
-					continue;
-				}
-				originalElements.add(((EventBTreeAtomicNode) node).getOriginalElement());
+		for (Object node : treeViewer.getCheckedElements()) {
+			if (node instanceof EventBTreeCategoryNode) {
+				continue;
 			}
+			originalElements.add(((EventBTreeAtomicNode) node).getOriginalElement());
 		}
 		return new EventBSliceSelection(originalElements);
 	}
