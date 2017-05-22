@@ -41,6 +41,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
@@ -309,17 +310,52 @@ public class SelectionEditor extends EditorPart {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				HashSet<EventBTreeNode> toBeAdded = new HashSet<>();
-				// Select all necessary elements that the selected elements
-				// depend on
-				for (EventBElement dependee : selectionDependees.keySet()) {
-					toBeAdded.add(element2TreeNode.get(dependee));
+				HashSet<EventBTreeNode> toBeAdded;
+
+				// May repeat until conversion (should be twice otherwise bug?)
+				for (int i = 0; i < 5; i++) {
+					toBeAdded = new HashSet<>();
+					// Select all necessary elements that the selected elements
+					// depend on
+					for (EventBElement dependee : selectionDependees.keySet()) {
+						EventBTreeNode node = element2TreeNode.get(dependee);
+						if (!selectionMap.containsKey(node)) {
+							toBeAdded.add(node);
+						}
+					}
+					// Also select all no-cost elements that depend only on the
+					// selected elements (variables)
+					toBeAdded.addAll(noCost);
+
+					if (toBeAdded.isEmpty()) {
+						if (i == 0) {
+							MessageBox box = new MessageBox(parent.getShell(), SWT.ICON_ERROR);
+							box.setText("Auto Select Error");
+							box.setMessage("No elements to automatically select for the current selection");
+							box.open();
+						}
+						break;
+					}
+					MessageBox box = new MessageBox(parent.getShell(), SWT.OK | SWT.CANCEL);
+					box.setText("Auto Select");
+					StringBuffer buf = new StringBuffer();
+					if (i == 0) {
+						buf.append("Select the following elements.\n");
+					} else {
+						buf.append("Auto select again for the result (selecting the following elements)?\n");
+					}
+					for (EventBTreeNode node : toBeAdded) {
+						buf.append(node.toString());
+						buf.append('\n');
+					}
+					box.setMessage(buf.toString());
+					int res = box.open();
+					if (res == SWT.OK) {
+						setChecked(toBeAdded, true, true);
+					} else {
+						break;
+					}
 				}
-				// Also select all no-cost elements that depend only on the
-				// selected elements (variables)
-				toBeAdded.addAll(noCost);
-				
-				setChecked(toBeAdded, true, true);
 			}
 
 			@Override
