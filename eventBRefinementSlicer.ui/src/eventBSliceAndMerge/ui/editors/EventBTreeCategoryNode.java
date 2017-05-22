@@ -17,20 +17,20 @@ import eventBSliceAndMerge.internal.datastructures.EventBElement.Type;
 public class EventBTreeCategoryNode extends EventBTreeNode {
 
 	/* Map from EventB element types to label texts */
-	private static HashMap<Type, String> labelMap;
+	public static Map<Type, String> LABELMAP;
 	static {
-		labelMap = new HashMap<Type, String>();
-		labelMap.put(Type.INVARIANT, "Invariants");
-		labelMap.put(Type.VARIABLE, "Variables");
-		labelMap.put(Type.EVENT, "Events");
-		labelMap.put(Type.CONTEXT, "Seen Contexts");
-		labelMap.put(Type.PARAMETER, "Parameters");
-		labelMap.put(Type.WITNESS, "Witnesses");
-		labelMap.put(Type.GUARD, "Guards");
-		labelMap.put(Type.ACTION, "Actions");
-		labelMap.put(Type.AXIOM, "Axioms");
-		labelMap.put(Type.CONSTANT, "Constants");
-		labelMap.put(Type.CARRIER_SET, "Carrier Sets");
+		LABELMAP = new HashMap<Type, String>();
+		LABELMAP.put(Type.INVARIANT, "Invariants");
+		LABELMAP.put(Type.VARIABLE, "Variables");
+		LABELMAP.put(Type.EVENT, "Events");
+		LABELMAP.put(Type.CONTEXT, "Seen Contexts");
+		LABELMAP.put(Type.PARAMETER, "Parameters");
+		LABELMAP.put(Type.WITNESS, "Witnesses");
+		LABELMAP.put(Type.GUARD, "Guards");
+		LABELMAP.put(Type.ACTION, "Actions");
+		LABELMAP.put(Type.AXIOM, "Axioms");
+		LABELMAP.put(Type.CONSTANT, "Constants");
+		LABELMAP.put(Type.CARRIER_SET, "Carrier Sets");
 	}
 
 	final String label;
@@ -40,7 +40,7 @@ public class EventBTreeCategoryNode extends EventBTreeNode {
 	public EventBTreeCategoryNode(Type type, EventBTreeAtomicNode parent, List<? extends EventBElement> children,
 			Map<EventBElement, EventBTreeAtomicNode> element2TreeNode, Object outerType) {
 		super(outerType);
-		this.label = labelMap.get(type);
+		this.label = LABELMAP.get(type);
 		this.parentNode = parent;
 		this.childrenNodes = createChildren(children, element2TreeNode);
 	}
