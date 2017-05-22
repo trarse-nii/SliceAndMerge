@@ -317,18 +317,8 @@ public class SelectionEditor extends EditorPart {
 				}
 				// Also select all no-cost elements that depend only on the
 				// selected elements (variables)
-				for (EventBElement depender : selectionDependers.keySet()) {
-					boolean keep = true;
-					for (EventBElement dependee : getDependees(depender)) {
-						if (!getSelection().variables.contains(dependee)) {
-							keep = false;
-							break;
-						}
-					}
-					if (keep) {
-						toBeAdded.add(element2TreeNode.get(depender));
-					}
-				}
+				toBeAdded.addAll(noCost);
+				
 				setChecked(toBeAdded, true, true);
 			}
 
@@ -776,18 +766,18 @@ public class SelectionEditor extends EditorPart {
 		boolean hasUnchecked = false;
 		boolean hasPartiallyChecked = false;
 		boolean hasChecked = false;
-		boolean hasNoCost = false;
+		boolean hasCost = false;
 		for (Object child : contentProvider.getChildren(node)) {
 			int result = correctParentsHighlightedSub((EventBTreeNode) child);
-			if (result > 2) {
-				hasNoCost = true;
-				result = result - 3;
+			if (result < 3) {
+				hasCost = true;
 			}
-			if (result == 0) {
+			switch (result % 3) {
+			case 0:
 				hasUnchecked = true;
-			} else if (result == 1) {
+			case 1:
 				hasPartiallyChecked = true;
-			} else {
+			default:
 				hasChecked = true;
 			}
 		}
@@ -805,7 +795,7 @@ public class SelectionEditor extends EditorPart {
 			treeViewer.setGrayed(node, true);
 			selectionMap.put(node, true);
 		}
-		if (hasNoCost) {
+		if (!hasCost) {
 			ret = ret + 3;
 			noCost.add(node);
 		} else {
