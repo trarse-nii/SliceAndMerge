@@ -1,6 +1,7 @@
 package eventBSliceAndMerge.ui.editors;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -53,6 +54,7 @@ import org.eclipse.ui.dialogs.ContainerCheckedTreeViewer;
 import org.eclipse.ui.part.EditorPart;
 import org.eventb.core.IMachineRoot;
 import org.eventb.core.IRefinesMachine;
+import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IRodinFile;
@@ -440,7 +442,7 @@ public class SelectionEditor extends EditorPart {
 	 *            Titles for the columns
 	 */
 	private void createContainerCheckedTreeViewer(Tree tree, String[] titles) {
-		ContainerCheckedTreeViewer treeViewer = new ContainerCheckedTreeViewer(tree);
+		this.treeViewer = new ContainerCheckedTreeViewer(tree);
 		treeViewer.setColumnProperties(titles);
 		treeViewer.setUseHashlookup(true);
 
@@ -484,28 +486,7 @@ public class SelectionEditor extends EditorPart {
 
 		treeViewer.setContentProvider(new TreeContentProvider(machine));
 		treeViewer.setInput(machine);
-		this.treeViewer = treeViewer;
 
-		// Select all the inherited variables and record them as "always-check"
-		// elements
-		HashSet<String> variables = new HashSet<>();
-		try {
-			for (IRefinesMachine refines : machineRoot.getRefinesClauses()) {
-				IMachineRoot abstractRoot = refines.getAbstractMachineRoot();
-				for (IVariable var : abstractRoot.getVariables()) {
-					variables.add(var.getIdentifierString());
-				}
-			}
-		} catch (RodinDBException e) {
-			e.printStackTrace();
-		}
-		for (EventBElement elem : element2TreeNode.keySet()) {
-			if (elem.getType() == Type.VARIABLE) {
-				if (variables.contains(elem.getLabel())) {
-					alwaysChecked.add(element2TreeNode.get(elem));
-				}
-			}
-		}
 		initialCheck();
 	}
 
@@ -544,7 +525,48 @@ public class SelectionEditor extends EditorPart {
 	 * Initial check set
 	 */
 	private void initialCheck() {
+		if (alwaysChecked.isEmpty()) {
+			// Variables and contexts contained both of the abstract machine and
+			// the concrete machine
+			ITreeContentProvider provider = (ITreeContentProvider) treeViewer.getContentProvider();
+			HashSet<String> variables = new HashSet<>();
+			HashSet<String> contexts = new HashSet<>();
+			try {
+				IMachineRoot abstractRoot = RodinUtil.getPrecedingMachineRoot(machineRoot);
+				for (IVariable var : abstractRoot.getVariables()) {
+					variables.add(var.getIdentifierString());
+				}
+				for (ISeesContext context : abstractRoot.getSeesClauses()) {
+					contexts.add(context.getSeenContextName());
+				}
+			} catch (RodinDBException e) {
+				e.printStackTrace();
+			}
+			for (EventBElement elem : element2TreeNode.keySet()) {
+				if (elem.getType() == Type.VARIABLE) {
+					if (variables.contains(elem.getLabel())) {
+						alwaysChecked.add(element2TreeNode.get(elem));
+					}
+				} else if (elem.getType() == Type.CONTEXT) {
+					if (contexts.contains(elem.getLabel())) {
+						EventBTreeNode node = element2TreeNode.get(elem);
+						alwaysChecked.add(node);
+						for (Object obj1 : provider.getChildren(node)) {
+							alwaysChecked.add((EventBTreeNode) obj1);
+							if (provider.hasChildren(obj1)) {
+								for (Object obj2 : provider.getChildren(obj1)) {
+									alwaysChecked.add((EventBTreeNode) obj2);
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 		for (EventBTreeNode node : alwaysChecked) {
+			if (node instanceof EventBTreeAtomicNode) {
+				expandToShow(((EventBTreeAtomicNode) node).originalElement);
+			}
 			treeViewer.setChecked(node, true);
 			treeViewer.update(node, null);
 		}
@@ -936,64 +958,40 @@ public class SelectionEditor extends EditorPart {
 		// Elements at depth 1
 		if (type == Type.INVARIANT || type == Type.VARIABLE || type == Type.CONTEXT || type == Type.EVENT) {
 			treeViewer.expandToLevel(category, 1);
+			return;
 		}
 
-		// TODO: cover all the kinds of elements
-		// TODO: unify into one logic
-
-		if (type == Type.CARRIER_SET) {
+		// Elements at depth 2
+		if (type == Type.ACTION || type == Type.GUARD || type == Type.PARAMETER || type == Type.WITNESS) {
+			category = treeCategories.get(Type.EVENT);
+		} else if (type == Type.AXIOM || type == Type.CARRIER_SET || type == Type.CONSTANT) {
 			category = treeCategories.get(Type.CONTEXT);
-			for (EventBTreeAtomicNode treeContext : category.getChildren()) {
-				assert treeContext.getOriginalElement() instanceof EventBContext;
-				EventBContext context = (EventBContext) treeContext.getOriginalElement();
-				if (!context.containsElement(element)) {
-					continue;
-				}
-				treeViewer.expandToLevel(treeContext, 1);
-				Object[] childrenOfContext = contentProvider.getChildren(treeContext);
-				for (Object child : childrenOfContext) {
-					// We pick out the correct subcategory for the element we
-					// are searching for
-					assert child instanceof EventBTreeCategoryNode;
-					EventBTreeCategoryNode subcategory = (EventBTreeCategoryNode) child;
-					String label = "";
-					if (element.getType().equals(Type.CONSTANT)) {
-						label = "Constants";
-					} else if (element.getType().equals(Type.AXIOM)) {
-						label = "Axioms";
-					} else if (element.getType().equals(Type.CARRIER_SET)) {
-						label = "Carrier Sets";
-					}
-					if (subcategory.getLabel().equals(label)) {
-						treeViewer.expandToLevel(subcategory, 1);
-						packColumns();
-					}
-				}
-			}
+		} else {
+			throw new RuntimeException("Unexpected Execution");
 		}
 
-		if (type == Type.ACTION || type == Type.GUARD) {
-			EventBTreeCategoryNode eventsCategory = treeCategories.get(Type.EVENT);
-			treeViewer.expandToLevel(eventsCategory, 1);
-			for (EventBTreeAtomicNode eventNode : eventsCategory.getChildren()) {
-				EventBEvent event = (EventBEvent) eventNode.getOriginalElement();
+		treeViewer.expandToLevel(category, 1);
+		for (EventBTreeAtomicNode node : category.getChildren()) {
+			if (node.originalElement instanceof EventBEvent) {
+				EventBEvent event = (EventBEvent) node.getOriginalElement();
 				if (!event.containsElement(element)) {
 					continue;
 				}
-				treeViewer.expandToLevel(eventNode, 1);
-				Object[] childrenofEvent = contentProvider.getChildren(eventNode);
-				for (Object child : childrenofEvent) {
-					EventBTreeCategoryNode subcategory = (EventBTreeCategoryNode) child;
-					String label = "";
-					if (element.getType().equals(Type.GUARD)) {
-						label = "Guards";
-					} else if (element.getType().equals(Type.ACTION)) {
-						label = "Actions";
-					}
-					if (subcategory.getLabel().equals(label)) {
-						treeViewer.expandToLevel(subcategory, 1);
-						packColumns();
-					}
+			} else if (node.originalElement instanceof EventBContext) {
+				EventBContext context = (EventBContext) node.getOriginalElement();
+				if (!context.containsElement(element)) {
+					continue;
+				}
+			} else {
+				throw new RuntimeException("Unexpected Execution");
+			}
+			treeViewer.expandToLevel(node, 1);
+			Object[] children = contentProvider.getChildren(node);
+			for (Object child : children) {
+				EventBTreeCategoryNode subcategory = (EventBTreeCategoryNode) child;
+				if (subcategory.getLabel().equals(EventBTreeCategoryNode.LABELMAP.get(element.getType()))) {
+					treeViewer.expandToLevel(subcategory, 1);
+					packColumns();
 				}
 			}
 		}
@@ -1058,11 +1056,7 @@ public class SelectionEditor extends EditorPart {
 
 		@Override
 		public Color getForeground(Object element, int columnIndex) {
-			if (element instanceof EventBTreeCategoryNode) {
-				// TODO: Add color coding for categories
-				return null;
-			}
-			if (element instanceof EventBTreeAtomicNode) {
+			if (element instanceof EventBTreeCategoryNode || element instanceof EventBTreeAtomicNode) {
 				if (alwaysChecked.contains(element)) {
 					switch (columnIndex) {
 					case ELEMENT_COLUMN:
@@ -1155,9 +1149,6 @@ public class SelectionEditor extends EditorPart {
 			if (!(element instanceof EventBTreeAtomicNode || element instanceof EventBTreeCategoryNode)) {
 				return null;
 			}
-			if (treeViewer == null) {
-				return null;
-			}
 			if (treeViewer.getChecked(element)) {
 				// If the element is selected (checked)
 				return Display.getDefault().getSystemColor(SWT.COLOR_LIST_SELECTION);
@@ -1207,23 +1198,21 @@ public class SelectionEditor extends EditorPart {
 			case ELEMENT_COLUMN:
 				return eventBElement.getLabel();
 			case STATUS_COLUMN:
-				if (EventBElement.isLeafElement((EventBElement) originalElement)) {
-					if (alwaysChecked.contains(element)) {
-						return "Auto-Selected (Fixed)";
-					} else if (userChecked.contains(element)) {
-						return "User-Selected";
-					} else if (autoChecked.contains(element)) {
-						return "Auto-Selected";
-					} else if (checkElementForDependencies(element) != null
-							&& !checkElementForDependencies(element).isEmpty()) {
-						LinkedList<String> tmp = new LinkedList<>();
-						for (EventBElement e : checkElementForDependencies(element)) {
-							tmp.add(e.getLabelFullPath());
-						}
-						return "Necessary for " + tmp.toString();
-					} else if (noCost.contains(element)) {
-						return "Should accompnay Selected Variables";
+				if (alwaysChecked.contains(element)) {
+					return "Auto-Selected (Fixed)";
+				} else if (userChecked.contains(element)) {
+					return "User-Selected";
+				} else if (autoChecked.contains(element)) {
+					return "Auto-Selected";
+				} else if (checkElementForDependencies(element) != null
+						&& !checkElementForDependencies(element).isEmpty()) {
+					LinkedList<String> tmp = new LinkedList<>();
+					for (EventBElement e : checkElementForDependencies(element)) {
+						tmp.add(e.getLabelFullPath());
 					}
+					return "Necessary for " + tmp.toString();
+				} else if (noCost.contains(element)) {
+					return "Should accompnay Selected Variables";
 				}
 				return null;
 			case CONTENT_COLUMN:
@@ -1371,12 +1360,23 @@ public class SelectionEditor extends EditorPart {
 							.getOriginalElement();
 					EventBTreeAtomicNode parent = (EventBTreeAtomicNode) parentElement;
 					if (!eventSubcategories.containsKey(originalElement)) {
-						EventBTreeCategoryNode[] children = new EventBTreeCategoryNode[4];
-						children[0] = addCategoryInnerLevel(Type.PARAMETER, parent, originalElement.getParameters());
-						children[1] = addCategoryInnerLevel(Type.WITNESS, parent, originalElement.getWitnesses());
-						children[2] = addCategoryInnerLevel(Type.GUARD, parent, originalElement.getGuards());
-						children[3] = addCategoryInnerLevel(Type.ACTION, parent, originalElement.getActions());
-						eventSubcategories.put(originalElement, children);
+						ArrayList<EventBTreeCategoryNode> children = new ArrayList<>();
+						if (!originalElement.getParameters().isEmpty()) {
+							children.add(
+									addCategoryInnerLevel(Type.PARAMETER, parent, originalElement.getParameters()));
+						}
+						if (!originalElement.getWitnesses().isEmpty()) {
+							children.add(addCategoryInnerLevel(Type.WITNESS, parent, originalElement.getWitnesses()));
+						}
+						if (!originalElement.getGuards().isEmpty()) {
+							children.add(addCategoryInnerLevel(Type.GUARD, parent, originalElement.getGuards()));
+						}
+						if (!originalElement.getActions().isEmpty()) {
+							children.add(addCategoryInnerLevel(Type.ACTION, parent, originalElement.getActions()));
+						}
+						EventBTreeCategoryNode[] nodes = new EventBTreeCategoryNode[children.size()];
+						nodes = children.toArray(nodes);
+						eventSubcategories.put(originalElement, nodes);
 					}
 					return eventSubcategories.get(originalElement);
 				}
@@ -1385,11 +1385,20 @@ public class SelectionEditor extends EditorPart {
 							.getOriginalElement();
 					EventBTreeAtomicNode parent = (EventBTreeAtomicNode) parentElement;
 					if (!contextSubcategories.containsKey(originalElement)) {
-						EventBTreeCategoryNode[] children = new EventBTreeCategoryNode[3];
-						children[0] = addCategoryInnerLevel(Type.AXIOM, parent, originalElement.getAxioms());
-						children[1] = addCategoryInnerLevel(Type.CONSTANT, parent, originalElement.getConstants());
-						children[2] = addCategoryInnerLevel(Type.CARRIER_SET, parent, originalElement.getCarrierSets());
-						contextSubcategories.put(originalElement, children);
+						ArrayList<EventBTreeCategoryNode> children = new ArrayList<>();
+						if (!originalElement.getAxioms().isEmpty()) {
+							children.add(addCategoryInnerLevel(Type.AXIOM, parent, originalElement.getAxioms()));
+						}
+						if (!originalElement.getConstants().isEmpty()) {
+							children.add(addCategoryInnerLevel(Type.CONSTANT, parent, originalElement.getConstants()));
+						}
+						if (!originalElement.getCarrierSets().isEmpty()) {
+							children.add(
+									addCategoryInnerLevel(Type.CARRIER_SET, parent, originalElement.getCarrierSets()));
+						}
+						EventBTreeCategoryNode[] nodes = new EventBTreeCategoryNode[children.size()];
+						nodes = children.toArray(nodes);
+						contextSubcategories.put(originalElement, nodes);
 					}
 					return contextSubcategories.get(originalElement);
 				}
