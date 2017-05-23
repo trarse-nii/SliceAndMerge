@@ -6,6 +6,9 @@ SliceAndMerge is a plug-in on the Rodin platform for the formal method Event-B. 
 See http://research.nii.ac.jp/slicenmerge/
 
 # History
+0.9.2 (May 24 2017)
+- Improvements and Fixes
+
 0.9.1 (May 20 2017)
 - The table view shows the status of each element
 - "Select Dependencies" is extended into "Auto Select" that selects not only elements that the selected ones depend on but also those that depend only on the selected ones
