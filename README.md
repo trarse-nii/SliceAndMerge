@@ -7,7 +7,10 @@ See http://research.nii.ac.jp/slicenmerge/
 
 # History
 0.9.2 (May 24 2017)
-- Improvements and Fixes
+- Preview and iteration of auto selection
+- Improvements and fixes on highlighting and auto selection
+
+
 
 0.9.1 (May 20 2017)
 - The table view shows the status of each element
