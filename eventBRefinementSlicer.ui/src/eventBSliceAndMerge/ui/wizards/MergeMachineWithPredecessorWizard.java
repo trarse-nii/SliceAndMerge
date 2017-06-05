@@ -160,7 +160,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 			if (existingWitnessPredicates.contains(witness.getPredicateString())) {
 				continue;
 			}
-			copyElementAndRenameLabel(witness, destination, abstractMachineName + "_" + witness.getLabel());
+			// Witness label should not be changed as it must match with the parameter name
+			copyElement(witness, destination);
 		}
 
 		// Finally, we copy the refinement clause
