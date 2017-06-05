@@ -355,6 +355,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				 */
 				for (IEvent event : root.getEvents()) {
 					prependConcreteLabelToEventElements(event, concreteMachineRoot.getElementName());
+					// Check the abstract events refined by this event
 					for (IRefinesEvent refinesClause : event.getRefinesClauses()) {
 						String abstractLabel = refinesClause.getAbstractEventLabel();
 						IEvent abstractEvent = abstractMachineRoot
@@ -367,6 +368,15 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 						// We also take over the convergence status from the
 						// abstract element
 						event.setConvergence(abstractEvent.getConvergence(), null);
+					}
+					// INITIALISATION is exceptional without explicit REFINES clause
+					if(event.getLabel().equals("INITIALISATION")){
+						IEvent abstractEvent = abstractMachineRoot
+								.getEvent(abstractLabelToInternalNameMap.get("INITIALISATION"));
+						// We copy all the missing elements from the abstract
+						// event to the new machine
+						copyAbstractEventElements(abstractEvent, event, abstractMachineRoot.getElementName(),
+								concreteMachineRoot.getElementName());
 					}
 				}
 
