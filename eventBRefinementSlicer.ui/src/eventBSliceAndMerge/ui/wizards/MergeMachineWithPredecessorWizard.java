@@ -20,6 +20,7 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eventb.core.IAction;
 import org.eventb.core.IConfigurationElement;
 import org.eventb.core.IEvent;
+import org.eventb.core.IExtendsContext;
 import org.eventb.core.IGuard;
 import org.eventb.core.IInvariant;
 import org.eventb.core.ILabeledElement;
@@ -303,26 +304,45 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				// We take over all the seen contexts from both machines
 				// We keep a list of names of already included contexts to avoid
 				// duplicates
-				List<String> alreadyIncludedContexts = new ArrayList<>();
+				Map<String, ISeesContext> alreadyIncludedContexts = new HashMap<>();
 				for (ISeesContext seenContext : root.getSeesClauses()) {
-					alreadyIncludedContexts.add(seenContext.getSeenContextName());
+					alreadyIncludedContexts.put(seenContext.getSeenContextName(), seenContext);
 				}
-				// We first copy the seen contexts from the abstract machine
+				// We first check the seen contexts from the abstract machine
 				// We need to look out for collisions between internal names
+				List<ISeesContext> toBeAdded = new ArrayList<>();
 				for (ISeesContext seenContext : abstractMachineRoot.getSeesClauses()) {
-					if (alreadyIncludedContexts.contains(seenContext.getSeenContextName())) {
-						continue;
-					}
-					copyElement(seenContext, root);
-					alreadyIncludedContexts.add(seenContext.getSeenContextName());
+					toBeAdded.add(seenContext);
 				}
-				// Then we copy the seen contexts from the concrete machine
+				// Then we check the seen contexts from the concrete machine
 				for (ISeesContext seenContext : concreteMachineRoot.getSeesClauses()) {
-					if (alreadyIncludedContexts.contains(seenContext.getSeenContextName())) {
+					toBeAdded.add(seenContext);
+				}
+				for (ISeesContext seenContext : toBeAdded) {
+					// Check duplicate
+					if (alreadyIncludedContexts.keySet().contains(seenContext.getSeenContextName())) {
 						continue;
 					}
 					copyElement(seenContext, root);
-					alreadyIncludedContexts.contains(seenContext.getSeenContextName());
+					alreadyIncludedContexts.put(seenContext.getSeenContextName(), seenContext);
+				}
+				// Remove duplicate by an extended context
+				ISeesContext[] seenContexts = root.getSeesClauses();
+				for (int i = 0; i < seenContexts.length; i++) {
+					boolean removed = false;
+					for (int j = i + 1; j < seenContexts.length; j++) {
+						for (IExtendsContext co : seenContexts[j].getSeenContextRoot().getExtendsClauses()) {
+							String parentContextName = co.getAbstractContextRoot().getElementName();
+							if(seenContexts[i].getSeenContextName().equals(parentContextName)){
+								seenContexts[i].delete(true, null);
+								removed = true;
+								break;
+							}
+						}
+						if(removed){
+							break;
+						}
+					}
 				}
 
 				Map<String, String> eventActualNameToInternalNameMap = new HashMap<>();
@@ -369,8 +389,9 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 						// abstract element
 						event.setConvergence(abstractEvent.getConvergence(), null);
 					}
-					// INITIALISATION is exceptional without explicit REFINES clause
-					if(event.getLabel().equals("INITIALISATION")){
+					// INITIALISATION is exceptional without explicit REFINES
+					// clause
+					if (event.getLabel().equals("INITIALISATION")) {
 						IEvent abstractEvent = abstractMachineRoot
 								.getEvent(abstractLabelToInternalNameMap.get("INITIALISATION"));
 						// We copy all the missing elements from the abstract
