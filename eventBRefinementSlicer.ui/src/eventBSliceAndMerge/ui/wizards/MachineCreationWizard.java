@@ -47,7 +47,8 @@ public class MachineCreationWizard extends Wizard {
 		String title = "Create Sub-Refinement";
 		String description = "Enter a name for the new derived sub-refinement machine";
 
-		machineNamingPage = new MachineNamingWizardPage(title, description);
+		machineNamingPage = new MachineNamingWizardPage(title, description,
+				originalMachineRoot.getElementName() + "-sliced");
 		addPage(machineNamingPage);
 	}
 

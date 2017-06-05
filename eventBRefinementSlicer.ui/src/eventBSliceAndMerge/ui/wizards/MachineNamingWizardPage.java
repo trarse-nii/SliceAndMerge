@@ -24,10 +24,11 @@ public class MachineNamingWizardPage extends WizardPage {
 
 	private Text machineInputText;
 
-	public MachineNamingWizardPage(String title, String description) {
+	public MachineNamingWizardPage(String title, String description, String machineName) {
 		super(title);
 		setTitle(title);
 		setDescription(description);
+		machineNameInput = machineName;
 
 	}
 

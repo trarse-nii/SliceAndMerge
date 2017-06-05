@@ -43,8 +43,8 @@ import org.rodinp.core.RodinDBException;
 import eventBSliceAndMerge.ui.util.RodinUtil;
 
 /**
- * Wizard to create a new machine, which merges the machine in the editor with the machine it directly
- * refines.
+ * Wizard to create a new machine, which merges the machine in the editor with
+ * the machine it directly refines.
  * 
  * @author Aivar Kripsaar
  *
@@ -71,14 +71,16 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	public void addPages() {
 
 		if (abstractMachineRoot == null) {
-			// Case where there is no abstract machine should be handled earlier.
+			// Case where there is no abstract machine should be handled
+			// earlier.
 			return;
 		}
 
 		String title = "Merge Machine With Predecessor";
 		String description = "Enter a name for the machine newly derived from merging a machine with its direct abstract predecessor.";
 
-		machineNamingPage = new MachineNamingWizardPage(title, description);
+		machineNamingPage = new MachineNamingWizardPage(title, description,
+				abstractMachineRoot.getElementName() + "+" + concreteMachineRoot.getElementName());
 		addPage(machineNamingPage);
 	}
 
@@ -98,7 +100,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	}
 
 	/**
-	 * A method to copy all elements of a given event to another event, including the refinement clause
+	 * A method to copy all elements of a given event to another event,
+	 * including the refinement clause
 	 * 
 	 * @param source
 	 *            Source Event
@@ -106,7 +109,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	 *            Destination Event
 	 * @throws RodinDBException
 	 */
-	private void copyAbstractEventElements(IEvent source, IEvent destination) throws RodinDBException {
+	private void copyAbstractEventElements(IEvent source, IEvent destination, String abstractMachineName,
+			String concreteMachineName) throws RodinDBException {
 		// We gather all the existing guard predicate strings
 		Set<String> existingGuardPredicates = new HashSet<>();
 		for (IGuard guard : destination.getGuards()) {
@@ -117,7 +121,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 			if (existingGuardPredicates.contains(guard.getPredicateString())) {
 				continue;
 			}
-			copyElementAndRenameLabel(guard, destination, "abs_" + guard.getLabel());
+			copyElementAndRenameLabel(guard, destination, abstractMachineName + "_" + guard.getLabel());
 		}
 
 		// We gather all the existing action assignments
@@ -130,7 +134,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 			if (existingActionAssignments.contains(action.getAssignmentString())) {
 				continue;
 			}
-			copyElementAndRenameLabel(action, destination, "abs_" + action.getLabel());
+			copyElementAndRenameLabel(action, destination, abstractMachineName + "_" + action.getLabel());
 		}
 
 		// We gather all the existing parameter identifiers
@@ -155,7 +159,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 			if (existingWitnessPredicates.contains(witness.getPredicateString())) {
 				continue;
 			}
-			copyElementAndRenameLabel(witness, destination, "abs_" + witness.getLabel());
+			copyElementAndRenameLabel(witness, destination, abstractMachineName + "_" + witness.getLabel());
 		}
 
 		// Finally, we copy the refinement clause
@@ -165,7 +169,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	}
 
 	/**
-	 * A method to safely copy an element to its new destination while avoiding name conflicts
+	 * A method to safely copy an element to its new destination while avoiding
+	 * name conflicts
 	 * 
 	 * @param element
 	 *            Element which needs to be copied
@@ -189,8 +194,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	}
 
 	/**
-	 * A method to safely copy an element to its new destination while avoiding name conflicts, also giving
-	 * the new element a new label
+	 * A method to safely copy an element to its new destination while avoiding
+	 * name conflicts, also giving the new element a new label
 	 * 
 	 * @param element
 	 *            Element which needs to be copied
@@ -200,34 +205,38 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	 *            New label for the copied element
 	 * @throws RodinDBException
 	 */
-	private void copyElementAndRenameLabel(ILabeledElement element, IInternalElement destination, String newLabel) throws RodinDBException {
+	private void copyElementAndRenameLabel(ILabeledElement element, IInternalElement destination, String newLabel)
+			throws RodinDBException {
 		String elementName = copyElement(element, destination);
-		ILabeledElement destElement = (ILabeledElement) destination.getInternalElement(element.getElementType(), elementName);
+		ILabeledElement destElement = (ILabeledElement) destination.getInternalElement(element.getElementType(),
+				elementName);
 		destElement.setLabel(newLabel, null);
 	}
 
 	/**
-	 * A method to prepend "con_" to the labels of elements of a given event. Makes it easier to see where the
-	 * elements come from. Should be used before adding elements from abstract events
+	 * A method to prepend "con_" to the labels of elements of a given event.
+	 * Makes it easier to see where the elements come from. Should be used
+	 * before adding elements from abstract events
 	 * 
 	 * @param event
 	 *            The event to be modified
 	 * @throws RodinDBException
 	 */
-	private void prependConcreteLabelToEventElements(IEvent event) throws RodinDBException {
+	private void prependConcreteLabelToEventElements(IEvent event, String concreteMachineName) throws RodinDBException {
 		for (IGuard guard : event.getGuards()) {
-			guard.setLabel("con_" + guard.getLabel(), null);
+			guard.setLabel(concreteMachineName + "_" + guard.getLabel(), null);
 		}
 		for (IAction action : event.getActions()) {
-			action.setLabel("con_" + action.getLabel(), null);
+			action.setLabel(concreteMachineName + "_" + action.getLabel(), null);
 		}
 		for (IWitness witness : event.getWitnesses()) {
-			witness.setLabel("con_" + witness.getLabel(), null);
+			witness.setLabel(concreteMachineName + "_" + witness.getLabel(), null);
 		}
 	}
 
 	/**
-	 * Creates a merge machine from the given information with the provided name.
+	 * Creates a merge machine from the given information with the provided
+	 * name.
 	 * 
 	 * @param machineName
 	 *            The name we give to the new machine
@@ -245,7 +254,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				MachineRoot root = (MachineRoot) file.getRoot();
 				root.setConfiguration(IConfigurationElement.DEFAULT_CONFIGURATION, monitor);
 
-				// If the abstract machine refines another machine, the new machine inherits this refinement
+				// If the abstract machine refines another machine, the new
+				// machine inherits this refinement
 				for (IRefinesMachine refinesClause : abstractMachineRoot.getRefinesClauses()) {
 					IRefinementManager refinementManager = RodinCore.getRefinementManager();
 					refinementManager.refine(refinesClause.getAbstractMachineRoot(), root, null);
@@ -254,14 +264,17 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				// Copy all invariants from both machines into new one
 				// We start with the abstract machine
 				for (IInvariant invariant : abstractMachineRoot.getInvariants()) {
-					copyElementAndRenameLabel(invariant, root, "abs_" + invariant.getLabel());
+					copyElementAndRenameLabel(invariant, root,
+							abstractMachineRoot.getElementName() + "_" + invariant.getLabel());
 				}
 				// And then we add the concrete invariants
 				for (IInvariant invariant : concreteMachineRoot.getInvariants()) {
-					copyElementAndRenameLabel(invariant, root, "con_" + invariant.getLabel());
+					copyElementAndRenameLabel(invariant, root,
+							concreteMachineRoot.getElementName() + "_" + invariant.getLabel());
 				}
 
-				// We keep track of the variables already included to avoid duplicates
+				// We keep track of the variables already included to avoid
+				// duplicates
 				List<String> alreadyIncludedVariables = new ArrayList<>();
 				for (IVariable variable : root.getVariables()) {
 					alreadyIncludedVariables.add(variable.getIdentifierString());
@@ -288,7 +301,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				}
 
 				// We take over all the seen contexts from both machines
-				// We keep a list of names of already included contexts to avoid duplicates
+				// We keep a list of names of already included contexts to avoid
+				// duplicates
 				List<String> alreadyIncludedContexts = new ArrayList<>();
 				for (ISeesContext seenContext : root.getSeesClauses()) {
 					alreadyIncludedContexts.add(seenContext.getSeenContextName());
@@ -312,7 +326,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				}
 
 				Map<String, String> eventActualNameToInternalNameMap = new HashMap<>();
-				// We use a map for easy access of events in the abstract machine
+				// We use a map for easy access of events in the abstract
+				// machine
 				Map<String, String> abstractLabelToInternalNameMap = new HashMap<>();
 
 				for (IEvent event : abstractMachineRoot.getEvents()) {
@@ -320,7 +335,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				}
 
 				// Time to merge the events
-				// First, we remove any events that were brought over from refining
+				// First, we remove any events that were brought over from
+				// refining
 				for (IEvent event : root.getEvents()) {
 					event.delete(true, null);
 				}
@@ -331,26 +347,33 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				}
 
 				/*
-				 * We iterate over all the copied events, removing refinement information, then adding
-				 * elements from their abstract versions where necessary. We also rename existing elements to
-				 * mark where they originate from. Additionally, we need to change convergence status.
+				 * We iterate over all the copied events, removing refinement
+				 * information, then adding elements from their abstract
+				 * versions where necessary. We also rename existing elements to
+				 * mark where they originate from. Additionally, we need to
+				 * change convergence status.
 				 */
 				for (IEvent event : root.getEvents()) {
-					prependConcreteLabelToEventElements(event);
+					prependConcreteLabelToEventElements(event, concreteMachineRoot.getElementName());
 					for (IRefinesEvent refinesClause : event.getRefinesClauses()) {
 						String abstractLabel = refinesClause.getAbstractEventLabel();
-						IEvent abstractEvent = abstractMachineRoot.getEvent(abstractLabelToInternalNameMap.get(abstractLabel));
+						IEvent abstractEvent = abstractMachineRoot
+								.getEvent(abstractLabelToInternalNameMap.get(abstractLabel));
 						refinesClause.delete(false, null);
-						// We copy all the missing elements from the abstract event to the new machine
-						copyAbstractEventElements(abstractEvent, event);
-						// We also take over the convergence status from the abstract element
+						// We copy all the missing elements from the abstract
+						// event to the new machine
+						copyAbstractEventElements(abstractEvent, event, abstractMachineRoot.getElementName(),
+								concreteMachineRoot.getElementName());
+						// We also take over the convergence status from the
+						// abstract element
 						event.setConvergence(abstractEvent.getConvergence(), null);
 					}
 				}
 
 				/*
-				 * We only take over a variant from one of the parent machines if the other one has no variant
-				 * Otherwise, either neither has a variant, or both machines include convergent events and we
+				 * We only take over a variant from one of the parent machines
+				 * if the other one has no variant Otherwise, either neither has
+				 * a variant, or both machines include convergent events and we
 				 * need a whole new variant for the merged machine
 				 */
 				if (concreteMachineRoot.getVariants() == null || concreteMachineRoot.getVariants().length == 0) {
@@ -373,7 +396,8 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				// Open new editor window for newly created machine
 
 				IFile resource = file.getResource();
-				IEditorDescriptor editorDesc = PlatformUI.getWorkbench().getEditorRegistry().getDefaultEditor(resource.getName());
+				IEditorDescriptor editorDesc = PlatformUI.getWorkbench().getEditorRegistry()
+						.getDefaultEditor(resource.getName());
 
 				getShell().getDisplay().asyncExec(new Runnable() {
 
