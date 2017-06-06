@@ -115,11 +115,11 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		// We gather all the existing guard predicate strings
 		Set<String> existingGuardPredicates = new HashSet<>();
 		for (IGuard guard : destination.getGuards()) {
-			existingGuardPredicates.add(guard.getPredicateString());
+			existingGuardPredicates.add(removeSpaces(guard.getPredicateString()));
 		}
 		// We copy the guards that aren't already in the destination
 		for (IGuard guard : source.getGuards()) {
-			if (existingGuardPredicates.contains(guard.getPredicateString())) {
+			if (existingGuardPredicates.contains(removeSpaces(guard.getPredicateString()))) {
 				continue;
 			}
 			copyElementAndRenameLabel(guard, destination, abstractMachineName + "_" + guard.getLabel());
@@ -128,11 +128,13 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		// We gather all the existing action assignments
 		Set<String> existingActionAssignments = new HashSet<>();
 		for (IAction action : destination.getActions()) {
-			existingActionAssignments.add(action.getAssignmentString());
+			existingActionAssignments.add(removeSpaces(action.getAssignmentString()));
+			System.err.println(action.getAssignmentString().trim());
 		}
 		// Copy all the actions not already in the dest event
 		for (IAction action : source.getActions()) {
-			if (existingActionAssignments.contains(action.getAssignmentString())) {
+			if (existingActionAssignments.contains(removeSpaces(action.getAssignmentString()))) {
+				System.err.println(action.getAssignmentString().trim());
 				continue;
 			}
 			copyElementAndRenameLabel(action, destination, abstractMachineName + "_" + action.getLabel());
@@ -154,10 +156,10 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 		// We do the same with witnesses
 		Set<String> existingWitnessPredicates = new HashSet<>();
 		for (IWitness witness : destination.getWitnesses()) {
-			existingWitnessPredicates.add(witness.getPredicateString());
+			existingWitnessPredicates.add(witness.getPredicateString().trim());
 		}
 		for (IWitness witness : source.getWitnesses()) {
-			if (existingWitnessPredicates.contains(witness.getPredicateString())) {
+			if (existingWitnessPredicates.contains(witness.getPredicateString().trim())) {
 				continue;
 			}
 			// Witness label should not be changed as it must match with the parameter name
@@ -447,4 +449,11 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 			}
 		}, null);
 	}
+	
+	/* Auxiliary Methods */
+	
+	private String removeSpaces(String str){
+		return str.replaceAll(" ", "");
+	}
+	
 }
