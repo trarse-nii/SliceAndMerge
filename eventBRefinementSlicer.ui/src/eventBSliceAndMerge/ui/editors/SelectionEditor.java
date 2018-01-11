@@ -73,6 +73,7 @@ import eventBSliceAndMerge.ui.jobs.EventBDependencyAnalysisJob;
 import eventBSliceAndMerge.ui.util.RodinUtil;
 import eventBSliceAndMerge.ui.wizards.MachineCreationWizard;
 import eventBSliceAndMerge.ui.wizards.MergeMachineWithPredecessorWizard;
+import eventBSliceAndMerge.ui.wizards.POInterpolationWizard;
 
 /**
  * The editor in charge of selecting which parts of an Event-B machine to use in
@@ -318,6 +319,29 @@ public class SelectionEditor extends EditorPart {
 			}
 		});
 
+		// A button to generate SMT format of a PO in the machine
+		Button generateSMTPOButton = new Button(buttonBar, SWT.PUSH);
+		generateSMTPOButton.setText("Interpolator");
+		generateSMTPOButton.setToolTipText("Generate a PO's interpolation written with selected variables");
+		generateSMTPOButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				WizardDialog wizardDialog = new WizardDialog(parent.getShell(),
+						new POInterpolationWizard(machine, getSelection()));
+				
+				wizardDialog.setBlockOnOpen(true);
+				wizardDialog.open();
+				System.out.println();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+
+			}
+		});
+
 		// A button for debug mode
 		if (System.getProperty("debug") != null) {
 			Button debugButton = new Button(buttonBar, SWT.PUSH);
@@ -533,11 +557,13 @@ public class SelectionEditor extends EditorPart {
 			HashSet<String> contexts = new HashSet<>();
 			try {
 				IMachineRoot abstractRoot = RodinUtil.getPrecedingMachineRoot(machineRoot);
-				for (IVariable var : abstractRoot.getVariables()) {
-					variables.add(var.getIdentifierString());
-				}
-				for (ISeesContext context : abstractRoot.getSeesClauses()) {
-					contexts.add(context.getSeenContextName());
+				if (abstractRoot != null) {
+					for (IVariable var : abstractRoot.getVariables()) {
+						variables.add(var.getIdentifierString());
+					}
+					for (ISeesContext context : abstractRoot.getSeesClauses()) {
+						contexts.add(context.getSeenContextName());
+					}
 				}
 			} catch (RodinDBException e) {
 				e.printStackTrace();
