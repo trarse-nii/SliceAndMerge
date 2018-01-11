@@ -34,8 +34,10 @@ public class EventBMachine extends EventBUnit {
 	private List<EventBContext> seenContexts = new ArrayList<>();
 	private List<EventBEvent> events = new ArrayList<>();
 	private ISCMachineRoot scMachineRoot = null;
+	private IMachineRoot machineRoot = null;
 
 	public EventBMachine(IMachineRoot machineRoot) throws CoreException {
+		this.machineRoot = machineRoot;
 		this.scMachineRoot = machineRoot.getSCMachineRoot();
 		for (IInvariant originalInvariant : machineRoot.getInvariants()) {
 			ITraceableElement originalSCElement = SCUtil.findSCElement(originalInvariant,
@@ -94,6 +96,10 @@ public class EventBMachine extends EventBUnit {
 
 	public ISCMachineRoot getScMachineRoot() {
 		return scMachineRoot;
+	}
+
+	public IMachineRoot getMachineRoot() {
+		return machineRoot;
 	}
 
 	public void addSeenContext(EventBContext context) {
