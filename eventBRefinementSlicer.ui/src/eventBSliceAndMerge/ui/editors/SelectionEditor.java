@@ -63,12 +63,14 @@ import org.rodinp.core.RodinDBException;
 import eventBSliceAndMerge.internal.analyzers.EventBSliceSelection;
 import eventBSliceAndMerge.internal.analyzers.EventBSlicer;
 import eventBSliceAndMerge.internal.datastructures.EventBAction;
+import eventBSliceAndMerge.internal.datastructures.EventBAttribute;
 import eventBSliceAndMerge.internal.datastructures.EventBCondition;
 import eventBSliceAndMerge.internal.datastructures.EventBContext;
 import eventBSliceAndMerge.internal.datastructures.EventBElement;
 import eventBSliceAndMerge.internal.datastructures.EventBElement.Type;
 import eventBSliceAndMerge.internal.datastructures.EventBEvent;
 import eventBSliceAndMerge.internal.datastructures.EventBMachine;
+import eventBSliceAndMerge.internal.datastructures.EventBVariable;
 import eventBSliceAndMerge.ui.jobs.EventBDependencyAnalysisJob;
 import eventBSliceAndMerge.ui.util.RodinUtil;
 import eventBSliceAndMerge.ui.wizards.MachineCreationWizard;
@@ -311,6 +313,24 @@ public class SelectionEditor extends EditorPart {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				autoSelect(true, parent.getShell());
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+			}
+		});
+
+		// A button to select all predicates written with selected variables
+		Button selectSliceButton = new Button(buttonBar, SWT.PUSH);
+		selectSliceButton.setText("Select Slice");
+		selectSliceButton.setToolTipText(
+				"Select all predicates written with selected variables");
+		selectSliceButton.addSelectionListener(new SelectionListener() {
+
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				selectSlice(parent.getShell());
 			}
 
 			@Override
@@ -676,6 +696,96 @@ public class SelectionEditor extends EditorPart {
 			setChecked(toBeAdded, true, true);
 		}
 		return ret;
+	}
+
+	/**
+	 * Automatically select predicates written with selected variables
+	 * 
+	 * @param shell
+	 *            Shell used to show the preview dialog
+	 * @return Whether some elements are additionally selected or not
+	 */
+	private boolean selectSlice(Shell shell) {
+		HashSet<EventBTreeNode> toBeAdded;
+		HashSet<EventBVariable> selectedVariables;
+		HashSet<EventBTreeNode> checkedNodes;
+
+		toBeAdded = new HashSet<>();
+		selectedVariables = new HashSet<>();
+		checkedNodes = new HashSet<>();
+		
+		checkedNodes.addAll(autoChecked);
+		checkedNodes.addAll(userChecked);
+		checkedNodes.addAll(alwaysChecked);
+
+		// Find user-checked variables
+		for (EventBTreeNode node : checkedNodes) {
+			if (node instanceof EventBTreeAtomicNode) {
+				EventBElement element = ((EventBTreeAtomicNode) node).getOriginalElement();
+				if (element instanceof EventBVariable) {
+					selectedVariables.add((EventBVariable) element);
+				}
+			}
+		}
+
+		Object[] categories = ((ITreeContentProvider) treeViewer.getContentProvider()).getChildren(machine);
+		HashSet<EventBTreeNode> nodes = new HashSet<>();
+		for (EventBTreeCategoryNode category : (EventBTreeCategoryNode [])categories) {
+			String label = category.getLabel();
+			if (label.equals(EventBTreeCategoryNode.LABELMAP.get(Type.INVARIANT))) {
+				for (EventBTreeAtomicNode node : category.getChildren()) {
+					if (isSpecifiableWithVariables(node.getOriginalElement(), selectedVariables)) {
+						toBeAdded.add(node);
+					}
+				}
+			} else if (label.equals(EventBTreeCategoryNode.LABELMAP.get(Type.EVENT))) {
+				for (EventBTreeAtomicNode node : category.getChildren()) {
+					HashSet<EventBElement> elements = new HashSet<>();
+					elements.addAll(((EventBEvent) node.getOriginalElement()).getGuards());
+					elements.addAll(((EventBEvent) node.getOriginalElement()).getWitnesses());
+					elements.addAll(((EventBEvent) node.getOriginalElement()).getActions());
+					for (EventBElement element : elements) {
+						if (isSpecifiableWithVariables(element, selectedVariables)) {
+							toBeAdded.add(element2TreeNode.get(element));
+						}
+					}
+				}
+			}
+				
+			nodes.add((EventBTreeNode) category);
+		}
+
+		if (toBeAdded.isEmpty()) {
+			MessageBox box = new MessageBox(shell, SWT.ICON_ERROR);
+			box.setText("Select Slice Error");
+			box.setMessage("No elements to automatically select for the current selection");
+			box.open();
+			return false;
+		}
+		setChecked(toBeAdded, true, true);
+
+		return true;
+	}
+	
+	private boolean isSpecifiableWithVariables(EventBElement element, HashSet<EventBVariable> variables) {
+		assert (element instanceof EventBCondition || element instanceof EventBAction);
+
+		Set<EventBAttribute> attributes = new HashSet<EventBAttribute>();
+		boolean result = true;
+
+		if (element instanceof EventBCondition) {
+			attributes = ((EventBCondition) element).getDependees();
+		} else if (element instanceof EventBAction) {
+			attributes = ((EventBAction) element).getDependees();
+		}
+
+		for (EventBAttribute attribute : attributes) {
+			if (attribute instanceof EventBVariable
+				&& (! variables.contains(attribute))) {
+				result = false;
+			}
+		}
+		return result;
 	}
 
 	/**
