@@ -155,7 +155,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 			if (existingWitnessPredicates.contains(witness.getPredicateString())) {
 				continue;
 			}
-			copyElementAndRenameLabel(witness, destination, "abs_" + witness.getLabel());
+			copyElementAndRenameLabel(witness, destination, witness.getLabel());
 		}
 
 		// Finally, we copy the refinement clause
@@ -222,7 +222,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 			action.setLabel("con_" + action.getLabel(), null);
 		}
 		for (IWitness witness : event.getWitnesses()) {
-			witness.setLabel("con_" + witness.getLabel(), null);
+			witness.setLabel(witness.getLabel(), null);
 		}
 	}
 
