@@ -28,6 +28,7 @@ import org.rodinp.core.RodinDBException;
 
 import eventBSliceAndMerge.internal.datastructures.EventBMachine;
 import eventBSliceAndMerge.internal.datastructures.EventBVariable;
+import eventBSliceAndMerge.internal.util.POUtil;
 
 @SuppressWarnings("restriction")
 public class POInterpolator {
@@ -37,7 +38,6 @@ public class POInterpolator {
 	
 	private String inputFilePath = "/tmp/z3-input.scm";
 	private String outputFilePath = "/tmp/z3-output.scm";
-	private String z3Path = "/usr/local/bin/z3";
 	private String goshPath = "/usr/bin/gosh";
 	private String identifierScmPath = "/usr/local/lib/refinement-interpolator/identifiers.scm";
 	private String smtToEventBScmPath = "/usr/local/lib/refinement-interpolator/smt-to-event-b.scm";
@@ -88,14 +88,8 @@ public class POInterpolator {
 
 		System.out.println("Creating input file for " + poName);
 		ArrayList<Predicate> hypotheses = new ArrayList<Predicate>();
-		try {
-			for (IPOPredicateSet poPredicateSet : sequent.getHypotheses()) {
-				hypotheses.addAll(recursivelyCollectAllPredicates(poPredicateSet));
-			}
-		} catch (RodinDBException e) {
-			e.printStackTrace();
-		} catch (CoreException e) {
-			e.printStackTrace();
+		for (IPOPredicateSet poPredicateSet : sequent.getHypotheses()) {
+			hypotheses.addAll(POUtil.recursivelyCollectAllPredicates(poPredicateSet, typeEnvironment));
 		}
 		
 		final ISimpleSequent simpleSequent = SimpleSequents.make(hypotheses, goal, goal.getFactory());
@@ -146,11 +140,11 @@ public class POInterpolator {
 
 		writer.write("(compute-interpolant (and ");
 		for (SMTFormula antecedentFormula : antecedentFormulas) {
-			writer.write(antecedentFormula.toString());
+			writer.write(antecedentFormula.toString() + " ");
 		}
 		writer.write(") (and ");
 		for (SMTFormula succedentFormula : succedentFormulas) {
-			writer.write(succedentFormula.toString());
+			writer.write(succedentFormula.toString() + " ");
 		}
 		writer.write("))");
 		
@@ -172,25 +166,6 @@ public class POInterpolator {
 		writer.close();
 	}
 	
-	/**
-	 * Collect all the predicates (goal and hypotheses) of the PO (predicates written in a BPR file).
-	 * 
-	 * @param poPredicateSet
-	 * @return List of all predicates in the PO
-	 * @throws RodinDBException
-	 * @throws CoreException
-	 */
-	private ArrayList<Predicate> recursivelyCollectAllPredicates(IPOPredicateSet poPredicateSet) throws RodinDBException, CoreException {
-		ArrayList<Predicate> preds = new ArrayList<Predicate>();
-		if (poPredicateSet != null) {
-			for (IPOPredicate poPred : poPredicateSet.getPredicates()) {
-				preds.add(poPred.getPredicate(typeEnvironment));
-			}
-			preds.addAll(recursivelyCollectAllPredicates(poPredicateSet.getParentPredicateSet()));
-		}
-		return preds;
-	}
-
 	/**
 	 * Returns whether a formula should be in the antecedent of the sequent passed to Z3.
 	 * (false means the formula should be in the succedent)
@@ -243,23 +218,6 @@ public class POInterpolator {
 	}
 	
 	/**
-	 * Runs Z3 with the converted PO as the input
-	 * @return The output from Z3
-	 * @throws IOException
-	 */
-	public String runZ3() throws IOException {
-		String result = "";
-		Process pr = Runtime.getRuntime().exec(z3Path + " -smt2 " + inputFilePath);
-		BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-		String line;
-		while ((line = in.readLine()) != null) {
-			result = result + "\n" + line;
-		}
-		in.close();
-		return result;
-	}
-	
-	/**
 	 * TODO: Implement in Java
 	 * 
 	 * @return The interpolant in Event-B notation.
@@ -281,5 +239,9 @@ public class POInterpolator {
 		}
 		in.close();
 		return result;
+	}
+
+	public String getInputFilePath() {
+		return inputFilePath;
 	}
 }

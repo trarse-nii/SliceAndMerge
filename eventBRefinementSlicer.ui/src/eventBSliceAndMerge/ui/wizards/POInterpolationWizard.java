@@ -9,6 +9,7 @@ import org.rodinp.core.RodinDBException;
 import eventBSliceAndMerge.internal.analyzers.EventBSliceSelection;
 import eventBSliceAndMerge.internal.analyzers.POInterpolator;
 import eventBSliceAndMerge.internal.datastructures.EventBMachine;
+import eventBSliceAndMerge.internal.util.Z3Util;
 
 /**
  * Wizard for generating a PO's interpolant written in the variables selected on SelectionEditor.
@@ -54,7 +55,7 @@ public class POInterpolationWizard extends Wizard {
 		
 		try {
 			interpolator.createSMTInputFile(poName);
-			z3Result = interpolator.runZ3();
+			z3Result = Z3Util.runZ3(interpolator.getInputFilePath());
 			System.out.println(z3Result);
 			interpolator.createSMTOutputFile(z3Result);
 			smtPOGenerationPage.setResult(interpolator.eventBInterpolant());
