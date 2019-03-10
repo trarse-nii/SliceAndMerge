@@ -40,6 +40,7 @@ import org.rodinp.core.IRodinProject;
 import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
 
+import eventBSliceAndMerge.internal.util.MachineUtil;
 import eventBSliceAndMerge.ui.util.RodinUtil;
 
 /**
@@ -308,7 +309,16 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 						continue;
 					}
 					copyElement(seenContext, root);
-					alreadyIncludedContexts.contains(seenContext.getSeenContextName());
+					alreadyIncludedContexts.add(seenContext.getSeenContextName());
+				}
+				// Finally we remove redundancies in seen contexts
+				for (ISeesContext context0 : root.getSeesClauses()) {
+					for (ISeesContext context1 : root.getSeesClauses()) {
+						if (! context0.getSeenContextName().equals(context1.getSeenContextName()) && MachineUtil.isContextExtendedAs(context1, context0)) {
+							alreadyIncludedContexts.remove(context1);
+							root.getSeesClause(context1.getElementName()).delete(true, monitor);
+						}
+					}
 				}
 
 				Map<String, String> eventActualNameToInternalNameMap = new HashMap<>();
