@@ -39,6 +39,9 @@ import org.rodinp.core.IRodinFile;
 import org.rodinp.core.IRodinProject;
 import org.rodinp.core.RodinCore;
 import org.rodinp.core.RodinDBException;
+import org.eventb.internal.ui.eventbeditor.manipulation.ExtendedAttributeManipulation;
+import org.eventb.internal.ui.utils.Messages;
+import org.eventb.ui.manipulation.ElementManipulationFacade;
 
 import eventBSliceAndMerge.internal.util.MachineUtil;
 import eventBSliceAndMerge.ui.util.RodinUtil;
@@ -51,6 +54,7 @@ import eventBSliceAndMerge.ui.util.RodinUtil;
  *
  */
 
+@SuppressWarnings("restriction")
 public class MergeMachineWithPredecessorWizard extends Wizard {
 
 	private IRodinProject rodinProject;
@@ -336,9 +340,17 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				}
 				// Next, we base the new machine's events on the concrete event
 				for (IEvent event : concreteMachineRoot.getEvents()) {
+					boolean isExtended = event.isExtended();
+					// Disable extending to copy all clauses
+					ElementManipulationFacade.changeAttribute((IInternalElement) event,  new ExtendedAttributeManipulation(), Messages.attributeManipulation_extended_false);
 					copyElement(event, root);
 					eventActualNameToInternalNameMap.put(event.getLabel(), event.getElementName());
+					if (isExtended) {
+						ElementManipulationFacade.changeAttribute((IInternalElement) event,  new ExtendedAttributeManipulation(), Messages.attributeManipulation_extended_true);
+					}
 				}
+				// Save the concrete machine because we manipulated extension status of events in the concrete machine
+				concreteMachineRoot.getRodinFile().save(null, false);
 
 				/*
 				 * We iterate over all the copied events, removing refinement information, then adding

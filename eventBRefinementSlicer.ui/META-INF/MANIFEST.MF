@@ -12,6 +12,7 @@ Require-Bundle: org.eclipse.ui,
  org.eventb.core;bundle-version="3.2.0",
  org.eventb.core.ast,
  eventBSliceAndMerge.internal;bundle-version="0.9.1",
- org.eclipse.swt
+ org.eclipse.swt,
+ org.eventb.ui;bundle-version="3.3.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
