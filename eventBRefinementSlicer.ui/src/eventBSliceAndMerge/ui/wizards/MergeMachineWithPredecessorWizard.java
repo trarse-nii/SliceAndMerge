@@ -31,6 +31,7 @@ import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
 import org.eventb.core.IVariant;
 import org.eventb.core.IWitness;
+import org.eventb.core.ast.FreeIdentifier;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IInternalElementType;
@@ -125,14 +126,16 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 			copyElementAndRenameLabel(guard, destination, "abs_" + guard.getLabel());
 		}
 
-		// We gather all the existing action assignments
-		Set<String> existingActionAssignments = new HashSet<>();
+		// We gather all the existing assigned identifiers in actions
+		Set<FreeIdentifier> existingAssignedIdentifiers = new HashSet<>();
 		for (IAction action : destination.getActions()) {
-			existingActionAssignments.add(action.getAssignmentString());
+			List<FreeIdentifier> assignedIdentifiers = MachineUtil.assignedIdentifiers(action);
+			existingAssignedIdentifiers.addAll(assignedIdentifiers);
 		}
-		// Copy all the actions not already in the dest event
+		// Copy all the actions that assign to variables not assigned in concrete events
 		for (IAction action : source.getActions()) {
-			if (existingActionAssignments.contains(action.getAssignmentString())) {
+			List<FreeIdentifier> assignedIdentifiers = MachineUtil.assignedIdentifiers(action);
+			if (existingAssignedIdentifiers.containsAll(assignedIdentifiers)) {
 				continue;
 			}
 			copyElementAndRenameLabel(action, destination, "abs_" + action.getLabel());
