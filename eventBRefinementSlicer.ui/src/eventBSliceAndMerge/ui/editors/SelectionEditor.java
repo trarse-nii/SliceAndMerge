@@ -570,8 +570,8 @@ public class SelectionEditor extends EditorPart {
 	 */
 	private void initialCheck() {
 		if (alwaysChecked.isEmpty()) {
-			// Variables and contexts contained both of the abstract machine and
-			// the concrete machine
+			// Variables contained both of the abstract machine and the concrete machine.
+			// Also, contexts seen by the concrete machine.
 			ITreeContentProvider provider = (ITreeContentProvider) treeViewer.getContentProvider();
 			HashSet<String> variables = new HashSet<>();
 			HashSet<String> contexts = new HashSet<>();
@@ -594,15 +594,13 @@ public class SelectionEditor extends EditorPart {
 						alwaysChecked.add(element2TreeNode.get(elem));
 					}
 				} else if (elem.getType() == Type.CONTEXT) {
-					if (contexts.contains(elem.getLabel())) {
-						EventBTreeNode node = element2TreeNode.get(elem);
-						alwaysChecked.add(node);
-						for (Object obj1 : provider.getChildren(node)) {
-							alwaysChecked.add((EventBTreeNode) obj1);
-							if (provider.hasChildren(obj1)) {
-								for (Object obj2 : provider.getChildren(obj1)) {
-									alwaysChecked.add((EventBTreeNode) obj2);
-								}
+					EventBTreeNode node = element2TreeNode.get(elem);
+					alwaysChecked.add(node);
+					for (Object obj1 : provider.getChildren(node)) {
+						alwaysChecked.add((EventBTreeNode) obj1);
+						if (provider.hasChildren(obj1)) {
+							for (Object obj2 : provider.getChildren(obj1)) {
+								alwaysChecked.add((EventBTreeNode) obj2);
 							}
 						}
 					}
