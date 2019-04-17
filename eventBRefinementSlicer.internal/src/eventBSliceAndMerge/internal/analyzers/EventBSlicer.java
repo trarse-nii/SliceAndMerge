@@ -7,7 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRunnable;
+import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eventb.core.IAction;
@@ -25,6 +29,7 @@ import org.eventb.core.IParameter;
 import org.eventb.core.IPredicateElement;
 import org.eventb.core.IRefinesEvent;
 import org.eventb.core.IRefinesMachine;
+import org.eventb.core.ISCVariable;
 import org.eventb.core.ISCVariant;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
@@ -33,6 +38,7 @@ import org.eventb.core.IWitness;
 import org.eventb.core.ast.Expression;
 import org.eventb.core.ast.FreeIdentifier;
 import org.eventb.core.ast.ITypeEnvironment;
+import org.eventb.core.ast.Type;
 import org.eventb.core.basis.MachineRoot;
 import org.rodinp.core.IInternalElement;
 import org.rodinp.core.IInternalElementType;
@@ -304,8 +310,47 @@ public class EventBSlicer implements IWorkspaceRunnable {
 
 		// Save the final result
 		file.save(null, false);
+		
+		addNecessaryPredicates(root, monitor);
 	}
+	
+	/**
+	 * Add invariants for typing and complementary predicates for consistency.
+	 * @throws CoreException 
+	 */
+	private void addNecessaryPredicates(MachineRoot root, IProgressMonitor monitor) throws CoreException {
+		IProject project = root.getRodinProject().getProject();
 
+		// Force building the project
+		project.build(IncrementalProjectBuilder.INCREMENTAL_BUILD, monitor);
+		
+		// Add invariants for typing
+		Set<String> untypedVariableLabels = new HashSet<String>();
+		IMarker[] markers = project.getWorkspace().getRoot().findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
+		// Find untyped variables by checking errors
+		for (IMarker marker : markers) {
+			if (marker.getAttribute("code").equals("org.eventb.core.UntypedVariableError")) {
+				String variableLabel = marker.getAttribute("arguments").toString().split(":")[1];
+				untypedVariableLabels.add(variableLabel);
+			}
+		}
+		for (String untypedVariableLabel : untypedVariableLabels) {
+			addTypingInvariants(root, untypedVariableLabel);
+		}
+
+		// Force building the project again
+		project.build(IncrementalProjectBuilder.INCREMENTAL_BUILD, monitor);
+	}
+	
+	private void addTypingInvariants(MachineRoot root, String untypedVariableLabel) throws CoreException {
+		ISCVariable originalSCVariable = originalMachineRoot.getSCMachineRoot().getSCVariable(untypedVariableLabel);
+		Type type = originalSCVariable.getType(root.getFormulaFactory());
+		EventBInvariant typingInvariant = new EventBInvariant("typ_" + untypedVariableLabel,
+				untypedVariableLabel + " ∈ " + type.toExpression().toString(), null,
+				"For typing. Added by the slicer.", null);
+		addRodinElement(IInvariant.ELEMENT_TYPE, root, typingInvariant);
+	}
+	
 	/**
 	 * Takes variants from a given source Event-B machine and copies them to a
 	 * provided target.
