@@ -1,15 +1,12 @@
 package eventBSliceAndMerge.ui.wizards;
 
-import java.io.IOException;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.wizard.Wizard;
 import org.eventb.core.ast.*;
-import org.rodinp.core.RodinDBException;
 
 import eventBSliceAndMerge.internal.analyzers.EventBSliceSelection;
 import eventBSliceAndMerge.internal.analyzers.POInterpolator;
 import eventBSliceAndMerge.internal.datastructures.EventBMachine;
-import eventBSliceAndMerge.internal.util.Z3Util;
 
 /**
  * Wizard for generating a PO's interpolant written in the variables selected on SelectionEditor.
@@ -21,7 +18,6 @@ import eventBSliceAndMerge.internal.util.Z3Util;
 public class POInterpolationWizard extends Wizard {
 	private POInterpolator interpolator;
 	private POInterpolationWizardPage smtPOGenerationPage;
-	private String poName;
 
 	public POInterpolationWizard(EventBMachine machine, EventBSliceSelection selection) {
 		super();
@@ -50,20 +46,9 @@ public class POInterpolationWizard extends Wizard {
 	}
 	
 	public void generate(String poNameInput) {
-		String z3Result = null;
-		poName = poNameInput;
-		
 		try {
-			interpolator.createSMTInputFile(poName);
-			z3Result = Z3Util.runZ3(interpolator.getInputFilePath());
-			System.out.println(z3Result);
-			interpolator.createSMTOutputFile(z3Result);
-			smtPOGenerationPage.setResult(interpolator.eventBInterpolant());
-		} catch (RodinDBException e) {
-			e.printStackTrace();
+			smtPOGenerationPage.setResult(interpolator.complementaryPredString(poNameInput));
 		} catch (CoreException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}

@@ -1,47 +1,28 @@
 package eventBSliceAndMerge.internal.analyzers;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eventb.core.IPOPredicate;
-import org.eventb.core.IPOPredicateSet;
 import org.eventb.core.IPOSequent;
+import org.eventb.core.ast.FormulaFactory;
+import org.eventb.core.ast.FreeIdentifier;
 import org.eventb.core.ast.ITypeEnvironment;
 import org.eventb.core.ast.Predicate;
 import org.eventb.core.seqprover.transformer.ISimpleSequent;
 import org.eventb.core.seqprover.transformer.SimpleSequents;
-import org.eventb.smt.core.internal.ast.SMTBenchmark;
-import org.eventb.smt.core.internal.ast.SMTFormula;
-import org.eventb.smt.core.internal.ast.SMTSignature;
-import org.eventb.smt.core.internal.ast.commands.DeclareFunCommand;
-import org.eventb.smt.core.internal.ast.commands.DeclareSortCommand;
-import org.eventb.smt.core.internal.ast.symbols.SMTFunctionSymbol;
-import org.eventb.smt.core.internal.ast.symbols.SMTPredicateSymbol;
-import org.eventb.smt.core.internal.ast.symbols.SMTSortSymbol;
-import org.eventb.smt.core.internal.translation.SMTThroughPP;
 import org.rodinp.core.RodinDBException;
 
 import eventBSliceAndMerge.internal.datastructures.EventBMachine;
 import eventBSliceAndMerge.internal.datastructures.EventBVariable;
-import eventBSliceAndMerge.internal.util.POUtil;
+import jp.ac.nii.tk_eventb_util.ast.PredicateUtil;
+import jp.ac.nii.tk_eventb_util.po.POUtil;
+import jp.ac.nii.tk_eventb_util.z3.Z3Util;
 
-@SuppressWarnings("restriction")
 public class POInterpolator {
 	private EventBMachine machine;
 	private ITypeEnvironment typeEnvironment;
 	private EventBSliceSelection selection;
 	
-	private String inputFilePath = "/tmp/z3-input.scm";
-	private String outputFilePath = "/tmp/z3-output.scm";
-	private String goshPath = "/usr/bin/gosh";
-	private String identifierScmPath = "/usr/local/lib/refinement-interpolator/identifiers.scm";
-	private String smtToEventBScmPath = "/usr/local/lib/refinement-interpolator/smt-to-event-b.scm";
-
 	public POInterpolator(EventBMachine machine,
 			ITypeEnvironment typeEnvironment, EventBSliceSelection selection) {
 		this.machine = machine;
@@ -71,99 +52,31 @@ public class POInterpolator {
 		return result;
 	}
 
-	/**
-	 * Create a file of an SMT-formatted PO.
-	 * 
-	 * @param poName
-	 *            Name of the PO
-	 * @throws RodinDBException
-	 * @throws CoreException
-	 * @throws IOException
-	 */
-	public void createSMTInputFile(String poName) throws RodinDBException, CoreException, IOException {
-		IPOSequent sequent = machine.getScMachineRoot().getPORoot().getSequent(poName);
-		IPOPredicate[] goals = sequent.getGoals();
-		assert(goals.length == 1);
-		Predicate goal = goals[0].getPredicate(typeEnvironment);
+	public String complementaryPredString(String poName) throws RodinDBException, CoreException {
+		final IPOSequent poSequent = machine.getScMachineRoot().getPORoot().getSequent(poName);
+		Predicate poGoal = POUtil.poGoal(poSequent, typeEnvironment);
+		FormulaFactory ff = poGoal.getFactory();
 
-		System.out.println("Creating input file for " + poName);
-		ArrayList<Predicate> hypotheses = new ArrayList<Predicate>();
-		for (IPOPredicateSet poPredicateSet : sequent.getHypotheses()) {
-			hypotheses.addAll(POUtil.recursivelyCollectAllPredicates(poPredicateSet, typeEnvironment));
-		}
+		ArrayList<Predicate> antecedentPredicates = new ArrayList<Predicate>();
+		ArrayList<Predicate> succedentPredicates = new ArrayList<Predicate>();
+		Predicate succedentPredicate; // disjunction of succedentPredicates
 		
-		final ISimpleSequent simpleSequent = SimpleSequents.make(hypotheses, goal, goal.getFactory());
-		final SMTBenchmark benchmark = (new SMTThroughPP()).translate(poName, simpleSequent).getSMTBenchmark();
-		final SMTSignature signature = benchmark.getSignature();
-		final BufferedWriter writer = new BufferedWriter(new FileWriter(inputFilePath));;
-		
-		// Sorts
-		StringBuilder sb = new StringBuilder();
-		for (SMTSortSymbol sort : signature.getSorts()) {
-			DeclareSortCommand declareSortCommand = new DeclareSortCommand(sort);
-			declareSortCommand.toString(sb);
-			sb.append(" ");
-		}
-		writer.write(new String(sb));
-
-		// Functions
-		sb = new StringBuilder();
-		for (SMTPredicateSymbol pred : signature.getPreds()) {
-			DeclareFunCommand declareFunCommand = new DeclareFunCommand(pred);
-			declareFunCommand.toString(sb);
-			sb.append(" ");
-		}
-		for (SMTFunctionSymbol fun : signature.getFuns()) {
-			DeclareFunCommand declareFunCommand = new DeclareFunCommand(fun);
-			declareFunCommand.toString(sb);
-		}
-		writer.write(new String(sb));
-		
-		ArrayList<SMTFormula> antecedentFormulas = new ArrayList<>();
-		ArrayList<SMTFormula> succedentFormulas = new ArrayList<>();
-
-		// Goal
-		if (shouldBeInAntecedent(benchmark.getFormula(), concreteIdentifiers())) {
-			antecedentFormulas.add(benchmark.getFormula());
-		} else {
-			succedentFormulas.add(benchmark.getFormula());
-		}
-
-		// Hypotheses
-		for (SMTFormula assumption : benchmark.getAssumptions()) {
-			if (shouldBeInAntecedent(assumption, concreteIdentifiers())) {
-				antecedentFormulas.add(assumption);
+		for (Predicate poPredicate : POUtil.poHypotheses(poSequent, typeEnvironment)) {
+			if (shouldBeInAntecedent(poPredicate)) {
+				antecedentPredicates.add(poPredicate);
 			} else {
-				succedentFormulas.add(assumption);
+				succedentPredicates.add(PredicateUtil.negation(poPredicate, ff));
 			}
 		}
+		if (shouldBeInAntecedent(poGoal)) {
+			antecedentPredicates.add(PredicateUtil.negation(poGoal, ff));
+		} else {
+			succedentPredicates.add(poGoal);
+		}
+		succedentPredicate = PredicateUtil.disjunction(succedentPredicates, ff);
 
-		writer.write("(compute-interpolant (and ");
-		for (SMTFormula antecedentFormula : antecedentFormulas) {
-			writer.write(antecedentFormula.toString() + " ");
-		}
-		writer.write(") (and ");
-		for (SMTFormula succedentFormula : succedentFormulas) {
-			writer.write(succedentFormula.toString() + " ");
-		}
-		writer.write("))");
-		
-		writer.close();
-	} 
-	
-	/**
-	 * Create a file of the SMT-formatted interpolant (the output of Z3).
-	 * 
-	 * @param output
-	 *            The output (on standard output) from Z3
-	 * @throws IOException
-	 */
-	public void createSMTOutputFile (String output) throws IOException {
-		final BufferedWriter writer = new BufferedWriter(new FileWriter(outputFilePath));
-		
-		writer.write(output);
-		
-		writer.close();
+        ISimpleSequent interpSequent = SimpleSequents.make(antecedentPredicates, succedentPredicate, ff);
+        return Z3Util.smt2StringOfInterpolant(interpSequent);
 	}
 	
 	/**
@@ -171,77 +84,28 @@ public class POInterpolator {
 	 * (false means the formula should be in the succedent)
 	 * TODO: Handle not only VCC but also VAA 
 	 * 
-	 * @param formula
+	 * @param predicate
 	 * @param vccs
 	 * 			Concrete variables
 	 */
-	private boolean shouldBeInAntecedent(SMTFormula formula, ArrayList<EventBVariable> vccs) {
+	private boolean shouldBeInAntecedent(Predicate predicate) {
 		boolean result = false;
-		
+		ArrayList<EventBVariable> vccs = new ArrayList<EventBVariable>();
+
 		try {
-			for (String freeIdentifierLabel : freeIdentifiers(formula)) {
-				for (EventBVariable vcc : vccs) {
-					if (freeIdentifierLabel.equals(vcc.getLabel())) {
-						result = true;
-					}
-				}
-			}
-		} catch (IOException e) {
+			vccs = concreteIdentifiers();
+		} catch (RodinDBException e) {
 			e.printStackTrace();
 		}
 
-		return result;
-	}
-	
-	/**
-	 * TODO: Implement in Java
-	 * 
-	 * @param formula
-	 * @return The list of free identifiers in the formula
-	 * @throws IOException
-	 */
-	private ArrayList<String> freeIdentifiers(SMTFormula formula) throws IOException {
-		ArrayList<String> result = new ArrayList<>();
-		String[] cmd = {
-			goshPath,
-			identifierScmPath,
-			formula.toString()
-		};
-		Process pr = Runtime.getRuntime().exec(cmd);
-		BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-		String line;
-		while ((line = in.readLine()) != null) {
-			result.add(line);
+		for (FreeIdentifier freeIdentifier: predicate.getFreeIdentifiers()) {
+			for (EventBVariable vcc : vccs) {
+				if (freeIdentifier.getName().equals(vcc.getLabel())) {
+					result = true;
+				}
+			}
 		}
-		in.close();
-		return result;
-	}
-	
-	/**
-	 * TODO: Implement in Java
-	 * 
-	 * @return The interpolant in Event-B notation.
-	 * @throws IOException
-	 */
-	public String eventBInterpolant() throws IOException {
-		String result = "";
-		String[] cmd = {
-			goshPath,
-			smtToEventBScmPath,
-			inputFilePath,
-			outputFilePath
-		};
-		Process pr = Runtime.getRuntime().exec(cmd);
-		BufferedReader in = new BufferedReader(new InputStreamReader(pr.getInputStream()));
-		String line;
-		while ((line = in.readLine()) != null) {
-			result = result + "\n" + line;
-		}
-		in.close();
-		return result;
-	}
 
-	public String getInputFilePath() {
-		return inputFilePath;
+		return result;
 	}
 }
