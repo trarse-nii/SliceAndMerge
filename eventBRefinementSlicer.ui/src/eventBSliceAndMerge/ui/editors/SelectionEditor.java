@@ -76,6 +76,7 @@ import eventBSliceAndMerge.ui.util.RodinUtil;
 import eventBSliceAndMerge.ui.wizards.MachineCreationWizard;
 import eventBSliceAndMerge.ui.wizards.MergeMachineWithPredecessorWizard;
 import eventBSliceAndMerge.ui.wizards.POInterpolationWizard;
+import eventBSliceAndMerge.ui.wizards.RefinementAnnotatorWizard;
 
 /**
  * The editor in charge of selecting which parts of an Event-B machine to use in
@@ -361,7 +362,30 @@ public class SelectionEditor extends EditorPart {
 
 			}
 		});
+		
+		// A button for event refinement annotation
+		Button refinementAnalysisButton = new Button(buttonBar, SWT.PUSH);
+		refinementAnalysisButton.setText("Ref Analysis");
+		refinementAnalysisButton.setToolTipText("Analyze refinement of events of this machine");
+		refinementAnalysisButton.addSelectionListener(new SelectionListener() {
 
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				WizardDialog wizardDialog = new WizardDialog(parent.getShell(),
+						new RefinementAnnotatorWizard(machine));
+				
+				wizardDialog.setBlockOnOpen(true);
+				wizardDialog.open();
+				System.out.println();
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				widgetSelected(e);
+
+			}
+		});
+	
 		// A button for debug mode
 		if (System.getProperty("debug") != null) {
 			Button debugButton = new Button(buttonBar, SWT.PUSH);
