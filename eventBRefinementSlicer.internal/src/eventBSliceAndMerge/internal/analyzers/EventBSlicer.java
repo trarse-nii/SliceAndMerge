@@ -33,7 +33,6 @@ import org.eventb.core.ISCVariable;
 import org.eventb.core.ISCVariant;
 import org.eventb.core.ISeesContext;
 import org.eventb.core.IVariable;
-import org.eventb.core.IVariant;
 import org.eventb.core.IWitness;
 import org.eventb.core.ast.Expression;
 import org.eventb.core.ast.FreeIdentifier;
@@ -62,7 +61,7 @@ import eventBSliceAndMerge.internal.datastructures.EventBWitness;
 
 /**
  * Class for the processing function of the slicer
- * 
+ *
  * @author Fuyuki Ishikawa
  *
  */
@@ -73,7 +72,7 @@ public class EventBSlicer implements IWorkspaceRunnable {
 	private IMachineRoot originalMachineRoot;
 
 	/**
-	 * 
+	 *
 	 * @param file
 	 *            Target IRodinFile
 	 * @param selection
@@ -90,7 +89,7 @@ public class EventBSlicer implements IWorkspaceRunnable {
 	/**
 	 * Creates Event-B machine with the given name based on a selection of
 	 * elements
-	 * 
+	 *
 	 * @param machineName
 	 *            machine name
 	 * @param selection
@@ -310,20 +309,20 @@ public class EventBSlicer implements IWorkspaceRunnable {
 
 		// Save the final result
 		file.save(null, false);
-		
+
 		addNecessaryPredicates(root, monitor);
 	}
-	
+
 	/**
 	 * Add invariants for typing and complementary predicates for consistency.
-	 * @throws CoreException 
+	 * @throws CoreException
 	 */
 	private void addNecessaryPredicates(MachineRoot root, IProgressMonitor monitor) throws CoreException {
 		IProject project = root.getRodinProject().getProject();
 
 		// Force building the project
 		project.build(IncrementalProjectBuilder.INCREMENTAL_BUILD, monitor);
-		
+
 		// Add invariants for typing
 		Set<String> untypedVariableLabels = new HashSet<String>();
 		IMarker[] markers = project.getWorkspace().getRoot().findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
@@ -341,7 +340,7 @@ public class EventBSlicer implements IWorkspaceRunnable {
 		// Force building the project again
 		project.build(IncrementalProjectBuilder.INCREMENTAL_BUILD, monitor);
 	}
-	
+
 	private void addTypingInvariants(MachineRoot root, String untypedVariableLabel) throws CoreException {
 		ISCVariable originalSCVariable = originalMachineRoot.getSCMachineRoot().getSCVariable(untypedVariableLabel);
 		Type type = originalSCVariable.getType(root.getFormulaFactory());
@@ -350,26 +349,10 @@ public class EventBSlicer implements IWorkspaceRunnable {
 				"For typing. Added by the slicer.", null);
 		addRodinElement(IInvariant.ELEMENT_TYPE, root, typingInvariant);
 	}
-	
-	/**
-	 * Takes variants from a given source Event-B machine and copies them to a
-	 * provided target.
-	 * 
-	 * @param source
-	 *            Source machine of variant to be copied
-	 * @param target
-	 *            Target machine
-	 * @throws RodinDBException
-	 */
-	private void addVariant(IMachineRoot source, IInternalElement target) throws RodinDBException {
-		for (IVariant variant : source.getVariants()) {
-			variant.copy(target, null, null, true, null);
-		}
-	}
 
 	/**
 	 * Adds a Rodin element to the given parent element
-	 * 
+	 *
 	 * @param type
 	 *            Type of the element (i.e. invariant or variable)
 	 * @param parent
@@ -406,7 +389,7 @@ public class EventBSlicer implements IWorkspaceRunnable {
 			((IAssignmentElement) rodinElement).setAssignmentString(((EventBAction) element).getAssignment(), null);
 		}
 		if (rodinElement instanceof ISeesContext && element instanceof EventBContext) {
-			((ISeesContext) rodinElement).setSeenContextName(((EventBContext) element).getLabel(), null);
+			((ISeesContext) rodinElement).setSeenContextName(element.getLabel(), null);
 		}
 		if (rodinElement instanceof IRefinesEvent && element instanceof EventBRefinedEvent) {
 			((IRefinesEvent) rodinElement).setAbstractEventLabel(element.getLabel(), null);

@@ -50,7 +50,7 @@ import eventBSliceAndMerge.ui.util.RodinUtil;
 /**
  * Wizard to create a new machine, which merges the machine in the editor with the machine it directly
  * refines.
- * 
+ *
  * @author Aivar Kripsaar
  *
  */
@@ -105,7 +105,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 
 	/**
 	 * A method to copy all elements of a given event to another event, including the refinement clause
-	 * 
+	 *
 	 * @param source
 	 *            Source Event
 	 * @param destination
@@ -174,7 +174,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 
 	/**
 	 * A method to safely copy an element to its new destination while avoiding name conflicts
-	 * 
+	 *
 	 * @param element
 	 *            Element which needs to be copied
 	 * @param destination
@@ -199,7 +199,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	/**
 	 * A method to safely copy an element to its new destination while avoiding name conflicts, also giving
 	 * the new element a new label
-	 * 
+	 *
 	 * @param element
 	 *            Element which needs to be copied
 	 * @param destination
@@ -217,7 +217,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 	/**
 	 * A method to prepend "con_" to the labels of elements of a given event. Makes it easier to see where the
 	 * elements come from. Should be used before adding elements from abstract events
-	 * 
+	 *
 	 * @param event
 	 *            The event to be modified
 	 * @throws RodinDBException
@@ -236,7 +236,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 
 	/**
 	 * Creates a merge machine from the given information with the provided name.
-	 * 
+	 *
 	 * @param machineName
 	 *            The name we give to the new machine
 	 * @throws RodinDBException
@@ -322,7 +322,7 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				for (ISeesContext context0 : root.getSeesClauses()) {
 					for (ISeesContext context1 : root.getSeesClauses()) {
 						if (! context0.getSeenContextName().equals(context1.getSeenContextName()) && MachineUtil.isContextExtendedAs(context1, context0)) {
-							alreadyIncludedContexts.remove(context1);
+							alreadyIncludedContexts.remove(context1.getSeenContextName());
 							root.getSeesClause(context1.getElementName()).delete(true, monitor);
 						}
 					}
@@ -345,11 +345,11 @@ public class MergeMachineWithPredecessorWizard extends Wizard {
 				for (IEvent event : concreteMachineRoot.getEvents()) {
 					boolean isExtended = event.isExtended();
 					// Disable extending to copy all clauses
-					ElementManipulationFacade.changeAttribute((IInternalElement) event,  new ExtendedAttributeManipulation(), Messages.attributeManipulation_extended_false);
+					ElementManipulationFacade.changeAttribute(event,  new ExtendedAttributeManipulation(), Messages.attributeManipulation_extended_false);
 					copyElement(event, root);
 					eventActualNameToInternalNameMap.put(event.getLabel(), event.getElementName());
 					if (isExtended) {
-						ElementManipulationFacade.changeAttribute((IInternalElement) event,  new ExtendedAttributeManipulation(), Messages.attributeManipulation_extended_true);
+						ElementManipulationFacade.changeAttribute(event,  new ExtendedAttributeManipulation(), Messages.attributeManipulation_extended_true);
 					}
 				}
 				// Save the concrete machine because we manipulated extension status of events in the concrete machine
