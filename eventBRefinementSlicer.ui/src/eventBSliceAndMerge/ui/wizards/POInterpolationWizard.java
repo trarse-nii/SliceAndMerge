@@ -1,8 +1,10 @@
 package eventBSliceAndMerge.ui.wizards;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.wizard.Wizard;
-import org.eventb.core.ast.*;
 
 import eventBSliceAndMerge.internal.analyzers.EventBSliceSelection;
 import eventBSliceAndMerge.internal.analyzers.POInterpolator;
@@ -10,7 +12,7 @@ import eventBSliceAndMerge.internal.datastructures.EventBMachine;
 
 /**
  * Wizard for generating a PO's interpolant written in the variables selected on SelectionEditor.
- * 
+ *
  * @author Tsutomu Kobayashi
  *
  */
@@ -21,13 +23,7 @@ public class POInterpolationWizard extends Wizard {
 
 	public POInterpolationWizard(EventBMachine machine, EventBSliceSelection selection) {
 		super();
-		ITypeEnvironment typeEnvironment = null;
-		try {
-			typeEnvironment = machine.getScMachineRoot().getTypeEnvironment();
-		} catch (CoreException e) {
-			e.printStackTrace();
-		}
-		this.interpolator = new POInterpolator(machine, typeEnvironment, selection);
+		this.interpolator = new POInterpolator(machine, selection);
 	}
 
 	@Override
@@ -44,13 +40,17 @@ public class POInterpolationWizard extends Wizard {
 		smtPOGenerationPage.finish();
 		return true;
 	}
-	
+
 	public void generate(String poNameInput) {
 		try {
 			smtPOGenerationPage.setResult(interpolator.complementaryPredString(poNameInput));
 		} catch (CoreException e) {
 			e.printStackTrace();
-		}
+		} catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 	}
-	
+
 }
